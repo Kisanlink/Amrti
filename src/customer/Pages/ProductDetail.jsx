@@ -18,9 +18,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
-  const [alternateId, setAlternateId] = useState(null);
-  const [isViewingPouch, setIsViewingPouch] = useState(false);
-  const [currentProductId, setCurrentProductId]=useState(productId)
+  const [powderId, setPowderId] = useState(null);
+  const [pouchId, setPouchId] = useState(null);
+  const [currentProductId, setCurrentProductId] = useState(productId);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -34,9 +34,9 @@ export default function ProductDetail() {
         const data = await response.json();
         console.log(data);
         setProductData(data.data.data);
-        setAlternateId(data.data.data.alternativeId);
+        setPowderId(data.data.data._id);
+        setPouchId(data.data.data.alternativeId);
         setActiveImage(data.data.data.imageUrl[0]);
-        setIsViewingPouch(false);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -60,7 +60,7 @@ export default function ProductDetail() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ productId:currentProductId })
+        body: JSON.stringify({ productId: currentProductId })
       });
 
       if (!response.ok) {
@@ -76,10 +76,8 @@ export default function ProductDetail() {
     }
   };
 
-  const handleClick = async () => {
+  const handleProductChange = async (targetId) => {
     try {
-      const targetId = isViewingPouch ? productId : alternateId;
-      
       const response = await fetch(`${API_URL}/getproduct/${targetId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch data');
@@ -89,9 +87,7 @@ export default function ProductDetail() {
       
       setProductData(data.data.data);
       setActiveImage(data.data.data.imageUrl[0]);
-      setAlternateId(data.data.data.alternativeId);
-      setIsViewingPouch(!isViewingPouch);
-      setCurrentProductId(data.data.data._id)
+      setCurrentProductId(data.data.data._id);
     } catch (error) {
       console.error('Error fetching data:', error);
       // Handle error (e.g., show an error message to the user)
@@ -196,21 +192,35 @@ export default function ProductDetail() {
                     py: "0.5rem",
                     bgcolor: "#9155fd",
                     borderRadius: "25px",
+                    marginRight: "1rem"
                   }}
                 >
                   Add To Cart
                 </Button>
                 <Button
-                  onClick={handleClick}
+                  onClick={() => handleProductChange(powderId)}
                   variant="contained"
                   sx={{
                     px: "2rem",
                     py: "0.5rem",
                     bgcolor: "#9155fd",
                     borderRadius: "25px",
+                    marginRight: "1rem"
                   }}
                 >
-                  {isViewingPouch ? "Original Product" : "Pouch"}
+                  Powder
+                </Button>
+                <Button
+                  onClick={() => handleProductChange(pouchId)}
+                  variant="contained"
+                  sx={{
+                    px: "2rem",
+                    py: "0.5rem",
+                    bgcolor: "#9155fd",
+                    borderRadius: "25px"
+                  }}
+                >
+                  Pouch
                 </Button>
               </form>
             </div>
