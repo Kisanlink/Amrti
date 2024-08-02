@@ -169,7 +169,7 @@ export default function Delivery() {
   const proceedToPayment = async (amount, addressId) => {
     const token = getCookie('jwtToken');
     try {
-      const paymentResponse = await fetch('http://localhost:4000/api/v1/amrti/payment/initiate', {
+      const paymentResponse = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/payment/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ export default function Delivery() {
       const currentTime = new Date().toISOString();
       
       try {
-        const response = await fetch('http://localhost:4000/api/v1/amrti/address/getaddressid', {
+        const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/address/getaddressid', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
