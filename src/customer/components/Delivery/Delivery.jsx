@@ -138,6 +138,7 @@ export default function Delivery() {
     
     if (validateForm()) {
       const token = getCookie('jwtToken');
+      const currentTime = new Date().toISOString();
       
       try {
         // Save address
@@ -147,9 +148,9 @@ export default function Delivery() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ ...formData, proceedTime: currentTime }),
         });
-
+  
         const addressData = await addressResponse.json();
         if (addressResponse.ok) {
           fetchSavedAddresses();  // Refresh the list of saved addresses
@@ -163,11 +164,12 @@ export default function Delivery() {
       }
     }
   };
+  
 
   const proceedToPayment = async (amount, addressId) => {
     const token = getCookie('jwtToken');
     try {
-      const paymentResponse = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/payment/initiate', {
+      const paymentResponse = await fetch('http://localhost:4000/api/v1/amrti/payment/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,17 +200,19 @@ export default function Delivery() {
 
   const handleUseSelectedAddress = async () => {
     if (selectedAddressId) {
+      const token = getCookie('jwtToken');
+      const currentTime = new Date().toISOString();
+      
       try {
-        const token = getCookie('jwtToken');
-        const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/address/getaddressid', {
+        const response = await fetch('http://localhost:4000/api/v1/amrti/address/getaddressid', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ addressId: selectedAddressId }),
+          body: JSON.stringify({ addressId: selectedAddressId, proceedTime: currentTime }),
         });
-
+  
         if (response.ok) {
           const addressData = await response.json();
           proceedToPayment(addressData.cartPrice, selectedAddressId);
@@ -221,6 +225,7 @@ export default function Delivery() {
       }
     }
   };
+  
 
   const handleDeleteAddress = async (addressId) => {
     const token = getCookie('jwtToken');
