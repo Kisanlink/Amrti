@@ -71,7 +71,13 @@ export default function RegisterUserForm() {
         setSnackBarMessage("OTP sent successfully. Please check your email.");
         setSnackBarSeverity("success");
         setShowOtpField(true);
-      } else {
+      } else if(response.status===400){
+         setSnackBarMessage("Already Registered!");
+
+      }
+      
+      
+      else {
         setSnackBarMessage(result.error || "Failed to send OTP");
         setSnackBarSeverity("error");
       }
