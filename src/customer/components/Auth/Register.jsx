@@ -85,7 +85,7 @@ export default function RegisterUserForm() {
 
   const verifyOtpAndRegister = async () => {
     try {
-      const verifyResponse = await fetch("http://localhost:4000/api/v1/amrti/users/verifyOtp", {
+      const verifyResponse = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/verifyOtp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
