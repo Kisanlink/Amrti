@@ -49,30 +49,30 @@ function App() {
     //     dispatch(getUser(jwt));
     //   }
     // }, [])
-    // async function fetchUser() {
-    //   try {
-    //     const response = await fetch(
-    //       "https://amrti-main-backend.vercel.app/api/v1/amrti/users/role",
-    //       {
-    //         method: "GET",
-    //         headers: {
-    //           "Content-Type": "application/json",
-    //           Authorization: `Bearer ${token}`,
-    //         },
-    //       }
-    //     );
-    //     if (!response.ok) {
-    //       throw new Error("Network response was not ok");
-    //     }
-    //     const result = await response.json();
-    //     console.log(result);
-    //     setUser(result.role);
-    //   } catch (error) {
-    //     console.error("Failed to fetch products:", error);
-    //   }
-    // }
-    // fetchUser();
-    requestPermission()
+    async function fetchUser() {
+      try {
+        const response = await fetch(
+          "https://amrti-main-backend.vercel.app/api/v1/amrti/users/role",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const result = await response.json();
+        console.log(result);
+        setUser(result.role);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      }
+    }
+    fetchUser();
+    // requestPermission()
   }, []);
   const getRoutes = () => {
     console.log(user);
