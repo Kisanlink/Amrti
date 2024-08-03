@@ -51,20 +51,21 @@ export default function RegisterUserForm() {
     }
 
     setUserData(formData);
-    await sendOtp(formData.email);
+    await sendOtp(formData.email,formData.name,formData.password,formData.passwordConfirm);
   };
 
-  const sendOtp = async (email) => {
+  const sendOtp = async (email,name,password,passwordConfirm) => {
     try {
-      const response = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/send-otp", {
+      const response = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email,name,password,passwordConfirm }),
       });
 
       const result = await response.json();
+      console.log(result)
 
       if (response.ok) {
         setSnackBarMessage("OTP sent successfully. Please check your email.");
@@ -84,39 +85,28 @@ export default function RegisterUserForm() {
 
   const verifyOtpAndRegister = async () => {
     try {
-      // First, verify the OTP
-      const verifyResponse = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/verify-otp", {
+      const verifyResponse = await fetch("http://localhost:4000/api/v1/amrti/users/verifyOtp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: userData.email, otp }),
+        body: JSON.stringify({ otp: otp }),
       });
 
       const verifyResult = await verifyResponse.json();
+      console.log(verifyResponse);
+      console.log(verifyResult);
 
       if (verifyResponse.ok) {
-        // If OTP is verified, proceed with registration
-        const registerResponse = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/signup", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userData),
-        });
-
-        const registerResult = await registerResponse.json();
-
-        if (registerResponse.ok) {
-          setSnackBarMessage("Registration successful!");
-          setSnackBarSeverity("success");
-          setTimeout(() => navigate("/login"), 2000);
-        } else {
-          setSnackBarMessage(registerResult.error || "Registration failed");
-          setSnackBarSeverity("error");
-        }
+        setSnackBarMessage("Registration successful!");
+        setSnackBarSeverity("success");
+        setTimeout(() => navigate("/login"), 2000);
       } else {
-        setSnackBarMessage(verifyResult.error || "OTP verification failed");
+        // Convert the error object to a string if it's not already
+        const errorMessage = typeof verifyResult.error === 'object' 
+          ? JSON.stringify(verifyResult.error) 
+          : verifyResult.error || "OTP verification failed";
+        setSnackBarMessage(errorMessage);
         setSnackBarSeverity("error");
       }
     } catch (error) {
