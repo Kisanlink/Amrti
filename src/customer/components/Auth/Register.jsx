@@ -75,8 +75,6 @@ export default function RegisterUserForm() {
          setSnackBarMessage("Already Registered!");
 
       }
-      
-      
       else {
         setSnackBarMessage(result.error || "Failed to send OTP");
         setSnackBarSeverity("error");

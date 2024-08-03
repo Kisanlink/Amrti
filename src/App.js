@@ -15,12 +15,28 @@ import { getUser, logout } from "../src/State/Auth/Action";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import AdminRoutes from "./Routers/AdminRoutes";
+import { messaging } from "./firebase";
+import { getToken } from "firebase/messaging";
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop().split(";").shift();
 };
+async function requestPermission() {
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    // Generate Token
+    const token = await getToken(messaging, {
+      vapidKey:
+        "BBtiyt1cTyjluSNQYD35ymJKBXH0sWW-iVwMZ8Gafm-b1D94qyJvi6YgOEsNhBbdRll-aac7Fkg8xA-YJMUpnpw",
+    });
+    console.log("Token Gen", token);
+    // Send this token  to server ( db)
+  } else if (permission === "denied") {
+    alert("You denied for the notification");
+  }
+}
 
 function App() {
   const { auth, cart } = useSelector((store) => store);
@@ -33,30 +49,31 @@ function App() {
     //     dispatch(getUser(jwt));
     //   }
     // }, [])
-    async function fetchUser() {
-      try {
-        const response = await fetch(
-          "https://amrti-main-backend.vercel.app/api/v1/amrti/users/role",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        const result = await response.json();
-        console.log(result);
-        setUser(result.role);
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      }
-    }
-    fetchUser();
-  }, [token]);
+    // async function fetchUser() {
+    //   try {
+    //     const response = await fetch(
+    //       "https://amrti-main-backend.vercel.app/api/v1/amrti/users/role",
+    //       {
+    //         method: "GET",
+    //         headers: {
+    //           "Content-Type": "application/json",
+    //           Authorization: `Bearer ${token}`,
+    //         },
+    //       }
+    //     );
+    //     if (!response.ok) {
+    //       throw new Error("Network response was not ok");
+    //     }
+    //     const result = await response.json();
+    //     console.log(result);
+    //     setUser(result.role);
+    //   } catch (error) {
+    //     console.error("Failed to fetch products:", error);
+    //   }
+    // }
+    // fetchUser();
+    requestPermission()
+  }, []);
   const getRoutes = () => {
     console.log(user);
 
