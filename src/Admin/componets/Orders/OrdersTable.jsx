@@ -70,7 +70,6 @@ export default function Orders() {
       const dateFilter = filters.dateRange === "all" || new Date(order.createdAt) >= new Date(filters.dateRange);
       
       return (
-        
         (order._id.toLowerCase().includes(searchValue) ||
           order.status.toLowerCase().includes(searchValue)) &&
         statusFilter &&
@@ -79,7 +78,6 @@ export default function Orders() {
     });
   }, [orders, search, filters]);
   
-
   const toggleOrderExpansion = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
@@ -191,9 +189,13 @@ export default function Orders() {
                 </TableRow>
                 {expandedOrder === order._id && (
                   <TableRow>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={7}>
                       <div className="p-4 bg-muted/20 rounded-md">
-                        <h3 className="font-semibold mb-2">Order Items:</h3>
+                        <h3 className="font-semibold mb-2">Shipping Address:</h3>
+                        <p>
+                          {order.shippingAddress.addr}, {order.shippingAddress.city}, {order.shippingAddress.state}, {order.shippingAddress.zip}
+                        </p>
+                        <h3 className="font-semibold mt-4 mb-2">Order Items:</h3>
                         <Table>
                           <TableHeader>
                             <TableRow>

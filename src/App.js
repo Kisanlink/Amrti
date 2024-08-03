@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import AdminRoutes from "./Routers/AdminRoutes";
 import { messaging } from "./firebase";
 import { getToken } from "firebase/messaging";
+import { Analytics } from "@vercel/analytics/react";
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
@@ -86,6 +87,7 @@ function App() {
   };
   return (
     <div>
+      <Analytics></Analytics>
       <Routes>
         <Route path="/*" element={getRoutes()} />
 
