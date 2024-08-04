@@ -37,6 +37,7 @@ export default function Delivery() {
 
   useEffect(() => {
     fetchSavedAddresses();
+
   }, []);
 
   const fetchSavedAddresses = async () => {
@@ -51,6 +52,7 @@ export default function Delivery() {
       if (response.ok) {
         const addresses = await response.json();
         setSavedAddresses(addresses.addresses);
+        console.log(addresses.addresses)
       }
     } catch (error) {
       console.error('Error fetching saved addresses:', error);
@@ -275,7 +277,7 @@ export default function Delivery() {
                />
                <label htmlFor={`address-${index}`} className="flex-1">
                  <div className="text-sm font-medium">{address.name}</div>
-                 <div className="text-sm">{address.address}</div>
+                 <div className="text-sm">{address.addr}</div>
                  <div className="text-sm">{address.city}, {address.state}, {address.zip}</div>
                  <div className="text-sm">{address.country}</div>
                  <div className="text-sm">{address.countryCode} {address.contact}</div>

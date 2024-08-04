@@ -7,7 +7,7 @@ const CreateReport = () => {
     batchNo: "",
     productId: "",
     productReport: "",
-    quantity: "",
+    quantity: 0,
     type: "", // New field for pouch/tin selection
   });
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ const CreateReport = () => {
     try {
       let apiUrl;
       if (productData.type === "pouch") {
-        apiUrl = `https://amrti-main-backend.vercel.app/api/v1/amrti/products/addbatch/${productData.productId}/pouch`;
+        apiUrl = `https://amrti-main-backend.vercel.app/api/v1/amrti/products/addbatch/${productData.productId}/powder`;
       } else if (productData.type === "tin") {
         apiUrl = `https://amrti-main-backend.vercel.app/api/v1/amrti/products/addbatch/${productData.productId}/powder`;
       } else {
@@ -59,7 +59,7 @@ const CreateReport = () => {
         batchNo: "",
         productId: "",
         productReport: "",
-        quantity: "",
+        quantity: 0,
         type: "",
       });
 
@@ -117,6 +117,7 @@ const CreateReport = () => {
             <TextField
               fullWidth
               label="Quantity"
+              type="number"
               name="quantity"
               value={productData.quantity}
               onChange={handleChange}
