@@ -155,7 +155,14 @@ export default function Delivery() {
   
         const addressData = await addressResponse.json();
         if (addressResponse.ok) {
-          proceedToPayment(addressData.cartPrice);
+          console.log(addressData)
+
+          const addressId=addressData.shippingAddress.addresses[addressData.shippingAddress.addresses.length - 1]._id
+        
+        
+         
+          proceedToPayment(addressData.cartPrice,addressId);
+
          
           
         } else {
@@ -173,8 +180,8 @@ export default function Delivery() {
     const token = getCookie('jwtToken');
     try {
 
-      console.log(amount)
-      console.log(addressId)
+      // console.log(amount)
+      // console.log(addressId)
       const paymentResponse = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/payment/initiate', {
         method: 'POST',
         headers: {
