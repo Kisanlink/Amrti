@@ -153,8 +153,9 @@ export default function Delivery() {
   
         const addressData = await addressResponse.json();
         if (addressResponse.ok) {
-          fetchSavedAddresses();  // Refresh the list of saved addresses
           proceedToPayment(addressData.cartPrice);
+          fetchSavedAddresses();  // Refresh the list of saved addresses
+          
         } else {
           setPaymentStatus('Failed to save delivery information');
         }
