@@ -45,7 +45,7 @@ const requestPermission = async (userId) => {
     return;
   }
 
-  const response = await fetch('http://localhost:4000/api/v1/amrti/users/updateWebToken', {
+  const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/users/updateWebToken', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -68,7 +68,7 @@ function App() {
     async function fetchUser() {
       try {
         const response = await fetch(
-          "http://localhost:4000/api/v1/amrti/users/role",
+          "https://amrti-main-backend.vercel.app/api/v1/amrti/users/role",
           {
             method: "GET",
             headers: {
