@@ -186,9 +186,29 @@ const fetchedCart = data.cart.items.map(item => ({
   }
 };
 
-const handleCheckout = () => {
+const handleCheckout = async() => {
+
+  
+  try {
+    const response = await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/cart/proceed", {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+  
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to proceed");
+    }
+
+
   navigate('/delivery');
-};
+}catch (error) {
+  console.error("Error updating cart:", error);
+}
+}
 
 
 const handleContinueShopping = () => {
