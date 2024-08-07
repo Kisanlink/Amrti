@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 export default function Product() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     category: [],
@@ -27,15 +28,21 @@ export default function Product() {
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
+      const categoryQuery = filters.category.length > 0 ? `category=${filters.category.join(',')}` : '';
       const response = await fetch(
-        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&sort=${sortBy}&category=${filters.category.join(',')}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}&search=${searchTerm}`
+        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&sort=${sortBy}&${categoryQuery}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}&search=${searchTerm}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       const fetchedProducts = await response.json();
-      setProducts(prevProducts => [...prevProducts, ...fetchedProducts.data]);
+      setProducts(prevProducts => page === 1 ? fetchedProducts.data : [...prevProducts, ...fetchedProducts.data]);
       setHasMore(fetchedProducts.data.length === 20);
+      
+      // Extract unique categories from products
+      const uniqueCategories = [...new Set(fetchedProducts.data.map(product => product.category))];
+      setCategories(uniqueCategories);
+      
       setIsLoading(false);
     } catch (error) {
       console.error("Failed to fetch products:", error);
@@ -146,7 +153,7 @@ export default function Product() {
             <div>
               <h4 className="text-base font-medium mb-2">Category</h4>
               <div className="grid gap-2">
-                {["Powders", "Kombucha"].map((category) => (
+                {categories.map((category) => (
                   <Label key={category} className="flex items-center gap-2 font-normal">
                     <Checkbox
                       checked={filters.category.includes(category)}

@@ -166,7 +166,7 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-4 row-gap-8">
                   <div className="text-center md:border-r">
                     <BackHandOutlinedIcon style={{ fontSize: "50px", border: "solid black 3px", borderRadius: "50px", padding: "5px", color: "black" }} />
-                    <p className="text-md font-bold tracking-widest">Handpicked Seeds</p>
+                    <p className="text-md font-bold tracking-widest">Handpicked Leaves</p>
                   </div>
                   <div className="text-center md:border-r">
                     <ClearOutlinedIcon style={{ fontSize: "50px", border: "solid black 3px", borderRadius: "50px", padding: "5px", color: "black" }} />
@@ -184,45 +184,61 @@ export default function ProductDetail() {
               </div>
 
               <form className="mt-10">
-                <Button
-                  onClick={handleSubmit}
-                  variant="contained"
-                  sx={{
-                    px: "2rem",
-                    py: "0.5rem",
-                    bgcolor: "#9155fd",
-                    borderRadius: "25px",
-                    marginRight: "1rem"
-                  }}
-                >
-                  Add To Cart
-                </Button>
-                <Button
-                  onClick={() => handleProductChange(powderId)}
-                  variant="contained"
-                  sx={{
-                    px: "2rem",
-                    py: "0.5rem",
-                    bgcolor: "#9155fd",
-                    borderRadius: "25px",
-                    marginRight: "1rem"
-                  }}
-                >
-                  Powder
-                </Button>
-                <Button
-                  onClick={() => handleProductChange(pouchId)}
-                  variant="contained"
-                  sx={{
-                    px: "2rem",
-                    py: "0.5rem",
-                    bgcolor: "#9155fd",
-                    borderRadius: "25px"
-                  }}
-                >
-                  Pouch
-                </Button>
-              </form>
+  {productData.alternativeId && (
+    <>
+      <Button
+        onClick={() => handleProductChange(powderId)}
+        variant="outlined"
+        sx={{
+          px: "1.5rem",
+          py: "0.5rem",
+          borderColor: "#9155fd",
+          color: currentProductId === powderId ? "white" : "#9155fd",
+          bgcolor: currentProductId === powderId ? "#9155fd" : "transparent",
+          borderRadius: "50px",
+          marginRight: "1rem",
+          '&:hover': {
+            bgcolor: currentProductId === powderId ? "#9155fd" : "rgba(145, 85, 253, 0.1)",
+          },
+        }}
+      >
+        100g
+      </Button>
+      <Button
+        onClick={() => handleProductChange(pouchId)}
+        variant="outlined"
+        sx={{
+          px: "1.5rem",
+          py: "0.5rem",
+          borderColor: "#9155fd",
+          color: currentProductId === pouchId ? "white" : "#9155fd",
+          bgcolor: currentProductId === pouchId ? "#9155fd" : "transparent",
+          borderRadius: "50px",
+          marginRight: "1rem",
+          '&:hover': {
+            bgcolor: currentProductId === pouchId ? "#9155fd" : "rgba(145, 85, 253, 0.1)",
+          },
+        }}
+      >
+        300g
+      </Button>
+    </>
+  )}
+  <Button
+    onClick={handleSubmit}
+    variant="contained"
+    sx={{
+      px: "2rem",
+      py: "0.5rem",
+      bgcolor: "#9155fd",
+      borderRadius: "25px",
+      marginTop: "1rem",
+      display: "block",
+    }}
+  >
+    Add To Cart
+  </Button>
+</form>
             </div>
 
             <div className="py-10 lg:col-span-2 lg:col-start-1 lg:border-r lg:border-gray-200 lg:pb-16 lg:pr-8 lg:pt-6">

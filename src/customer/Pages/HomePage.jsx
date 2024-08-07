@@ -51,27 +51,27 @@ const HomePage = () => {
       <div style={{ background: "white", margin: "0", padding: "0" }}>
         <Story />
       </div>
-      <div class="contain" style={{ margin: "0" }}>
+      {/* <div class="contain" style={{ margin: "0" }}>
         <svg viewBox="0 0 500 500" preserveAspectRatio="xMinYMin meet">
           <path
             d="M20,0 C150,0 350,100 500,0 L500,00 L0,0 Z"
             style={{ stroke: "none", fill: "white" }}
           ></path>
         </svg>
-      </div>
+      </div> */}
       {/* <div style={{ background: "#f9f1e1", margin: "0", padding: "0" }}>
         <Process />
       </div> */}
 
-      <div class="contain" style={{ margin: "0", background: "white" }}>
+      {/* <div class="contain" style={{ margin: "0", background: "white" }}>
         <svg viewBox="0 0 500 500" preserveAspectRatio="xMinYMin meet">
           <path
             d="M20,0 C150,0 350,100 500,0 L500,00 L0,0 Z"
             style={{ stroke: "none", fill: "#f9f1e1" }}
           ></path>
         </svg>
-      </div>
-      <div className="bg-white">
+      </div> */}
+      <div className=" pt-6 bg-white">
         <ProductCarousel />
         <Testimonial />
         

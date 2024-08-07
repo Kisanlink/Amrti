@@ -9,8 +9,8 @@ const Testimonial = () => {
       </h1>
     */}
 
-      <div class="container my-24 mx-auto md:px-6">
-        <section class="mb-32 text-center">
+      <div class="container my-4 mx-auto md:px-6">
+        <section class="text-center">
           <h2 class="mb-12 text-3xl font-bold">Testimonials</h2>
 
           <div class="grid gap-x-6 md:grid-cols-1 lg:gap-x-12">
