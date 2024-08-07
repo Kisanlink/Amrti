@@ -51,7 +51,7 @@ export default function AdminPannel() {
   const handleLogout = async () => {
     try {
       // 1. Call the backend logout endpoint
-      const response = await fetch("http://localhost:4000/api/v1/amrti/users/logout", {
+      const response = await fetch("http://amrti-main-backend.vercel.app/api/v1/amrti/users/logout", {
         method: 'POST',
         credentials: 'include', // Include cookies in the request
       });
