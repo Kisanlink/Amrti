@@ -41,7 +41,7 @@ const requestPermission = async (userId) => {
     });
     console.log('Token Gen', token);
   } else if (permission === 'denied') {
-    alert('You denied the notification');
+    console.log('You denied the notification');
     return;
   }
 
