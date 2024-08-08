@@ -1,6 +1,20 @@
 import about from './about us.jpg'
 export const About = () => {
   return (
+
+    <div>
+      <div className="flex justify-center mt-16">
+              <iframe
+           
+                src="https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/amrti-new-teaser.mp4"
+                title={`Product Video `}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="shadow-lg rounded-lg w-full h-screen"
+              ></iframe>
+            </div>
+   
     <div style={{ paddingTop: "100px" }}>
       <h2 className=" mb-6 font-sans text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl sm:leading-none text-center">
         About Us
@@ -39,6 +53,7 @@ export const About = () => {
         </div>
       </div>
       <div style={{height:"100px"}}></div>
+    </div>
     </div>
   );
 };
