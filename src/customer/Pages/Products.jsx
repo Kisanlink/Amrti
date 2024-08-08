@@ -1,4 +1,3 @@
-"use client";
 import { useState, useCallback, useEffect } from "react";
 import { Input } from "../../components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "../../components/ui/dropdown-menu";
@@ -109,6 +108,11 @@ export default function Product() {
     }
   };
 
+  // Filter products based on selected categories
+  const filteredProducts = products.filter(product => 
+    filters.category.length === 0 || filters.category.includes(product.category)
+  );
+
   if (error) {
     return <div>{error}</div>;
   }
@@ -168,7 +172,7 @@ export default function Product() {
         </div>
         <div>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <div 
                 key={product._id}
                 className="bg-background rounded-lg shadow-lg overflow-hidden">
