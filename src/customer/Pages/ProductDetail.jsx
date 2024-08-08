@@ -303,25 +303,30 @@ export default function ProductDetail() {
 
         {/* Ways to Enjoy Section */}
         {productData.category?.name !== "350ml" && productData.category?.name !== "500g" && (
-          <div className="px-4 py-16 mx-auto sm:max-w-xl md:max-w-full lg:max-w-screen-xl md:px-24 lg:px-8 lg:py-20">
-            <h2 className="text-center mb-6 font-sans text-3xl font-bold leading-none tracking-tight text-gray-900 sm:text-4xl md:mx-auto">
-              <p>Ways to Enjoy Our {productData.title}</p>
-            </h2>
-            <div className="grid gap-8 lg:grid-cols-3 sm:max-w-sm sm:mx-auto lg:max-w-full">
-              {productData.enjoy?.map((item, index) => (
-                <div key={index} className="overflow-hidden transition-shadow duration-300 bg-white rounded shadow-sm">
-                  <img src={item.url} className="object-cover w-full h-72" alt="" />
-                  <div className="p-5 border border-t-0 h-full">
-                    <a href="/" className="inline-block mb-3 text-2xl font-bold leading-5 transition-colors duration-200 hover:text-deep-purple-accent-700">
-                      {item.heading}
-                    </a>
-                    <p className="mb-2 text-gray-700">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+  <div className="px-4 mx-auto sm:max-w-xl md:max-w-full lg:max-w-screen-xl md:px-24 lg:px-8">
+    <h2 className="text-center mb-6 font-sans text-3xl font-bold leading-none tracking-tight text-gray-900 sm:text-4xl md:mx-auto">
+      <p>Ways to Enjoy Our {productData.title}</p>
+    </h2>
+    <div className="grid gap-8 lg:grid-cols-3 sm:max-w-sm sm:mx-auto lg:max-w-full py-8">
+      {productData.enjoy?.map((item, index) => (
+        <a 
+          key={index} 
+          href={item.redirectUrl || "/"} 
+          className="overflow-hidden transition-shadow duration-300 bg-white rounded shadow-sm block"
+        >
+          <img src={item.url} className="object-cover w-full h-72" alt="" />
+          <div className="p-5 border border-t-0 h-full">
+            <h3 className="inline-block mb-3 text-2xl font-bold leading-5 transition-colors duration-200 hover:text-deep-purple-accent-700">
+              {item.heading}
+            </h3>
+            <p className="mb-2 text-gray-700">{item.desc}</p>
           </div>
-        )}
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
 
         {/* Render Kombucha or Compare components based on category */}
         {productData.category?.name === "350ml" && <Kombucha />}
