@@ -34,6 +34,7 @@ export default function ProductDetail() {
         const data = await response.json();
         console.log(data);
         setProductData(data.data.data);
+        console.log(productData)
         setPowderId(data.data.data._id);
         setPouchId(data.data.data.alternativeId);
         setActiveImage(data.data.data.imageUrl[0]);
@@ -86,6 +87,7 @@ export default function ProductDetail() {
       console.log(data);
       
       setProductData(data.data.data);
+      
       setActiveImage(data.data.data.imageUrl[0]);
       setCurrentProductId(data.data.data._id);
     } catch (error) {
@@ -253,6 +255,29 @@ export default function ProductDetail() {
             </div>
           </div>
         </section>
+
+        {productData.videoUrl && productData.videoUrl.length > 0 && (
+      <div className="mt-16 flex flex-col items-center">
+        {productData.videoUrl.map((video, index) => (
+          <div key={index} className="mb-12 w-full max-w-4xl">
+            <h2 className="text-4xl font-semibold text-gray-900 text-center mb-6 ">{video.heading}</h2>
+            <div className="flex justify-center mt-16">
+              <iframe
+                width="1000"
+                height="600"
+                src={video.url}
+                title={`Product Video ${index + 1}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="shadow-lg rounded-lg"
+              ></iframe>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
 
         {/* Highlights Section */}
         {productData.category?.name !== "350ml" && (
