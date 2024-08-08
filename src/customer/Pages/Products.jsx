@@ -29,7 +29,7 @@ export default function Product() {
       setIsLoading(true);
       const categoryQuery = filters.category.length > 0 ? `category=${filters.category.join(',')}` : '';
       const response = await fetch(
-        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&sort=${sortBy}&${categoryQuery}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}`
+        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&${categoryQuery}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -48,13 +48,13 @@ export default function Product() {
       setError("Failed to load products. Please try again later.");
       setIsLoading(false);
     }
-  }, [page, sortBy, filters]);
+  }, [page, filters]);
 
   useEffect(() => {
     setProducts([]);
     setPage(1);
     setHasMore(true);
-  }, [sortBy, filters]);
+  }, [filters]);
 
   useEffect(() => {
     fetchProducts();
@@ -109,10 +109,17 @@ export default function Product() {
   };
 
   // Filter products based on search term and selected categories
-  const filteredProducts = products.filter(product => 
+  let filteredProducts = products.filter(product => 
     (filters.category.length === 0 || filters.category.includes(product.category)) &&
     (searchTerm === "" || product.title.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Sort products based on sortBy value
+  if (sortBy === "price-asc") {
+    filteredProducts.sort((a, b) => a.discountedPrice - b.discountedPrice);
+  } else if (sortBy === "price-desc") {
+    filteredProducts.sort((a, b) => b.discountedPrice - a.discountedPrice);
+  }
 
   if (error) {
     return <div>{error}</div>;
@@ -129,7 +136,7 @@ export default function Product() {
             placeholder="Search products..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-auto pl-10 pr-4 py-2 rounded-lg bg-muted"
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-muted"
           />
         </div>
         <div className="flex items-center gap-4">
