@@ -29,7 +29,7 @@ export default function Product() {
       setIsLoading(true);
       const categoryQuery = filters.category.length > 0 ? `category=${filters.category.join(',')}` : '';
       const response = await fetch(
-        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&sort=${sortBy}&${categoryQuery}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}&search=${searchTerm}`
+        `https://amrti-main-backend.vercel.app/api/v1/amrti/products/getall?page=${page}&limit=20&sort=${sortBy}&${categoryQuery}&minPrice=${filters.price.min}&maxPrice=${filters.price.max}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -48,13 +48,13 @@ export default function Product() {
       setError("Failed to load products. Please try again later.");
       setIsLoading(false);
     }
-  }, [page, sortBy, filters, searchTerm]);
+  }, [page, sortBy, filters]);
 
   useEffect(() => {
     setProducts([]);
     setPage(1);
     setHasMore(true);
-  }, [sortBy, filters, searchTerm]);
+  }, [sortBy, filters]);
 
   useEffect(() => {
     fetchProducts();
@@ -108,9 +108,10 @@ export default function Product() {
     }
   };
 
-  // Filter products based on selected categories
+  // Filter products based on search term and selected categories
   const filteredProducts = products.filter(product => 
-    filters.category.length === 0 || filters.category.includes(product.category)
+    (filters.category.length === 0 || filters.category.includes(product.category)) &&
+    (searchTerm === "" || product.title.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (error) {
