@@ -232,7 +232,7 @@ export const Recipes = () => {
               </a>
             </div>
           </div>
-          <div className="overflow-hidden transition-shadow duration-300  rounded shadow-sm">
+          {/* <div className="overflow-hidden transition-shadow duration-300  rounded shadow-sm">
             <img src={chick} className="object-cover w-full h-64" alt="" />
             <div className="p-5 border border-t-0 h-full">
               <p className="mb-3 text-xs font-semibold tracking-wide uppercase">
@@ -244,7 +244,7 @@ export const Recipes = () => {
                 >
                   
                 </a>
-                {/* <span className="text-gray-600">— 28 Dec 2020</span> */}
+              
               </p>
               <a
                 href="/recipes/chickpea"
@@ -266,8 +266,8 @@ export const Recipes = () => {
                 Read more
               </a>
             </div>
-          </div>
-          <div className="overflow-hidden transition-shadow duration-300  rounded shadow-sm">
+          </div> */}
+          {/* <div className="overflow-hidden transition-shadow duration-300  rounded shadow-sm">
             <img src={saag} className="object-cover w-full h-64" alt="" />
             <div className="p-5 border border-t-0 h-full">
               <p className="mb-3 text-xs font-semibold tracking-wide uppercase">
@@ -436,7 +436,7 @@ export const Recipes = () => {
                 Read more
               </a>
             </div>
-          </div>
+          </div> */}
 
 
           
