@@ -129,7 +129,7 @@ export default function Product() {
             placeholder="Search products..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-muted"
+            className="w-auto pl-10 pr-4 py-2 rounded-lg bg-muted"
           />
         </div>
         <div className="flex items-center gap-4">
