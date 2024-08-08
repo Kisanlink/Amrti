@@ -108,11 +108,26 @@ export default function Product() {
     }
   };
 
+  // Custom order for categories
+  const customOrder = ["Powders", "Spices", "Kombucha"];
+
   // Filter products based on search term and selected categories
   let filteredProducts = products.filter(product => 
     (filters.category.length === 0 || filters.category.includes(product.category)) &&
     (searchTerm === "" || product.title.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Sort products based on custom order when no filters are applied
+  if (filters.category.length === 0) {
+    filteredProducts.sort((a, b) => {
+      const orderA = customOrder.indexOf(a.category);
+      const orderB = customOrder.indexOf(b.category);
+      if (orderA === -1 && orderB === -1) return 0; // Both are not in custom order
+      if (orderA === -1) return 1; // a is not in custom order, place it after b
+      if (orderB === -1) return -1; // b is not in custom order, place it after a
+      return orderA - orderB; // Sort based on custom order
+    });
+  }
 
   // Sort products based on sortBy value
   if (sortBy === "price-asc") {
@@ -165,24 +180,22 @@ export default function Product() {
             <div>
               <h4 className="text-base font-medium mb-2">Category</h4>
               <div className="grid gap-2">
-  {categories.map((category) => (
-    <Label key={category} className="flex items-center gap-2 font-normal">
-      <Checkbox
-        checked={filters.category.includes(category)}
-        onCheckedChange={() => handleCategoryFilter(category)}
-      />
-      {category === 'Powders' ? (
-        <>
-          <span>Fruit and Vegetable Powders</span>
-        
-        </>
-      ) : (
-        category
-      )}
-    </Label>
-  ))}
-</div>
-
+                {categories.map((category) => (
+                  <Label key={category} className="flex items-center gap-2 font-normal">
+                    <Checkbox
+                      checked={filters.category.includes(category)}
+                      onCheckedChange={() => handleCategoryFilter(category)}
+                    />
+                    {category === 'Powders' ? (
+                      <>
+                        <span>Fruit and Vegetable Powders</span>
+                      </>
+                    ) : (
+                      category
+                    )}
+                  </Label>
+                ))}
+              </div>
             </div>
           </div>
         </div>
