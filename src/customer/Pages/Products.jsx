@@ -165,16 +165,24 @@ export default function Product() {
             <div>
               <h4 className="text-base font-medium mb-2">Category</h4>
               <div className="grid gap-2">
-                {categories.map((category) => (
-                  <Label key={category} className="flex items-center gap-2 font-normal">
-                    <Checkbox
-                      checked={filters.category.includes(category)}
-                      onCheckedChange={() => handleCategoryFilter(category)}
-                    />
-                    {category}
-                  </Label>
-                ))}
-              </div>
+  {categories.map((category) => (
+    <Label key={category} className="flex items-center gap-2 font-normal">
+      <Checkbox
+        checked={filters.category.includes(category)}
+        onCheckedChange={() => handleCategoryFilter(category)}
+      />
+      {category === 'Powders' ? (
+        <>
+          <span>Fruit and Vegetable Powders</span>
+        
+        </>
+      ) : (
+        category
+      )}
+    </Label>
+  ))}
+</div>
+
             </div>
           </div>
         </div>
