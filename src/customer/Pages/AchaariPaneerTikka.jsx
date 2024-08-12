@@ -21,12 +21,12 @@ const AchaariPaneerTikka = () => {
           <li>250g paneer (Indian cottage cheese), cut into cubes</li>
           <li>
             2 tablespoons{" "}
-            <span style={{ fontWeight: "bold" }}>Amrti mustard oil</span>
+             mustard oil
           </li>
           <li>1 tablespoon lemon juice</li>
           <li>2 teaspoons ginger-garlic paste</li>
           <li>1 teaspoon red chili powder</li>
-          <li>1 teaspoon turmeric powder</li>
+          <li>1 teaspoon{" "}<span style={{ fontWeight: "bold" }}>Amrti's Turmeric powder</span> </li>
           <li>1 teaspoon coriander powder</li>
           <li>1 teaspoon cumin powder</li>
           <li>1 teaspoon garam masala</li>
