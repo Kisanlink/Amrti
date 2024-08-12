@@ -49,6 +49,11 @@ import MoringaLeafBananaSmoothie from "../customer/reports/MoringaBanana";
 import MoringaAvocadoToast from "../customer/reports/MoringaToast";
 import MoringaChutneyRice from "../customer/reports/MoringaRice";
 import MoringaUttapam from "../customer/reports/MoringaUttapam";
+import TurmericReportViewer from "../customer/reports/turmeric/TurmericReportViewer";
+
+import TurmericReport from "../customer/reports/turmeric/TurmericReport";
+import TurmericRecipeCategories from "../customer/reports/turmeric/TurmericRecipe";
+import TurmericFarmerDetails from "../customer/reports/turmeric/TuremericTraceability";
 import PaymentCallback from "../customer/components/Delivery/PaymentCallback";
 import Orders from "../customer/Pages/CustomerOrders";
 
@@ -73,7 +78,11 @@ const CustomerRouters = () => {
       <Route path="/product/moringa/recipes/easy-to-use/moringa-uttapam" element={<MoringaUttapam/>}></Route>
       <Route path="/product/moringa/recipes/easy-to-use/moringa-rice" element={<MoringaChutneyRice/>}></Route>
       <Route path="/product/moringa/recipes/easy-to-use/moringa-toast" element={<MoringaAvocadoToast/>}></Route>
-
+      <Route path="/product/turmeric/101" element={<TurmericReport/>}></Route>
+      <Route path="/product/turmeric/recipes" element={<TurmericRecipeCategories/>}></Route>
+      <Route path="/product/turmeric/farmer-details" element={<TurmericFarmerDetails/>}></Route>
+      {/* /* change report link */}
+      <Route path="/product/turmeric/product-report" element={<TurmericReportViewer driveLink={"https://drive.google.com/file/d/1cJZtTmaSuZpT6SLJZC0TL2D0GZet7I2l/view?usp=sharing"}/>}></Route> 
 
 
       </Routes>
