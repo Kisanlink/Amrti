@@ -1,19 +1,20 @@
 import about from './about us.jpg'
+import  MainCarousel  from '../components/Carousel/MainCarousel'
+
+const slides = ["https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti.jpg","https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti-2.jpg","https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti-1.jpg"];
+
 export const About = () => {
   return (
 
+
     <div>
-      <div className="flex justify-center mt-16">
-              <iframe
-           
-                src="https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/amrti-new-teaser.mp4"
-                title={`Product Video `}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="shadow-lg rounded-lg w-full h-screen"
-              ></iframe>
-            </div>
+          <div className="overflow-hidden mt-16" >
+
+       <MainCarousel autoSlide={true}>
+        {[...slides.map((s) => <img className='w-[1560px] h-[680px]' src={s} key={s} />)]}
+      </MainCarousel>
+      </div >
+
    
             <div style={{ paddingTop: "100px" }}>
   <h2 className="mb-6 font-sans text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl sm:leading-none text-center">
