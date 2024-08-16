@@ -7,6 +7,9 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import  MainCarousel  from '../components/Carousel/MainCarousel'
+
+const slides = ["https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti.jpg","https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti-2.jpg","https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/web-banner-new-amrti-1.jpg"];
 
 export default function Product() {
   const [products, setProducts] = useState([]);
@@ -142,6 +145,12 @@ export default function Product() {
 
   return (
     <div className="container mx-auto mt-12 px-4 md:px-6 py-8">
+      <div className="overflow-hidden mt-16" >
+
+<MainCarousel autoSlide={true}>
+ {[...slides.map((s) => <img className='w-[1560px] h-[680px]' src={s} key={s} />)]}
+</MainCarousel>
+</div >
       <ToastContainer />
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-8">
         <div className="relative flex-1">
