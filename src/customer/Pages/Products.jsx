@@ -144,13 +144,14 @@ export default function Product() {
   }
 
   return (
-    <div className="container mx-auto mt-12 px-4 md:px-6 py-8">
-      <div className="overflow-hidden mt-16" >
+    <div >
+      <div className="overflow-hidden pt-16" >
 
 <MainCarousel autoSlide={true}>
  {[...slides.map((s) => <img className='w-[1560px] h-[680px]' src={s} key={s} />)]}
 </MainCarousel>
 </div >
+<div className="container mx-auto mt-12 px-4 md:px-6 py-8">
       <ToastContainer />
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-8">
         <div className="relative flex-1">
@@ -246,6 +247,7 @@ export default function Product() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
