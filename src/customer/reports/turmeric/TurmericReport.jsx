@@ -23,14 +23,14 @@ const TurmericReport=()=>{
         
               {/* Video placeholder */}
               <div className="bg-gray-200 h-64 mt-16 flex items-center justify-center">
-              {/* <iframe
+              <iframe
           className="absolute overflow-hidden h-[250px] w-full  "
-   src="https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/Turmeric-LAUNCH-VIDEO-new.mp4"
+   src="https://d33hqsk72xx8w2.cloudfront.net/wp-content/uploads/0814-1.mp4"
           title="Full Screen Video"
          
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-        ></iframe> */}
+        ></iframe>
                 {/* <span className="text-gray-600 text-sm">Turmeric Video</span> */}
               </div>
         
