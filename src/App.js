@@ -15,6 +15,9 @@ import { getUser, logout } from "../src/State/Auth/Action";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import AdminRoutes from "./Routers/AdminRoutes";
+import { messaging } from "./firebase";
+import { getToken } from "firebase/messaging";
+import { Analytics } from "@vercel/analytics/react";
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
@@ -22,17 +25,46 @@ const getCookie = (name) => {
   if (parts.length === 2) return parts.pop().split(";").shift();
 };
 
+const requestPermission = async (userId) => {
+  if (!userId) {
+    console.log("User not logged in. Skipping notification permission request.");
+    return;
+  }
+
+  var token = "";
+  
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    // Generate Token
+    token = await getToken(messaging, {
+      vapidKey: 'BBtiyt1cTyjluSNQYD35ymJKBXH0sWW-iVwMZ8Gafm-b1D94qyJvi6YgOEsNhBbdRll-aac7Fkg8xA-YJMUpnpw',
+    });
+    console.log('Token Gen', token);
+  } else if (permission === 'denied') {
+    console.log('You denied the notification');
+    return;
+  }
+
+  const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/users/updateWebToken', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      userId: userId,
+      webToken: token
+    })
+  });
+  console.log(response);
+};
+
 function App() {
   const { auth, cart } = useSelector((store) => store);
-  // const dispatch = useDispatch();
-  // const jwt = localStorage.getItem("jwt");
   const token = getCookie("jwtToken");
   const [user, setUser] = useState("");
+  const [userId, setUserId] = useState(null);
+
   useEffect(() => {
-    //   if (jwt) {
-    //     dispatch(getUser(jwt));
-    //   }
-    // }, [])
     async function fetchUser() {
       try {
         const response = await fetch(
@@ -51,12 +83,19 @@ function App() {
         const result = await response.json();
         console.log(result);
         setUser(result.role);
+        setUserId(result.userId); // Assuming the API returns a userId
+        
+        // Call requestPermission only if userId is available
+        if (result.userId) {
+          requestPermission(result.userId);
+        }
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        console.error("Failed to fetch user data:", error);
       }
     }
     fetchUser();
-  }, [token]);
+  }, []);
+
   const getRoutes = () => {
     console.log(user);
 
@@ -67,12 +106,12 @@ function App() {
       return <CustomerRouters />;
     }
   };
+
   return (
     <div>
+      <Analytics></Analytics>
       <Routes>
         <Route path="/*" element={getRoutes()} />
-
-        {/* <Route path="/admin/*" element={<AdminPannel />}></Route> */}
       </Routes>
     </div>
   );

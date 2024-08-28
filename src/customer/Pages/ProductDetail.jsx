@@ -18,9 +18,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
-  const [alternateId, setAlternateId] = useState(null);
-  const [isViewingPouch, setIsViewingPouch] = useState(false);
-  const [currentProductId, setCurrentProductId]=useState(productId)
+  const [powderId, setPowderId] = useState(null);
+  const [pouchId, setPouchId] = useState(null);
+  const [currentProductId, setCurrentProductId] = useState(productId);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -34,9 +34,10 @@ export default function ProductDetail() {
         const data = await response.json();
         console.log(data);
         setProductData(data.data.data);
-        setAlternateId(data.data.data.alternativeId);
+        console.log(productData)
+        setPowderId(data.data.data._id);
+        setPouchId(data.data.data.alternativeId);
         setActiveImage(data.data.data.imageUrl[0]);
-        setIsViewingPouch(false);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -60,7 +61,7 @@ export default function ProductDetail() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ productId:currentProductId })
+        body: JSON.stringify({ productId: currentProductId })
       });
 
       if (!response.ok) {
@@ -76,10 +77,8 @@ export default function ProductDetail() {
     }
   };
 
-  const handleClick = async () => {
+  const handleProductChange = async (targetId) => {
     try {
-      const targetId = isViewingPouch ? productId : alternateId;
-      
       const response = await fetch(`${API_URL}/getproduct/${targetId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch data');
@@ -88,10 +87,9 @@ export default function ProductDetail() {
       console.log(data);
       
       setProductData(data.data.data);
+      
       setActiveImage(data.data.data.imageUrl[0]);
-      setAlternateId(data.data.data.alternativeId);
-      setIsViewingPouch(!isViewingPouch);
-      setCurrentProductId(data.data.data._id)
+      setCurrentProductId(data.data.data._id);
     } catch (error) {
       console.error('Error fetching data:', error);
       // Handle error (e.g., show an error message to the user)
@@ -170,7 +168,7 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-4 row-gap-8">
                   <div className="text-center md:border-r">
                     <BackHandOutlinedIcon style={{ fontSize: "50px", border: "solid black 3px", borderRadius: "50px", padding: "5px", color: "black" }} />
-                    <p className="text-md font-bold tracking-widest">Handpicked Seeds</p>
+                    <p className="text-md font-bold tracking-widest">Handpicked Leaves</p>
                   </div>
                   <div className="text-center md:border-r">
                     <ClearOutlinedIcon style={{ fontSize: "50px", border: "solid black 3px", borderRadius: "50px", padding: "5px", color: "black" }} />
@@ -188,31 +186,61 @@ export default function ProductDetail() {
               </div>
 
               <form className="mt-10">
-                <Button
-                  onClick={handleSubmit}
-                  variant="contained"
-                  sx={{
-                    px: "2rem",
-                    py: "0.5rem",
-                    bgcolor: "#9155fd",
-                    borderRadius: "25px",
-                  }}
-                >
-                  Add To Cart
-                </Button>
-                <Button
-                  onClick={handleClick}
-                  variant="contained"
-                  sx={{
-                    px: "2rem",
-                    py: "0.5rem",
-                    bgcolor: "#9155fd",
-                    borderRadius: "25px",
-                  }}
-                >
-                  {isViewingPouch ? "Original Product" : "Pouch"}
-                </Button>
-              </form>
+  {productData.alternativeId && (
+    <>
+      <Button
+        onClick={() => handleProductChange(powderId)}
+        variant="outlined"
+        sx={{
+          px: "1.5rem",
+          py: "0.5rem",
+          borderColor: "#9155fd",
+          color: currentProductId === powderId ? "white" : "#9155fd",
+          bgcolor: currentProductId === powderId ? "#9155fd" : "transparent",
+          borderRadius: "50px",
+          marginRight: "1rem",
+          '&:hover': {
+            bgcolor: currentProductId === powderId ? "#9155fd" : "rgba(145, 85, 253, 0.1)",
+          },
+        }}
+      >
+        100g
+      </Button>
+      <Button
+        onClick={() => handleProductChange(pouchId)}
+        variant="outlined"
+        sx={{
+          px: "1.5rem",
+          py: "0.5rem",
+          borderColor: "#9155fd",
+          color: currentProductId === pouchId ? "white" : "#9155fd",
+          bgcolor: currentProductId === pouchId ? "#9155fd" : "transparent",
+          borderRadius: "50px",
+          marginRight: "1rem",
+          '&:hover': {
+            bgcolor: currentProductId === pouchId ? "#9155fd" : "rgba(145, 85, 253, 0.1)",
+          },
+        }}
+      >
+        300g
+      </Button>
+    </>
+  )}
+  <Button
+    onClick={handleSubmit}
+    variant="contained"
+    sx={{
+      px: "2rem",
+      py: "0.5rem",
+      bgcolor: "#9155fd",
+      borderRadius: "25px",
+      marginTop: "1rem",
+      display: "block",
+    }}
+  >
+    Add To Cart
+  </Button>
+</form>
             </div>
 
             <div className="py-10 lg:col-span-2 lg:col-start-1 lg:border-r lg:border-gray-200 lg:pb-16 lg:pr-8 lg:pt-6">
@@ -227,6 +255,29 @@ export default function ProductDetail() {
             </div>
           </div>
         </section>
+
+        {productData.videoUrl && productData.videoUrl.length > 0 && (
+      <div className="mt-16 flex flex-col items-center">
+        {productData.videoUrl.map((video, index) => (
+          <div key={index} className="mb-12 w-full max-w-4xl">
+            <h2 className="text-4xl font-semibold text-gray-900 text-center mb-6 ">{video.heading}</h2>
+            <div className="flex justify-center mt-16">
+              <iframe
+                width="1000"
+                height="600"
+                src={video.url}
+                title={`Product Video ${index + 1}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="shadow-lg rounded-lg"
+              ></iframe>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
 
         {/* Highlights Section */}
         {productData.category?.name !== "350ml" && (
@@ -252,25 +303,30 @@ export default function ProductDetail() {
 
         {/* Ways to Enjoy Section */}
         {productData.category?.name !== "350ml" && productData.category?.name !== "500g" && (
-          <div className="px-4 py-16 mx-auto sm:max-w-xl md:max-w-full lg:max-w-screen-xl md:px-24 lg:px-8 lg:py-20">
-            <h2 className="text-center mb-6 font-sans text-3xl font-bold leading-none tracking-tight text-gray-900 sm:text-4xl md:mx-auto">
-              <p>Ways to Enjoy Our {productData.title}</p>
-            </h2>
-            <div className="grid gap-8 lg:grid-cols-3 sm:max-w-sm sm:mx-auto lg:max-w-full">
-              {productData.enjoy?.map((item, index) => (
-                <div key={index} className="overflow-hidden transition-shadow duration-300 bg-white rounded shadow-sm">
-                  <img src={item.url} className="object-cover w-full h-72" alt="" />
-                  <div className="p-5 border border-t-0 h-full">
-                    <a href="/" className="inline-block mb-3 text-2xl font-bold leading-5 transition-colors duration-200 hover:text-deep-purple-accent-700">
-                      {item.heading}
-                    </a>
-                    <p className="mb-2 text-gray-700">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+  <div className="px-4 mx-auto sm:max-w-xl md:max-w-full lg:max-w-screen-xl md:px-24 lg:px-8">
+    <h2 className="text-center mb-6 font-sans text-3xl font-bold leading-none tracking-tight text-gray-900 sm:text-4xl md:mx-auto">
+      <p>Ways to Enjoy Our {productData.title}</p>
+    </h2>
+    <div className="grid gap-8 lg:grid-cols-3 sm:max-w-sm sm:mx-auto lg:max-w-full py-8">
+      {productData.enjoy?.map((item, index) => (
+        <a 
+          key={index} 
+          href={item.redirectUrl || "/"} 
+          className="overflow-hidden transition-shadow duration-300 bg-white rounded shadow-sm block"
+        >
+          <img src={item.url} className="object-cover w-full h-72" alt="" />
+          <div className="p-5 border border-t-0 h-full">
+            <h3 className="inline-block mb-3 text-2xl font-bold leading-5 transition-colors duration-200 hover:text-deep-purple-accent-700">
+              {item.heading}
+            </h3>
+            <p className="mb-2 text-gray-700">{item.desc}</p>
           </div>
-        )}
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
 
         {/* Render Kombucha or Compare components based on category */}
         {productData.category?.name === "350ml" && <Kombucha />}

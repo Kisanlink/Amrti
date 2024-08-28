@@ -5,6 +5,7 @@ import { Input } from "../../../components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../../components/ui/select";
 import { Button } from "../../../components/ui/button";
 import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
+import { FaTrashAlt } from 'react-icons/fa'; // Import dustbin icon from react-icons
 
 const countryCodes = {
   in: "+91",
@@ -36,6 +37,7 @@ export default function Delivery() {
 
   useEffect(() => {
     fetchSavedAddresses();
+
   }, []);
 
   const fetchSavedAddresses = async () => {
@@ -50,6 +52,7 @@ export default function Delivery() {
       if (response.ok) {
         const addresses = await response.json();
         setSavedAddresses(addresses.addresses);
+        console.log(addresses.addresses)
       }
     } catch (error) {
       console.error('Error fetching saved addresses:', error);
@@ -137,6 +140,7 @@ export default function Delivery() {
     
     if (validateForm()) {
       const token = getCookie('jwtToken');
+      const currentTime = new Date().toISOString();
       
       try {
         // Save address
@@ -146,13 +150,21 @@ export default function Delivery() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ ...formData, proceedTime: currentTime }),
         });
-
+  
         const addressData = await addressResponse.json();
         if (addressResponse.ok) {
-          fetchSavedAddresses();  // Refresh the list of saved addresses
-          proceedToPayment(addressData.cartPrice);
+          console.log(addressData)
+
+          const addressId=addressData.shippingAddress.addresses[addressData.shippingAddress.addresses.length - 1]._id
+        
+        
+         
+          proceedToPayment(addressData.cartPrice,addressId);
+
+         
+          
         } else {
           setPaymentStatus('Failed to save delivery information');
         }
@@ -162,11 +174,14 @@ export default function Delivery() {
       }
     }
   };
+  
 
-  const proceedToPayment = async (amount,addressId) => {
+  const proceedToPayment = async (amount, addressId) => {
     const token = getCookie('jwtToken');
     try {
-      console.log(addressId)
+
+      // console.log(amount)
+      // console.log(addressId)
       const paymentResponse = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/payment/initiate', {
         method: 'POST',
         headers: {
@@ -175,7 +190,7 @@ export default function Delivery() {
         },
         body: JSON.stringify({
           amount: amount,
-          addressId:addressId,
+          addressId: addressId,
           redirectUrl: 'https://amrti-main-backend.vercel.app/api/v1/amrti/payment/verify/:merchantTransactionId',
         }),
       });
@@ -198,22 +213,22 @@ export default function Delivery() {
 
   const handleUseSelectedAddress = async () => {
     if (selectedAddressId) {
+      const token = getCookie('jwtToken');
+      const currentTime = new Date().toISOString();
+      
       try {
-        console.log(selectedAddressId)
-        const token = getCookie('jwtToken');
         const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/address/getaddressid', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ addressId: selectedAddressId }),
+          body: JSON.stringify({ addressId: selectedAddressId, proceedTime: currentTime }),
         });
-
+  
         if (response.ok) {
           const addressData = await response.json();
-          console.log(addressData)
-          proceedToPayment(addressData.cartPrice,selectedAddressId);
+          proceedToPayment(addressData.cartPrice, selectedAddressId);
         } else {
           setPaymentStatus('Failed to fetch selected address');
         }
@@ -221,6 +236,29 @@ export default function Delivery() {
         console.error('Error:', error);
         setPaymentStatus('An error occurred');
       }
+    }
+  };
+  
+
+  const handleDeleteAddress = async (addressId) => {
+    const token = getCookie('jwtToken');
+    try {
+      const response = await fetch('https://amrti-main-backend.vercel.app/api/v1/amrti/address/deleteaddress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ addressId }),
+      });
+
+      if (response.ok) {
+        fetchSavedAddresses(); // Refresh the list of saved addresses
+      } else {
+        console.error('Failed to delete address');
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
     }
   };
 
@@ -239,149 +277,86 @@ export default function Delivery() {
             <h2 className="text-xl font-semibold">Saved Addresses</h2>
             <RadioGroup onValueChange={handleAddressSelection} className="space-y-2">
               {savedAddresses.map((address, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                  <RadioGroupItem value={address._id} id={`address-${index}`} />
-                  <Label htmlFor={`address-${index}`} className="flex-grow">
-                    {`${address.name}, ${address.addr}, ${address.city}, ${address.state}, ${address.zip}, ${address.country}, ${address.contact}`}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            <Button onClick={handleUseSelectedAddress} disabled={!selectedAddressId} className="w-full">
-              Use Selected Address
-            </Button>
-          </div>
-        )}
+               
+               <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+               <RadioGroupItem
+                 id={`address-${index}`}
+                 value={address._id}
+                 className="mr-4"
+                 checked={selectedAddressId === address._id}
+               />
+               <label htmlFor={`address-${index}`} className="flex-1">
+                 <div className="text-sm font-medium">{address.name}</div>
+                 <div className="text-sm">{address.addr}</div>
+                 <div className="text-sm">{address.city}, {address.state}, {address.zip}</div>
+                 <div className="text-sm">{address.country}</div>
+                 <div className="text-sm">{address.countryCode} {address.contact}</div>
+               </label>
+               <button onClick={() => handleDeleteAddress(address._id)} className="text-red-600 hover:text-red-800">
+                 <FaTrashAlt />
+               </button>
+             </div>
+           ))}
+         </RadioGroup>
+         <Button onClick={handleUseSelectedAddress} disabled={!selectedAddressId}>
+           Use Selected Address
+         </Button>
+       </div>
+     )}
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Add New Address</h2>
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Enter your name" 
-                  value={formData.name} 
-                  onChange={handleInputChange}
-                  className={errors.name ? 'border-red-500' : ''}
-                />
-                {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input 
-                  id="address" 
-                  placeholder="Enter your address" 
-                  value={formData.address} 
-                  onChange={handleInputChange}
-                  className={errors.address ? 'border-red-500' : ''}
-                />
-                {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <Input 
-                  id="city" 
-                  placeholder="Enter your city" 
-                  value={formData.city} 
-                  onChange={handleInputChange}
-                  className={errors.city ? 'border-red-500' : ''}
-                />
-                {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
-                <Input 
-                  id="state" 
-                  placeholder="Enter your state" 
-                  value={formData.state} 
-                  onChange={handleInputChange}
-                  className={errors.state ? 'border-red-500' : ''}
-                />
-                {errors.state && <p className="text-red-500 text-sm">{errors.state}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="zip">Zip Code *</Label>
-                <Input 
-                  id="zip" 
-                  placeholder="Enter your zip code" 
-                  value={formData.zip} 
-                  onChange={handleInputChange}
-                  className={errors.zip ? 'border-red-500' : ''}
-                />
-                {errors.zip && <p className="text-red-500 text-sm">{errors.zip}</p>}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">Country *</Label>
-              <Select 
-                id="country" 
-                value={formData.country} 
-                onValueChange={(value) => handleSelectChange('country', value)}
-              >
-                <SelectTrigger className={errors.country ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select your country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="in">India</SelectItem>
-                  <SelectItem value="us">United States</SelectItem>
-                  <SelectItem value="ca">Canada</SelectItem>
-                  <SelectItem value="mx">Mexico</SelectItem>
-                  <SelectItem value="gb">United Kingdom</SelectItem>
-                  <SelectItem value="au">Australia</SelectItem>
-                  <SelectItem value="de">Germany</SelectItem>
-                  <SelectItem value="fr">France</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.country && <p className="text-red-500 text-sm">{errors.country}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact">Contact Number *</Label>
-              <div className="flex space-x-2">
-                <div className="w-1/4">
-                  <Select 
-                    id="countryCode" 
-                    value={formData.countryCode} 
-                    onValueChange={(value) => handleSelectChange('countryCode', value)}
-                  >
-                    <SelectTrigger className={errors.countryCode ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Code" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(countryCodes).map(([country, code]) => (
-                        <SelectItem key={country} value={code}>{code}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-3/4">
-                  <Input 
-                    id="contact" 
-                    placeholder="Enter 10-digit number" 
-                    value={formData.contact} 
-                    onChange={handleInputChange}
-                    className={errors.contact ? 'border-red-500' : ''}
-                  />
-                </div>
-              </div>
-              {(errors.countryCode || errors.contact) && 
-                <p className="text-red-500 text-sm">{errors.countryCode || errors.contact}</p>}
-            </div>
-            <Button type="submit" className="w-full">
-              Save Address and Proceed to Payment
-            </Button>
-          </form>
-        </div>
-        
-        {paymentStatus && (
-          <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
-            {paymentStatus}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+     <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+       <div className="space-y-4">
+         <Label htmlFor="name">Name</Label>
+         <Input id="name" value={formData.name} onChange={handleInputChange} />
+         {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
+
+         <Label htmlFor="address">Address</Label>
+         <Input id="address" value={formData.address} onChange={handleInputChange} />
+         {errors.address && <p className="text-red-600 text-sm">{errors.address}</p>}
+
+         <Label htmlFor="city">City</Label>
+         <Input id="city" value={formData.city} onChange={handleInputChange} />
+         {errors.city && <p className="text-red-600 text-sm">{errors.city}</p>}
+
+         <Label htmlFor="state">State</Label>
+         <Input id="state" value={formData.state} onChange={handleInputChange} />
+         {errors.state && <p className="text-red-600 text-sm">{errors.state}</p>}
+
+         <Label htmlFor="zip">Zip Code</Label>
+         <Input id="zip" value={formData.zip} onChange={handleInputChange} />
+         {errors.zip && <p className="text-red-600 text-sm">{errors.zip}</p>}
+
+         <Label htmlFor="country">Country</Label>
+         <Select id="country" onValueChange={(value) => handleSelectChange('country', value)}>
+           <SelectTrigger>
+             <SelectValue placeholder="Select a country" />
+           </SelectTrigger>
+           <SelectContent>
+             <SelectItem value="in">India</SelectItem>
+             <SelectItem value="us">United States</SelectItem>
+             <SelectItem value="ca">Canada</SelectItem>
+             <SelectItem value="mx">Mexico</SelectItem>
+             <SelectItem value="gb">United Kingdom</SelectItem>
+             <SelectItem value="au">Australia</SelectItem>
+             <SelectItem value="de">Germany</SelectItem>
+             <SelectItem value="fr">France</SelectItem>
+           </SelectContent>
+         </Select>
+         {errors.country && <p className="text-red-600 text-sm">{errors.country}</p>}
+
+         <Label htmlFor="countryCode">Country Code</Label>
+         <Input id="countryCode" value={formData.countryCode} readOnly />
+         {errors.countryCode && <p className="text-red-600 text-sm">{errors.countryCode}</p>}
+
+         <Label htmlFor="contact">Contact Number</Label>
+         <Input id="contact" value={formData.contact} onChange={handleInputChange} />
+         {errors.contact && <p className="text-red-600 text-sm">{errors.contact}</p>}
+       </div>
+
+       <Button type="submit">Proceed to Payment</Button>
+       {paymentStatus && <p className="text-red-600 text-sm">{paymentStatus}</p>}
+     </form>
+   </div>
+ </div>
+);
 }

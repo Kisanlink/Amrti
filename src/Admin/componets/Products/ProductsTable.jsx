@@ -31,6 +31,7 @@ const ProductsTable = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { customersProduct } = useSelector((store) => store);
+  console.log(customersProduct)
   const [filterValue, setFilterValue] = useState({
     availability: "",
     category: "",
@@ -96,7 +97,7 @@ const ProductsTable = () => {
                 <TableCell>Image</TableCell>
                 <TableCell>Title</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>Product ID</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>Category</TableCell>
+                {/* <TableCell sx={{ textAlign: "center" }}>Category</TableCell> */}
                 <TableCell sx={{ textAlign: "center" }}>Price</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>Quantity</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>Delete</TableCell>
@@ -104,6 +105,7 @@ const ProductsTable = () => {
             </TableHead>
             <TableBody>
               {customersProduct?.products?.content?.map((item) => (
+              
                 <TableRow
                   hover
                   key={item._id}
@@ -128,7 +130,7 @@ const ProductsTable = () => {
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>{item._id}</TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>{item.category.name}</TableCell>
+                  {/* <TableCell sx={{ textAlign: "center" }}>{item.category}</TableCell> */}
                   <TableCell sx={{ textAlign: "center" }}>{item.discountedPrice}</TableCell>
                   <TableCell sx={{ textAlign: "center" }}>{item.quantity}</TableCell>
                   <TableCell sx={{ textAlign: "center" }}>

@@ -20,7 +20,7 @@ const Saag = () => {
           <li>2 green chilies, chopped (adjust to taste)</li>
           <li>
             1 tablespoon{" "}
-            <span style={{ fontWeight: "bold" }}>Amrti's Mustard Oil</span>
+            Mustard Oil
           </li>
           <li>1 onion, finely chopped</li>
           <li>2 tomatoes, chopped</li>
@@ -28,7 +28,7 @@ const Saag = () => {
           <li>1-inch piece of ginger, grated</li>
           <li>1 teaspoon cumin seeds</li>
           <li>1 teaspoon coriander powder</li>
-          <li>1/2 teaspoon turmeric powder</li>
+          <li>1/2 teaspoon  <span style={{ fontWeight: "bold" }}>Amrti's Turmeric powder</span></li>
           <li>Salt to taste</li>
           <li>Water, as needed</li>
         </ul>

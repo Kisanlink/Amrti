@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Box,Avatar} from "@mui/material";
+import { Box, Avatar } from "@mui/material";
 import Drawer from "@mui/material/Drawer";
 import CssBaseline from "@mui/material/CssBaseline";
 import Toolbar from "@mui/material/Toolbar";
@@ -20,14 +20,11 @@ import Dashboard from "./Views/Admin";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import DemoAdmin from "./Views/DemoAdmin";
 import CreateProductForm from "./componets/createProduct/CreateProductFrom";
-
 import "./AdminPannel.css";
 import ProductsTable from "./componets/Products/ProductsTable";
 import OrdersTable from "./componets/Orders/OrdersTable";
 import Customers from "./componets/customers/customers";
 import UpdateProductForm from "./componets/updateProduct/UpdateProduct";
-import { useDispatch, useSelector } from "react-redux";
-import { getUser, logout } from "../State/Auth/Action";
 import { useEffect } from "react";
 import { deepPurple } from "@mui/material/colors";
 import CreateReport from "./componets/createProduct/CreateReport";
@@ -49,24 +46,44 @@ export default function AdminPannel() {
   const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
   const [sideBarVisible, setSideBarVisible] = React.useState(false);
-  const navigate=useNavigate();
-  // const dispatch=useDispatch()
-  const {auth}=useSelector(store=>store);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    
-    const response=await fetch("https://amrti-main-backend.vercel.app/api/v1/amrti/users/logout")
-    console.log(response)
+    try {
+      // 1. Call the backend logout endpoint
+      const response = await fetch("http://amrti-main-backend.vercel.app/api/v1/amrti/users/logout", {
+        method: 'POST',
+        credentials: 'include', // Include cookies in the request
+      });
+
+      if (response.ok) {
+        console.log("Logged out successfully from backend");
+
+        // 2. Clear any client-side storage
+        localStorage.removeItem('user'); // Remove user data from localStorage
+        sessionStorage.clear(); // Clear any session storage data
+
+        // 3. Clear cookies (this should be done by the server, but we can also do it client-side)
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+
+        // 4. Reset any global state if you're using a state management library like Redux
+        // dispatch(logout()); // Uncomment and implement this if you're using Redux
+
+        // 5. Navigate to the login page
+        navigate('/');
+      } else {
+        console.error("Failed to logout from backend");
+        // Handle error, maybe show a notification to the user
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Handle error, maybe show a notification to the user
+    }
   };
-  
-
-  // const jwt = localStorage.getItem("jwt");
-
-  // useEffect(() => {
-  //   if (jwt) {
-  //     dispatch(getUser(jwt));
-  //   }
-  // }, [jwt]);
 
   const drawer = (
     <Box
@@ -80,7 +97,7 @@ export default function AdminPannel() {
       {isLargeScreen && <Toolbar />}
       <List>
         {menu.map((item, index) => (
-          <ListItem key={item.name} disablePadding onClick={()=>navigate(item.path)}>
+          <ListItem key={item.name} disablePadding onClick={() => navigate(item.path)}>
             <ListItemButton>
               <ListItemIcon>
                 {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
@@ -93,25 +110,21 @@ export default function AdminPannel() {
 
       <List sx={{ position: "absolute", bottom: 0, width: "100%" }}>
         <Divider />
-       
-        <ListItem onClick={handleLogout}  disablePadding >
-            <ListItemButton>
+        <ListItem onClick={handleLogout} disablePadding>
+          <ListItemButton>
             <Avatar
-                        className="text-white"
-                        onClick={handleLogout}
-                       
-                        sx={{
-                          bgcolor: deepPurple[500],
-                          color: "white",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {auth.user?.firstName[0].toUpperCase()}
-                      </Avatar>
-              <ListItemText className="ml-5" primary={"Logout"} />
-            </ListItemButton>
-          </ListItem>
-        
+              className="text-white"
+              sx={{
+                bgcolor: deepPurple[500],
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              U
+            </Avatar>
+            <ListItemText className="ml-5" primary={"Logout"} />
+          </ListItemButton>
+        </ListItem>
       </List>
     </Box>
   );
@@ -142,14 +155,13 @@ export default function AdminPannel() {
               boxSizing: "border-box",
               ...(drawerVariant === "temporary" && {
                 top: 0,
-                [`& .MuiPaper-root.MuiDrawer-paperAnchorTop.MuiDrawer-paperTemporary`]:
-                  {
-                    position: "fixed",
-                    left: 0,
-                    right: 0,
-                    height: "100%",
-                    zIndex: (theme) => theme.zIndex.drawer + 2,
-                  },
+                [`& .MuiPaper-root.MuiDrawer-paperAnchorTop.MuiDrawer-paperTemporary`]: {
+                  position: "fixed",
+                  left: 0,
+                  right: 0,
+                  height: "100%",
+                  zIndex: (theme) => theme.zIndex.drawer + 2,
+                },
               }),
             },
           }}
@@ -162,14 +174,8 @@ export default function AdminPannel() {
           <Toolbar />
           <Routes>
             <Route path="/" element={<Dashboard />}></Route>
-            <Route
-              path="/product/create"
-              element={<CreateProductForm />}
-            ></Route>
-            <Route
-              path="/product/update/:productId"
-              element={<UpdateProductForm />}
-            ></Route>
+            <Route path="/product/create" element={<CreateProductForm />}></Route>
+            <Route path="/product/update/:productId" element={<UpdateProductForm />}></Route>
             <Route path="/products" element={<ProductsTable />}></Route>
             <Route path="/orders" element={<OrdersTable />}></Route>
             <Route path="/customers" element={<Customers />}></Route>
