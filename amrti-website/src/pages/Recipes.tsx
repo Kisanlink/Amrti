@@ -1,0 +1,507 @@
+import { motion } from 'framer-motion';
+import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, Truck, Shield, RotateCcw } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
+
+const Recipes = () => {
+  const { id } = useParams();
+  const [selectedCategory, setSelectedCategory] = useState('All Recipes');
+
+  const recipes = [
+    {
+      id: 'moringa-smoothie',
+      title: 'Moringa Smoothie',
+      category: 'Beverages',
+      description: 'This vibrant green smoothie combines the superfood power of moringa with fresh fruits for a delicious and nutritious energy boost. Perfect for breakfast or post-workout recovery.',
+      longDescription: 'Start your day with this nutrient-packed smoothie that combines the incredible benefits of moringa with fresh fruits. This recipe is perfect for those looking to boost their energy levels naturally while enjoying a delicious and refreshing drink.',
+      image: '/Recipes/moringa smoothie.jpg',
+      prepTime: '5 mins',
+      servings: 1,
+      difficulty: 'Easy',
+      rating: 4.7,
+      reviews: 89,
+      tags: ['Energy', 'Recovery', 'Breakfast', 'Superfood'],
+      ingredients: [
+        '1 tsp Moringa Powder',
+        '1 banana',
+        '1 cup spinach',
+        '1/2 cup frozen mango',
+        '1 cup almond milk',
+        '1 tbsp honey (optional)',
+        'Ice cubes'
+      ],
+      instructions: [
+        'Add all ingredients to a high-speed blender',
+        'Blend until smooth and creamy',
+        'Add more almond milk if too thick',
+        'Serve immediately for best taste'
+      ],
+      nutrition: {
+        'Calories': '180 kcal',
+        'Protein': '8g',
+        'Fiber': '6g',
+        'Vitamin C': '45mg'
+      },
+      tips: [
+        'Use frozen banana for a creamier texture',
+        'Add chia seeds for extra protein',
+        'Substitute with coconut milk for tropical flavor'
+      ]
+    },
+    {
+      id: 'moringa-tea',
+      title: 'Moringa Tea',
+      category: 'Beverages',
+      description: 'A soothing and nutritious tea made with fresh moringa leaves or powder. This traditional drink offers numerous health benefits and is perfect for any time of day.',
+      longDescription: 'Moringa tea is a traditional beverage that has been consumed for centuries for its medicinal properties. This simple yet powerful drink can be enjoyed hot or cold and provides a natural energy boost without caffeine.',
+      image: '/Recipes/tea moringa.jpg',
+      prepTime: '3 mins',
+      servings: 1,
+      difficulty: 'Easy',
+      rating: 4.8,
+      reviews: 156,
+      tags: ['Wellness', 'Immunity', 'Detox', 'Traditional'],
+      ingredients: [
+        '1 tsp Moringa Powder',
+        '1 cup hot water',
+        '1 tsp honey (optional)',
+        '1/2 lemon slice (optional)',
+        '1/4 tsp ginger powder (optional)'
+      ],
+      instructions: [
+        'Boil water to 80-90°C (not boiling)',
+        'Add moringa powder to a tea infuser or strainer',
+        'Pour hot water over the powder',
+        'Let steep for 3-5 minutes',
+        'Add honey and lemon if desired',
+        'Strain and serve hot'
+      ],
+      nutrition: {
+        'Calories': '15 kcal',
+        'Antioxidants': 'High',
+        'Vitamin C': '25mg',
+        'Iron': '2mg'
+      },
+      tips: [
+        'Don\'t use boiling water as it can destroy nutrients',
+        'Steep longer for stronger flavor',
+        'Add mint leaves for refreshing taste'
+      ]
+    },
+    {
+      id: 'moringa-dessert',
+      title: 'Moringa Desert',
+      category: 'Desserts',
+      description: 'Nutritious and delicious energy balls made with moringa powder, dates, and nuts. Perfect as a healthy snack or post-workout treat.',
+      longDescription: 'These energy balls are a perfect combination of taste and nutrition. Packed with natural ingredients and the superfood power of moringa, they make an ideal healthy snack that will keep you energized throughout the day.',
+      image: '/Recipes/moringa dessert.jpg',
+      prepTime: '15 mins',
+      servings: 12,
+      difficulty: 'Easy',
+      rating: 4.6,
+      reviews: 78,
+      tags: ['Snack', 'Energy', 'Healthy', 'No-Bake'],
+      ingredients: [
+        '1 cup dates, pitted',
+        '1/2 cup almonds',
+        '1/4 cup walnuts',
+        '2 tbsp Moringa Powder',
+        '2 tbsp chia seeds',
+        '1 tbsp honey',
+        '1/2 tsp vanilla extract',
+        'Pinch of salt'
+      ],
+      instructions: [
+        'Soak dates in warm water for 10 minutes',
+        'Process almonds and walnuts in food processor',
+        'Add soaked dates and blend until sticky',
+        'Add moringa powder, chia seeds, and honey',
+        'Mix until well combined',
+        'Roll into 12 small balls',
+        'Refrigerate for 30 minutes before serving'
+      ],
+      nutrition: {
+        'Calories': '120 kcal',
+        'Protein': '4g',
+        'Fiber': '3g',
+        'Healthy Fats': '6g'
+      },
+      tips: [
+        'Store in refrigerator for up to 1 week',
+        'Roll in coconut flakes for extra flavor',
+        'Add dark chocolate chips for indulgence'
+      ]
+    },
+    {
+      id: 'moringa-soup',
+      title: 'Moringa Vegetable Soup',
+      category: 'Soups',
+      description: 'A hearty and nutritious soup loaded with vegetables and moringa powder. Perfect for boosting immunity and staying warm during cold weather.',
+      longDescription: 'This comforting soup combines the goodness of fresh vegetables with the nutritional powerhouse of moringa. It\'s a perfect meal for those looking to boost their immunity and enjoy a warm, satisfying dish.',
+      image: '/Recipes/dosa moringa.jpg',
+      prepTime: '20 mins',
+      servings: 4,
+      difficulty: 'Medium',
+      rating: 4.5,
+      reviews: 92,
+      tags: ['Immunity', 'Comfort', 'Vegetarian', 'Warm'],
+      ingredients: [
+        '2 tbsp olive oil',
+        '1 onion, diced',
+        '2 carrots, chopped',
+        '2 celery stalks, chopped',
+        '3 garlic cloves, minced',
+        '1 tsp Moringa Powder',
+        '4 cups vegetable broth',
+        '1 cup spinach',
+        'Salt and pepper to taste',
+        'Fresh herbs for garnish'
+      ],
+      instructions: [
+        'Heat oil in a large pot over medium heat',
+        'Sauté onion, carrots, and celery for 5 minutes',
+        'Add garlic and cook for 1 minute',
+        'Add vegetable broth and bring to boil',
+        'Simmer for 15 minutes until vegetables are tender',
+        'Add moringa powder and spinach',
+        'Season with salt and pepper',
+        'Serve hot with fresh herbs'
+      ],
+      nutrition: {
+        'Calories': '85 kcal',
+        'Protein': '3g',
+        'Fiber': '4g',
+        'Vitamin A': '120%'
+      },
+      tips: [
+        'Add quinoa for extra protein',
+        'Use homemade vegetable broth for better flavor',
+        'Garnish with fresh parsley or cilantro'
+      ]
+    }
+  ];
+
+  const categories = [
+    { name: 'All Recipes', count: recipes.length },
+    { name: 'Beverages', count: recipes.filter(r => r.category === 'Beverages').length },
+    { name: 'Desserts', count: recipes.filter(r => r.category === 'Desserts').length },
+    { name: 'Soups', count: recipes.filter(r => r.category === 'Soups').length }
+  ];
+
+  const filteredRecipes = selectedCategory === 'All Recipes' 
+    ? recipes 
+    : recipes.filter(recipe => recipe.category === selectedCategory);
+
+  return (
+    <div className="pt-16 sm:pt-20 bg-beige-300">
+      {/* Hero Section */}
+      <section className="section-padding bg-gradient-to-br from-beige-400 via-beige-300 to-beige-500">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mb-4 sm:mb-6"
+            >
+              <div className="inline-flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-beige-500/80 rounded-full border border-green-200">
+                <Leaf className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                <span className="font-heading font-semibold text-green-700 tracking-wide text-sm sm:text-base">Healthy Recipes</span>
+                <Leaf className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+              </div>
+            </motion.div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-heading font-bold mb-4 sm:mb-6 text-black-900">
+              Delicious{' '}
+              <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+                Moringa Recipes
+              </span>
+            </h1>
+            <p className="text-base sm:text-lg lg:text-xl text-black-700 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
+              Discover amazing recipes that showcase the incredible benefits of moringa. 
+              From smoothies to desserts, these recipes are both nutritious and delicious.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Recipe Categories */}
+      <section className="py-12 sm:py-16 bg-gradient-to-r from-beige-500 via-beige-400 to-beige-500">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-3 sm:mb-4">
+              Recipe Categories
+            </h2>
+            <p className="text-base sm:text-lg text-black-700 px-4 sm:px-0">
+              Explore our collection of moringa recipes by category
+            </p>
+          </motion.div>
+          
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8 sm:mb-12 px-4 sm:px-0">
+            {categories.map((category, index) => (
+              <motion.button
+                key={category.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                onClick={() => setSelectedCategory(category.name)}
+                className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-heading font-semibold transition-all duration-300 text-sm sm:text-base ${
+                  selectedCategory === category.name
+                    ? 'bg-green-600 text-white-50 shadow-lg'
+                    : 'bg-beige-300/80 text-black-700 hover:bg-green-600 hover:text-white-50'
+                }`}
+              >
+                {category.name} ({category.count})
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Recipes */}
+      <section className="section-padding bg-gradient-to-br from-beige-400 to-beige-500">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-heading font-bold text-black-900 mb-6">
+              Featured <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Recipes</span>
+            </h2>
+            <p className="text-xl text-black-700 max-w-3xl mx-auto">
+              Our most popular moringa recipes loved by thousands
+            </p>
+          </motion.div>
+
+          {/* Featured Recipe Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+            {filteredRecipes.slice(0, 3).map((recipe, index) => (
+              <motion.div
+                key={recipe.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group cursor-pointer"
+              >
+                <div className="relative overflow-hidden rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
+                  <div className="relative overflow-hidden flex-shrink-0">
+                    <img
+                      src={recipe.image}
+                      alt={recipe.title}
+                      className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-500"
+                      style={{ maxHeight: '300px' }}
+                    />
+                    <div className="absolute top-4 right-4 bg-green-600 text-white-50 px-3 py-1 rounded-full text-sm font-semibold">
+                      {recipe.category}
+                    </div>
+                  </div>
+                  
+                  <div className="relative p-6 flex flex-col flex-grow">
+                    <h3 className="text-xl font-heading font-bold text-black-900 mb-3 group-hover:text-green-700 transition-colors duration-300">
+                      {recipe.title}
+                    </h3>
+                    <p className="text-black-700 mb-4 leading-relaxed flex-grow">
+                      {recipe.description}
+                    </p>
+                    
+                    <div className="flex items-center space-x-2 mb-4">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < Math.floor(recipe.rating) ? 'text-green-500 fill-current' : 'text-black-300'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-black-600">({recipe.reviews} reviews)</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <Clock className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                        <p className="text-sm font-semibold text-black-900">{recipe.prepTime}</p>
+                        <p className="text-xs text-black-600">Prep Time</p>
+                      </div>
+                      <div className="text-center">
+                        <Users className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                        <p className="text-sm font-semibold text-black-900">{recipe.servings}</p>
+                        <p className="text-xs text-black-600">Servings</p>
+                      </div>
+                      <div className="text-center">
+                        <TrendingUp className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                        <p className="text-sm font-semibold text-black-900">{recipe.difficulty}</p>
+                        <p className="text-xs text-black-600">Difficulty</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Link
+                        to={`/recipes/${recipe.id}`}
+                        className="flex-1 bg-green-600 text-white-50 font-heading font-semibold py-3 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center justify-center space-x-2"
+                      >
+                        <Leaf className="w-4 h-4" />
+                        <span>View Recipe</span>
+                      </Link>
+                      <button className="p-3 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 rounded-lg transition-colors duration-300">
+                        <Heart className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* All Recipes Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="mb-12"
+          >
+            <h3 className="text-2xl font-heading font-bold text-black-900 mb-8 text-center">
+              All Moringa Recipes
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {filteredRecipes.map((recipe, index) => (
+                <motion.div
+                  key={recipe.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="group cursor-pointer"
+                >
+                  <div className="overflow-hidden rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                    <div className="relative overflow-hidden flex-shrink-0">
+                      <img
+                        src={recipe.image}
+                        alt={recipe.title}
+                        className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                        style={{ maxHeight: '200px' }}
+                      />
+                      <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
+                        {recipe.category}
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 flex flex-col flex-grow">
+                      <h3 className="text-lg font-heading font-semibold text-black-900 mb-2 group-hover:text-green-700 transition-colors duration-300">
+                        {recipe.title}
+                      </h3>
+                      <p className="text-black-700 text-sm mb-3 leading-relaxed flex-grow">
+                        {recipe.description}
+                      </p>
+                      
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${i < Math.floor(recipe.rating) ? 'text-green-500 fill-current' : 'text-black-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-black-600">({recipe.reviews})</span>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="w-3 h-3 text-green-600" />
+                          <span className="text-xs text-black-600">{recipe.prepTime}</span>
+                        </div>
+                        <span className="text-xs text-black-600">{recipe.difficulty}</span>
+                      </div>
+
+                      <Link
+                        to={`/recipes/${recipe.id}`}
+                        className="inline-flex items-center font-heading font-semibold text-green-600 hover:text-green-700 transition-colors duration-300 group-hover:translate-x-1 text-sm mt-auto"
+                      >
+                        View Recipe
+                        <motion.span
+                          className="ml-1"
+                          animate={{ x: [0, 3, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          →
+                        </motion.span>
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Call to Action */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <div className="p-12 rounded-3xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-2xl">
+              <div className="max-w-2xl mx-auto">
+                <div className="p-4 rounded-full bg-green-600 w-fit mx-auto mb-6">
+                  <Award className="w-8 h-8 text-white-50" />
+                </div>
+                <h3 className="text-3xl font-heading font-bold text-black-900 mb-4">
+                  Why Try Our Recipes?
+                </h3>
+                <p className="text-lg text-black-700 mb-8">
+                  Our recipes are carefully crafted to maximize the benefits of moringa while creating delicious, 
+                  easy-to-make dishes that everyone will love.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="flex items-center space-x-3">
+                    <Leaf className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-black-900">Nutritious</p>
+                      <p className="text-sm text-black-600">Packed with nutrients</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-black-900">Quick & Easy</p>
+                      <p className="text-sm text-black-600">Simple preparation</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Heart className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-black-900">Delicious</p>
+                      <p className="text-sm text-black-600">Great taste</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Award className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-black-900">Healthy</p>
+                      <p className="text-sm text-black-600">Good for you</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Recipes; 
