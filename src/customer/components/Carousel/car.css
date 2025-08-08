@@ -1,9 +1,0 @@
-.car {
-    height: 100%;
-    width: 100%;
-}
-@media (max-width: 640px) {
-    .car {
-        height: 200px; /* Increased height for small screens and above */
-    }
-}
