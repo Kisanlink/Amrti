@@ -9,7 +9,7 @@ const Footer = () => {
     company: [
       { name: 'About Us', path: '/about' },
       { name: 'Our Mission', path: '/about' },
-      { name: 'Contact', path: '/about' },
+      { name: 'Contact', path: '/contact' },
     ],
     products: [
       { name: 'Powders', path: '/products' },
@@ -20,6 +20,7 @@ const Footer = () => {
       { name: 'Privacy Policy', path: '/privacy' },
       { name: 'Shipping Policy', path: '/shipping' },
       { name: 'Returns & Refunds', path: '/return' },
+      { name: 'Cancellation & Refund', path: '/cancellation-refund' },
       { name: 'Terms & Conditions', path: '/TnC' },
       { name: 'FAQ', path: '/faq' },
     ],
@@ -58,16 +59,16 @@ const Footer = () => {
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 text-gray-300">
                   <Mail size={16} />
-                  <span>contact@amrti.com</span>
+                  <span>info@amrti.com</span>
                 </div>
                 <div className="flex items-center space-x-3 text-gray-300">
                   <Phone size={16} />
-                  <span>+91 73867 27007</span>
+                  <span>+91-XXXXXXXXXX</span>
                 </div>
                 <div className="flex items-start space-x-3 text-gray-300">
                   <MapPin size={16} className="mt-1" />
                   <span className="text-sm">
-                    Plot no 27, Nandi Hills, Road no 51, Jubliee Hills, Hyderabad, 500033
+                    [Insert your office/registered address here]
                   </span>
                 </div>
               </div>
