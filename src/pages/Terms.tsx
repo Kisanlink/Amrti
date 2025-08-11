@@ -39,7 +39,7 @@ const Terms = () => {
       <section className="py-16 bg-gradient-to-br from-beige-400 to-beige-500">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto space-y-12">
-            {/* Acceptance of Terms */}
+            {/* Use of Site */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -50,19 +50,16 @@ const Terms = () => {
                 <div className="p-3 rounded-lg bg-green-600">
                   <Shield className="w-6 h-6 text-white-50" />
                 </div>
-                <h2 className="text-2xl font-heading font-bold text-black-900">Acceptance of Terms</h2>
+                <h2 className="text-2xl font-heading font-bold text-black-900">Use of Site</h2>
               </div>
               <div className="space-y-4 text-black-700 leading-relaxed">
                 <p>
-                  By accessing and using the Amrti website and services, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
-                </p>
-                <p>
-                  These terms and conditions apply to all users of the site, including without limitation users who are browsers, vendors, customers, merchants, and/or contributors of content.
+                  Content is for personal, non-commercial use. Unauthorized use is prohibited.
                 </p>
               </div>
             </motion.div>
 
-            {/* Use License */}
+            {/* Purchases */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -73,24 +70,16 @@ const Terms = () => {
                 <div className="p-3 rounded-lg bg-green-600">
                   <Award className="w-6 h-6 text-white-50" />
                 </div>
-                <h2 className="text-2xl font-heading font-bold text-black-900">Use License</h2>
+                <h2 className="text-2xl font-heading font-bold text-black-900">Purchases</h2>
               </div>
               <div className="space-y-4 text-black-700 leading-relaxed">
                 <p>
-                  Permission is granted to temporarily download one copy of the materials (information or software) on Amrti's website for personal, non-commercial transitory viewing only.
+                  You agree to provide accurate information for orders. We reserve the right to refuse/cancel orders at discretion.
                 </p>
-                <p>This is the grant of a license, not a transfer of title, and under this license you may not:</p>
-                <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Modify or copy the materials</li>
-                  <li>Use the materials for any commercial purpose or for any public display</li>
-                  <li>Attempt to reverse engineer any software contained on the website</li>
-                  <li>Remove any copyright or other proprietary notations from the materials</li>
-                  <li>Transfer the materials to another person or "mirror" the materials on any other server</li>
-                </ul>
               </div>
             </motion.div>
 
-            {/* Disclaimer */}
+            {/* Intellectual Property */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -101,19 +90,16 @@ const Terms = () => {
                 <div className="p-3 rounded-lg bg-green-600">
                   <Shield className="w-6 h-6 text-white-50" />
                 </div>
-                <h2 className="text-2xl font-heading font-bold text-black-900">Disclaimer</h2>
+                <h2 className="text-2xl font-heading font-bold text-black-900">Intellectual Property</h2>
               </div>
               <div className="space-y-4 text-black-700 leading-relaxed">
                 <p>
-                  The materials on Amrti's website are provided on an 'as is' basis. Amrti makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
-                </p>
-                <p>
-                  Further, Amrti does not warrant or make any representations concerning the accuracy, likely results, or reliability of the use of the materials on its website or otherwise relating to such materials or on any sites linked to this site.
+                  All site content is the property of amrti.com.
                 </p>
               </div>
             </motion.div>
 
-            {/* Limitations */}
+            {/* Liability */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -124,49 +110,22 @@ const Terms = () => {
                 <div className="p-3 rounded-lg bg-green-600">
                   <Users className="w-6 h-6 text-white-50" />
                 </div>
-                <h2 className="text-2xl font-heading font-bold text-black-900">Limitations</h2>
+                <h2 className="text-2xl font-heading font-bold text-black-900">Liability</h2>
               </div>
               <div className="space-y-4 text-black-700 leading-relaxed">
                 <p>
-                  In no event shall Amrti or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Amrti's website, even if Amrti or an Amrti authorized representative has been notified orally or in writing of the possibility of such damage.
-                </p>
-                <p>
-                  Because some jurisdictions do not allow limitations on implied warranties, or limitations of liability for consequential or incidental damages, these limitations may not apply to you.
+                  amrti.com is not responsible for indirect damages arising from site use or purchased products/services.
                 </p>
               </div>
             </motion.div>
 
-            {/* Privacy Policy */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl"
-            >
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="p-3 rounded-lg bg-green-600">
-                  <Globe className="w-6 h-6 text-white-50" />
-                </div>
-                <h2 className="text-2xl font-heading font-bold text-black-900">Privacy Policy</h2>
-              </div>
-              <div className="space-y-4 text-black-700 leading-relaxed">
-                <p>
-                  Your privacy is important to us. It is Amrti's policy to respect your privacy regarding any information we may collect while operating our website.
-                </p>
-                <p>
-                  We collect information that you provide directly to us, such as when you create an account, make a purchase, or contact us for support. We also automatically collect certain information when you visit our website, such as your IP address and browser type.
-                </p>
-                <p>
-                  We use this information to provide, maintain, and improve our services, to process your transactions, and to communicate with you.
-                </p>
-              </div>
-            </motion.div>
+
 
             {/* Governing Law */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
               className="p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl"
             >
               <div className="flex items-center space-x-3 mb-6">
@@ -177,10 +136,7 @@ const Terms = () => {
               </div>
               <div className="space-y-4 text-black-700 leading-relaxed">
                 <p>
-                  These terms and conditions are governed by and construed in accordance with the laws of India and you irrevocably submit to the exclusive jurisdiction of the courts in that State or location.
-                </p>
-                <p>
-                  Any disputes arising from these terms and conditions or your use of our website will be resolved through binding arbitration in accordance with the laws of India.
+                  These terms are governed by the laws of India.
                 </p>
               </div>
             </motion.div>

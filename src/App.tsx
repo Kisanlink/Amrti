@@ -24,7 +24,9 @@ import Shipping from './pages/Shipping';
 import Returns from './pages/Returns';
 import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
-
+import Contact from './pages/Contact';
+import CancellationRefund from './pages/CancellationRefund';
+  
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -48,6 +50,8 @@ function AnimatedRoutes() {
         <Route path="/return" element={<Returns />} />
         <Route path="/TnC" element={<Terms />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/cancellation-refund" element={<CancellationRefund />} />
       </Routes>
     </AnimatePresence>
   );

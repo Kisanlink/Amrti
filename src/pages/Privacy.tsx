@@ -5,26 +5,26 @@ const Privacy = () => {
   const privacySections = [
     {
       icon: Eye,
-      title: 'Information We Collect',
-      content: 'We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us for support. This may include your name, email address, phone number, shipping address, and payment information.',
+      title: 'Data Collection',
+      content: 'We collect information you provide during registration, ordering, or contact forms, such as name, email, address, and payment details.',
       color: 'from-green-500 to-green-600'
     },
     {
       icon: Lock,
-      title: 'How We Use Your Information',
-      content: 'We use the information we collect to process your orders, communicate with you about your account and orders, provide customer support, send you marketing communications (with your consent), and improve our services.',
+      title: 'Usage',
+      content: 'Your information is used for order processing, communication, and site improvement. We never sell your data.',
       color: 'from-beige-500 to-beige-600'
     },
     {
       icon: Shield,
-      title: 'Information Sharing',
-      content: 'We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy. We may share information with service providers who assist us in operating our website and serving you.',
+      title: 'Security',
+      content: 'We employ industry-standard measures to protect your data.',
       color: 'from-green-600 to-green-700'
     },
     {
       icon: FileText,
-      title: 'Data Security',
-      content: 'We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure.',
+      title: 'Cookies',
+      content: 'We use cookies for site analytics and a personalized experience.',
       color: 'from-beige-600 to-beige-700'
     }
   ];
@@ -173,7 +173,7 @@ const Privacy = () => {
                   Questions About Privacy?
                 </h2>
                 <p className="text-xl text-black-700 mb-8 leading-relaxed">
-                  If you have any questions about our privacy policy or how we handle your data, please don't hesitate to contact us
+                  For privacy questions, email privacy@amrti.com
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}

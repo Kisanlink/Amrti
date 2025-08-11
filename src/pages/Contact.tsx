@@ -6,25 +6,25 @@ const Contact = () => {
     {
       icon: MapPin,
       title: 'Visit Us',
-      details: '123 Wellness Street, Organic District, Bangalore, Karnataka 560001',
+      details: '[Insert your office/registered address here]',
       color: 'from-green-500 to-green-600'
     },
     {
       icon: Phone,
       title: 'Call Us',
-      details: '+91 98765 43210\n+91 87654 32109',
+      details: '+91-XXXXXXXXXX\n(Mon–Fri, 10am–6pm IST)',
       color: 'from-beige-500 to-beige-600'
     },
     {
       icon: Mail,
       title: 'Email Us',
-      details: 'info@amrti.com\nsupport@amrti.com',
+      details: 'info@amrti.com',
       color: 'from-green-600 to-green-700'
     },
     {
       icon: Clock,
       title: 'Business Hours',
-      details: 'Monday - Friday: 9:00 AM - 6:00 PM\nSaturday: 10:00 AM - 4:00 PM',
+      details: 'Monday - Friday: 10:00 AM - 6:00 PM IST',
       color: 'from-beige-600 to-beige-700'
     }
   ];
