@@ -27,14 +27,12 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'Twitter', icon: Twitter, href: '#' },
-    { name: 'Instagram', icon: Instagram, href: '#' },
-    { name: 'LinkedIn', icon: Linkedin, href: '#' },
+
+    { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/amrti.foods/' },
   ];
 
   return (
-    <footer className="bg-black-900 text-white-50">
+    <footer className="bg-russet-900 text-white">
       <div className="container-custom">
         <div className="section-padding">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -51,7 +49,7 @@ const Footer = () => {
                   alt="Amrti Logo" 
                   className="h-12 w-12 object-contain"
                 />
-                <h3 className="text-2xl font-heading font-bold tracking-tight">AMRTI</h3>
+                                 <h3 className="text-2xl font-heading font-bold tracking-tight">AMRTI</h3>
               </div>
               <p className="text-gray-300 mb-6 leading-relaxed">
                 Premium natural products for health and wellness. Empowering farmers through sustainable practices.
@@ -80,13 +78,13 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <h4 className="text-lg font-heading font-semibold mb-4">Company</h4>
+                             <h4 className="text-lg font-heading font-bold mb-4">Company</h4>
               <ul className="space-y-2">
                 {footerLinks.company.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-black-300 hover:text-white-50 transition-colors duration-200"
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
                     >
                       {link.name}
                     </Link>
@@ -101,13 +99,13 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h4 className="text-lg font-heading font-semibold mb-4">Products</h4>
+                             <h4 className="text-lg font-heading font-bold mb-4">Products</h4>
               <ul className="space-y-2">
                 {footerLinks.products.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-black-300 hover:text-white-50 transition-colors duration-200"
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
                     >
                       {link.name}
                     </Link>
@@ -122,13 +120,13 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-                              <h4 className="text-lg font-heading font-semibold mb-4">Support</h4>
+                              <h4 className="text-lg font-heading font-bold mb-4">Support</h4>
               <ul className="space-y-2">
                 {footerLinks.support.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-black-300 hover:text-white-50 transition-colors duration-200"
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
                     >
                       {link.name}
                     </Link>
@@ -146,7 +144,7 @@ const Footer = () => {
             className="border-t border-gray-700 mt-12 pt-8"
           >
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <div className="text-black-300 text-sm">
+              <div className="text-gray-300 text-sm">
                 © {currentYear} Agros link Pvt. All Rights Reserved.
               </div>
               <div className="flex items-center space-x-4">
@@ -156,7 +154,7 @@ const Footer = () => {
                     href={social.href}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 bg-black-800 rounded-full text-black-300 hover:text-white-50 hover:bg-black-700 transition-all duration-200"
+                    className="p-2 bg-russet-800 rounded-full text-gray-300 hover:text-white hover:bg-russet-700 transition-all duration-200"
                   >
                     <social.icon size={18} />
                   </motion.a>

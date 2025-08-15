@@ -65,6 +65,45 @@ export const products: Product[] = [
     reviews: 98,
     inStock: true,
     featured: false
+  },
+  {
+    id: 'tomato-powder',
+    name: 'Tomato Powder',
+    description: 'Rich in lycopene and antioxidants, perfect for adding natural tomato flavor and nutrition to your meals',
+    price: 249,
+    originalPrice: 329,
+    image: '/products/Tomato Powder.jpg',
+    category: 'Natural Powders',
+    rating: 4.7,
+    reviews: 112,
+    inStock: true,
+    featured: true
+  },
+  {
+    id: 'beetroot-powder',
+    name: 'Beetroot Powder',
+    description: 'Nitrate-rich beetroot powder for improved blood flow, energy, and athletic performance',
+    price: 269,
+    originalPrice: 349,
+    image: '/products/web beetroot powder.jpg',
+    category: 'Natural Powders',
+    rating: 4.8,
+    reviews: 145,
+    inStock: true,
+    featured: true
+  },
+  {
+    id: 'spinach-powder',
+    name: 'Spinach Powder',
+    description: 'Iron and vitamin-rich spinach powder for energy, immunity, and overall wellness',
+    price: 259,
+    originalPrice: 339,
+    image: '/products/web spinach powder.jpg',
+    category: 'Natural Powders',
+    rating: 4.6,
+    reviews: 89,
+    inStock: true,
+    featured: false
   }
 ];
 

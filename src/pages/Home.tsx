@@ -31,15 +31,15 @@ const Home = () => {
             transition={{ duration: 0.8 }}
           >
             <div className="flex items-center justify-center space-x-2 sm:space-x-4 mb-4 sm:mb-6 px-4 sm:px-0">
-              <div className="h-px bg-gradient-to-r from-transparent via-green-400 to-transparent flex-1"></div>
-              <div className="flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-beige-500/80 rounded-full border border-green-200">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                <span className="font-heading font-semibold text-green-700 tracking-wide text-sm sm:text-base">Premium Quality</span>
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-              </div>
-              <div className="h-px bg-gradient-to-r from-transparent via-green-400 to-transparent flex-1"></div>
+                               <div className="h-px bg-gradient-to-r from-transparent via-tea-400 to-transparent flex-1"></div>
+         <div className="flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/90 rounded-full border border-tea-200 shadow-soft">
+           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-tea-600" />
+           <span className="font-medium text-tea-700 tracking-wide text-sm sm:text-base">Premium Quality</span>
+           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-tea-600" />
+         </div>
+         <div className="h-px bg-gradient-to-r from-transparent via-tea-400 to-transparent flex-1"></div>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-3 sm:mb-4">
+                          <h2 className="text-2xl sm:text-3xl font-heading font-bold text-russet-800 mb-3 sm:mb-4">
               Transforming Lives Through Natural Products
             </h2>
             <p className="text-base sm:text-lg text-black-700 max-w-3xl mx-auto px-4 sm:px-0">
@@ -50,6 +50,55 @@ const Home = () => {
       </motion.section>
 
       <MissionSection />
+      
+      {/* Product Banner Section */}
+      <motion.section 
+        className="py-16 sm:py-20 bg-gradient-to-br from-beige-300 to-beige-400"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-russet-900 mb-6">
+              Pure <span className="text-tea-600">Goodness</span>
+            </h2>
+            <p className="text-xl text-russet-800 max-w-4xl mx-auto leading-relaxed">
+              Packed with Nature's Power
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="relative"
+          >
+            <img
+              src="/products/product_banner.jpg"
+              alt="Amrti Natural Products Collection"
+              className="w-full h-auto rounded-2xl shadow-elegant"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-russet-900/20 to-transparent rounded-2xl"></div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="text-center mt-8"
+          >
+            <p className="text-lg text-russet-800 max-w-3xl mx-auto font-medium">
+              Our mission is to provide high quality health and wellness products sourced through organic and sustainable practices.
+            </p>
+          </motion.div>
+        </div>
+      </motion.section>
       
       {/* Enhanced Story Section with Beige Background */}
       <motion.section 
@@ -66,10 +115,10 @@ const Home = () => {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 sm:mb-6">
-                Our <span className="text-gradient bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Story</span>
-              </h2>
-              <p className="text-base sm:text-lg text-black-700 leading-relaxed mb-4 sm:mb-6">
+                              <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 sm:mb-6">
+                  Our <span className="text-tea-600">Story</span>
+                </h2>
+                <p className="text-base sm:text-lg text-russet-700 leading-relaxed mb-4 sm:mb-6 font-medium">
                 Amrti is a brand conceived with the intention of empowering farmers and Self-Help Groups (SHGs) 
                 through an innovative buy-back model utilizing solar dryers. Our mission is to transform the 
                 agricultural landscape by providing farmers with sustainable solutions that enhance their livelihoods 
@@ -83,7 +132,7 @@ const Home = () => {
               <motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
-                                    className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+                                    className="px-8 sm:px-10 py-4 sm:py-5 bg-tea-300 hover:bg-tea-400 text-russet-800 font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 text-sm sm:text-base"
               >
                 <span className="flex items-center space-x-2">
                   <span>Learn More</span>
@@ -122,18 +171,18 @@ const Home = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   whileHover={{ x: 5 }}
-                  className="flex items-start space-x-4 p-6 rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 hover:border-green-300/50 transition-all duration-300"
+                  className="flex items-start space-x-4 p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 hover:border-tea-300/50 transition-all duration-300 shadow-elegant"
                 >
                   <div className="flex-shrink-0">
-                                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-                <benefit.icon className="w-6 h-6 text-white-50" />
+                                  <div className="w-14 h-14 rounded-xl bg-tea-300 flex items-center justify-center shadow-soft">
+                <benefit.icon className="w-7 h-7 text-russet-800" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-heading font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-heading font-bold text-russet-800 mb-3">
                       {benefit.title}
                     </h3>
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-russet-600 leading-relaxed font-medium">
                       {benefit.description}
                     </p>
                   </div>
@@ -148,7 +197,7 @@ const Home = () => {
       
       {/* Professional Feature Highlight */}
       <motion.section 
-        className="py-16 bg-gradient-to-r from-beige-300 via-beige-400 to-beige-300"
+        className="py-20 bg-gradient-to-r from-beige-50 via-beige-100 to-beige-50"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 1 }}
@@ -160,7 +209,7 @@ const Home = () => {
                 icon: Award,
                 title: "Premium Quality",
                 description: "Solar-dried, nutrient-rich products with no preservatives",
-                color: "from-green-500 to-green-600"
+                color: "bg-tea-300"
               },
               {
                 icon: Heart,
@@ -172,7 +221,7 @@ const Home = () => {
                 icon: Leaf,
                 title: "Sustainable Process",
                 description: "Eco-friendly solar drying technology for minimal environmental impact",
-                color: "from-green-600 to-green-700"
+                color: "bg-russet-600"
               }
             ].map((feature, index) => (
               <motion.div
@@ -183,16 +232,16 @@ const Home = () => {
                 whileHover={{ y: -5, scale: 1.02 }}
                 className="group"
               >
-                <div className="relative p-8 rounded-2xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="relative p-10 rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300">
                   <div className="absolute inset-0 bg-gradient-to-br from-beige-100/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="relative z-10">
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                      <feature.icon className="w-7 h-7 text-white-50" />
+                    <div className={`w-14 h-14 rounded-xl ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <feature.icon className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-xl font-heading font-bold text-black-900 mb-3">
+                                         <h3 className="text-xl font-heading font-bold text-russet-800 mb-4">
                       {feature.title}
                     </h3>
-                    <p className="text-black-700 leading-relaxed">
+                    <p className="text-russet-600 leading-relaxed font-medium">
                       {feature.description}
                     </p>
                   </div>
@@ -207,7 +256,7 @@ const Home = () => {
       
       {/* Call to Action Section with Beige Theme */}
       <motion.section 
-        className="py-20 bg-gradient-to-br from-beige-500 via-beige-400 to-beige-600"
+        className="py-24 bg-gradient-to-br from-beige-100 via-beige-200 to-beige-300"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 1 }}
@@ -240,7 +289,7 @@ const Home = () => {
                   >
                     <Link
                       to="/products"
-                      className="inline-block px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="inline-block px-10 py-5 bg-sage-600 hover:bg-sage-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
                     >
                       <span className="flex items-center space-x-2">
                         <span>Explore Products</span>
