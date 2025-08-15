@@ -17,12 +17,21 @@
             "value": "nosniff"
           },
           {
-            "key": "X-Frame-Options",
-            "value": "DENY"
-          },
-          {
             "key": "X-XSS-Protection",
             "value": "1; mode=block"
+          }
+        ]
+      },
+      {
+        "source": "/Test_report.pdf",
+        "headers": [
+          {
+            "key": "X-Frame-Options",
+            "value": "SAMEORIGIN"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/pdf"
           }
         ]
       }

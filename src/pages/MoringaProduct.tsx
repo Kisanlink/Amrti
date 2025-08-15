@@ -630,6 +630,9 @@ const TraceabilityContent = () => {
 
 // Quality Content Component
 const QualityContent = () => {
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -658,12 +661,49 @@ const QualityContent = () => {
          </div>
         
         {/* PDF Viewer */}
-        <div className="w-full h-80 sm:h-96 md:h-[500px] lg:h-[600px] bg-white rounded-lg overflow-hidden shadow-lg">
-          <iframe
-            src="/Test_report.pdf"
-            className="w-full h-full"
-            title="Test Report PDF"
-          />
+        <div className="w-full h-80 sm:h-96 md:h-[500px] lg:h-[600px] bg-white rounded-lg overflow-hidden shadow-lg relative">
+          {pdfLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tea-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading PDF...</p>
+              </div>
+            </div>
+          )}
+          
+          {pdfError ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center p-6">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">Unable to load PDF viewer</p>
+                <p className="text-sm text-gray-500">Please use the download link below</p>
+              </div>
+            </div>
+          ) : (
+            <iframe
+              src="/Test_report.pdf#toolbar=1&navpanes=1&scrollbar=1"
+              className="w-full h-full"
+              title="Test Report PDF"
+              allowFullScreen
+              onLoad={() => setPdfLoading(false)}
+              onError={() => {
+                setPdfLoading(false);
+                setPdfError(true);
+              }}
+            />
+          )}
+        </div>
+        
+        {/* Fallback Download Link */}
+        <div className="mt-4 text-center">
+          <a
+            href="/Test_report.pdf"
+            download="Amrti_Quality_Test_Report.pdf"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-tea-600 hover:bg-tea-700 text-white font-medium rounded-lg shadow-elegant hover:shadow-premium transition-all duration-300"
+          >
+            <FileText className="w-5 h-5" />
+            <span>Download Test Report</span>
+          </a>
         </div>
       </div>
     </motion.div>
