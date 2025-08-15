@@ -71,6 +71,50 @@ const Products = () => {
         </div>
       </section>
 
+      {/* Product Banner Section */}
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-beige-300 to-beige-400">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-russet-900 mb-6">
+              Pure <span className="text-tea-600">Goodness</span>
+            </h2>
+            <p className="text-xl text-russet-800 max-w-4xl mx-auto leading-relaxed">
+              Packed with Nature's Power
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="relative"
+          >
+            <img
+              src="/products/product_banner.jpg"
+              alt="Amrti Natural Products Collection"
+              className="w-full h-auto rounded-2xl shadow-elegant"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-russet-900/20 to-transparent rounded-2xl"></div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="text-center mt-8"
+          >
+            <p className="text-lg text-russet-800 max-w-3xl mx-auto font-medium">
+              Our mission is to provide high quality health and wellness products sourced through organic and sustainable practices.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Product Categories */}
       <section className="py-12 sm:py-16 bg-gradient-to-r from-beige-500 via-beige-400 to-beige-500">
         <div className="container-custom">
