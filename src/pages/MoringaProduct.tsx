@@ -665,7 +665,7 @@ const QualityContent = () => {
           {pdfLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tea-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading PDF...</p>
               </div>
             </div>
@@ -699,7 +699,7 @@ const QualityContent = () => {
           <a
             href="/Test_report.pdf"
             download="Amrti_Quality_Test_Report.pdf"
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-tea-600 hover:bg-tea-700 text-white font-medium rounded-lg shadow-elegant hover:shadow-premium transition-all duration-300"
+                          className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-elegant hover:shadow-premium transition-all duration-300"
           >
             <FileText className="w-5 h-5" />
             <span>Download Test Report</span>

@@ -48,13 +48,13 @@ const TestimonialsSection = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-beige-400 to-beige-500">
+    <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
           <h2 className="text-4xl font-heading font-bold text-black-900 mb-4">
             What Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Customers</span> Say
@@ -65,7 +65,7 @@ const TestimonialsSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
+          {testimonials.slice(0, 3).map((testimonial, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 30 }}
@@ -121,7 +121,7 @@ const TestimonialsSection = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-center mt-16"
+          className="text-center mt-12"
         >
           <div className="p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
             <h3 className="text-2xl font-heading font-bold text-black-900 mb-4">

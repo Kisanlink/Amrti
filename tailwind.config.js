@@ -21,19 +21,19 @@ export default {
           900: '#8f7d4f',
           950: '#6b5d3b',
         },
-        // Tea Green - Professional accent
-        tea: {
-          50: '#f4f8f0',
-          100: '#e8f2e0',
-          200: '#d1e6c0',
-          300: '#b8d99a',
-          400: '#9fcc74',
-          500: '#86bf4e',
-          600: '#6db228',
-          700: '#5a951f',
-          800: '#477816',
-          900: '#345b0d',
-          950: '#213e04',
+        // Single Green - Consistent brand color
+        green: {
+          50: '#f0f9f0',
+          100: '#dcf2dc',
+          200: '#bce4bc',
+          300: '#8fd18f',
+          400: '#5bb85b',
+          500: '#3a9d3a',
+          600: '#2d7e2d',
+          700: '#256425',
+          800: '#1f511f',
+          900: '#1a421a',
+          950: '#0d240d',
         },
         // Russet - Rich and sophisticated
         russet: {
@@ -101,7 +101,7 @@ export default {
       },
       backgroundImage: {
         'solid-beige': 'linear-gradient(to right, #f0e8d6, #e8dcc0)',
-        'solid-tea': 'linear-gradient(to right, #d9e9bb, #c5d99a)',
+        'solid-green': 'linear-gradient(to right, #5bb85b, #3a9d3a)',
         'solid-russet': 'linear-gradient(to right, #845025, #703a1b)',
       },
       spacing: {
@@ -114,8 +114,8 @@ export default {
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'glow': '0 0 20px rgba(217, 233, 187, 0.3)',
-        'tea-glow': '0 0 20px rgba(217, 233, 187, 0.3)',
+        'glow': '0 0 20px rgba(91, 184, 91, 0.3)',
+        'green-glow': '0 0 20px rgba(91, 184, 91, 0.3)',
         'russet-glow': '0 0 20px rgba(132, 80, 37, 0.3)',
         'elegant': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         'premium': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',

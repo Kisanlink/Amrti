@@ -47,13 +47,13 @@ const ValuesSection = () => {
   };
 
   return (
-    <section className="section-padding bg-primary-300">
+    <section className="py-12 sm:py-16 bg-primary-300">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
             Our <span className="text-gradient">Core Values</span>
@@ -96,7 +96,7 @@ const ValuesSection = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-16 text-center"
+          className="mt-12 text-center"
         >
           <div className="max-w-4xl mx-auto">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
