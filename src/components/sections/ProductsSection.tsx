@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getFeaturedProducts, Product } from '../../services/productService';
+import { getAllProducts, Product } from '../../services/productService';
 import { addToCart, getCartItemCount } from '../../services/cartService';
 import { addToWishlist, removeFromWishlist, isInWishlist, getWishlistCount } from '../../services/wishlistService';
 import { useNotification } from '../../context/NotificationContext';
@@ -14,9 +14,10 @@ const ProductsSection = () => {
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const { showNotification } = useNotification();
 
-  // Load products on mount
+  // Load products on mount - show only 4 products for homepage
   useEffect(() => {
-    setProducts(getFeaturedProducts());
+    const allProducts = getAllProducts();
+    setProducts(allProducts.slice(0, 4)); // Show only first 4 products
     setCartCount(getCartItemCount());
     setWishlistCount(getWishlistCount());
   }, []);
@@ -40,7 +41,7 @@ const ProductsSection = () => {
               className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
               style={{ maxHeight: '200px' }}
             />
-                            <div className="absolute top-3 right-3 bg-tea-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                            <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
               {product.category}
             </div>
             {discount > 0 && (
@@ -51,7 +52,7 @@ const ProductsSection = () => {
           </div>
           
           <div className="p-5 flex flex-col flex-grow">
-                                         <h3 className="text-lg font-heading font-bold text-russet-900 mb-3 group-hover:text-tea-600 transition-colors duration-300">
+                                         <h3 className="text-lg font-heading font-bold text-russet-900 mb-3 group-hover:text-green-600 transition-colors duration-300">
                {product.name}
              </h3>
                            <p className="text-russet-700 text-sm mb-4 leading-relaxed flex-grow">
@@ -63,7 +64,7 @@ const ProductsSection = () => {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                                         className={`w-3 h-3 ${i < Math.floor(product.rating) ? 'text-tea-600 fill-current' : 'text-russet-400'}`}
+                                         className={`w-3 h-3 ${i < Math.floor(product.rating) ? 'text-green-600 fill-current' : 'text-russet-400'}`}
                   />
                 ))}
               </div>
@@ -72,7 +73,7 @@ const ProductsSection = () => {
 
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
-                                 <span className="font-bold text-tea-600">₹{product.price}</span>
+                                 <span className="font-bold text-green-600">₹{product.price}</span>
                                  {product.originalPrice !== product.price && (
                    <span className="text-sm text-russet-500 line-through">₹{product.originalPrice}</span>
                  )}
@@ -82,7 +83,7 @@ const ProductsSection = () => {
             <div className="flex items-center space-x-2 mt-auto">
               <Link
                 to={`/product/${product.id}`}
-                                 className="flex-1 inline-flex items-center justify-center font-heading font-semibold text-tea-600 hover:text-tea-700 transition-colors duration-300 group-hover:translate-x-1 text-sm py-2 px-4 border border-tea-600 rounded-lg hover:bg-tea-600 hover:text-white"
+                                 className="flex-1 inline-flex items-center justify-center font-heading font-semibold text-green-600 hover:text-green-700 transition-colors duration-300 group-hover:translate-x-1 text-sm py-2 px-4 border border-green-600 rounded-lg hover:bg-green-600 hover:text-white"
               >
                 View Details
                 <motion.span
@@ -116,7 +117,7 @@ const ProductsSection = () => {
                   }
                 }}
                 disabled={loadingStates[`cart-${product.id}`]}
-                                 className="p-2 border border-tea-600 text-tea-600 hover:bg-tea-600 hover:text-white rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                 className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Add to Cart"
               >
                 {loadingStates[`cart-${product.id}`] ? (
@@ -159,7 +160,7 @@ const ProductsSection = () => {
                 className={`p-2 border rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                   isInWishlist(product.id)
                     ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white-50'
-                    : 'border-tea-600 text-tea-600 hover:bg-tea-600 hover:text-white'
+                    : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
                 }`}
                 title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
               >
@@ -177,23 +178,23 @@ const ProductsSection = () => {
   };
 
   return (
-         <section className="py-24 bg-gradient-to-br from-beige-50 to-beige-100">
+         <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-50 to-beige-100">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
                      <h2 className="text-4xl font-heading font-bold text-russet-900 mb-6">
-             Our <span className="text-tea-600">Premium Products</span>
+             Our <span className="text-green-600">Premium Products</span>
            </h2>
            <p className="text-xl text-russet-800 max-w-3xl mx-auto font-medium">
             Discover our carefully sourced natural powders that bring the power of traditional wisdom to modern wellness
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {products.map((product, index) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -207,7 +208,7 @@ const ProductsSection = () => {
         >
           <Link
             to="/products"
-                            className="inline-flex items-center space-x-2 px-10 py-4 bg-tea-600 hover:bg-tea-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
+                            className="inline-flex items-center space-x-2 px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
           >
             <span>View All Products</span>
             <ArrowRight className="w-5 h-5" />

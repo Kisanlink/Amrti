@@ -65,8 +65,8 @@ const Login = () => {
           
           <div className="w-20 h-20 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center">
             <img 
-              src="/logo.png" 
-              alt="Amrti Logo" 
+                              src="/logo2.png" 
+                              alt="Amrti Nature's Elixir" 
               className="w-10 h-10 object-contain"
             />
           </div>

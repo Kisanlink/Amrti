@@ -8,7 +8,7 @@ const HeroSection = () => {
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
                  <motion.div
-           className="absolute top-20 left-10 w-32 h-32 bg-tea-200 rounded-full opacity-20"
+                       className="absolute top-20 left-10 w-32 h-32 bg-green-200 rounded-full opacity-20"
           animate={{
             y: [0, -20, 0],
             scale: [1, 1.1, 1],
@@ -33,7 +33,7 @@ const HeroSection = () => {
           }}
         />
                  <motion.div
-           className="absolute bottom-20 left-1/4 w-16 h-16 bg-tea-300 rounded-full opacity-25"
+                       className="absolute bottom-20 left-1/4 w-16 h-16 bg-green-300 rounded-full opacity-25"
           animate={{
             y: [0, -15, 0],
             x: [0, 10, 0],
@@ -47,7 +47,7 @@ const HeroSection = () => {
         />
       </div>
 
-      <div className="relative z-10 container-custom py-20 lg:py-32">
+      <div className="relative z-10 container-custom py-12 lg:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content */}
           <motion.div
@@ -56,17 +56,17 @@ const HeroSection = () => {
             transition={{ duration: 0.8 }}
             className="text-center lg:text-left"
           >
-                         <div className="inline-flex items-center space-x-2 px-6 py-3 bg-tea-600 text-white rounded-full text-sm font-medium mb-8 shadow-elegant">
+                         <div className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-full text-sm font-medium mb-8 shadow-elegant">
               <img 
-                src="/logo.png" 
-                alt="Amrti Logo" 
+                src="/logo2.png" 
+                alt="Amrti Nature's Elixir" 
                 className="w-4 h-4 object-contain"
               />
               <span>Premium Natural Products</span>
             </div>
             
                          <h1 className="text-5xl lg:text-6xl xl:text-7xl font-heading font-bold text-russet-900 mb-8 leading-tight">
-               Transform Your <span className="text-tea-600">Wellness</span> Journey
+               Transform Your <span className="text-green-600">Wellness</span> Journey
              </h1>
             
                          <p className="text-xl text-russet-800 mb-10 leading-relaxed max-w-2xl lg:max-w-none font-medium">
@@ -79,7 +79,7 @@ const HeroSection = () => {
                                             <motion.button
                  whileHover={{ scale: 1.02, y: -2 }}
                  whileTap={{ scale: 0.98 }}
-                 className="px-10 py-4 bg-tea-600 hover:bg-tea-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 flex items-center justify-center space-x-3"
+                 className="px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 flex items-center justify-center space-x-3"
                >
                  <span>Explore Products</span>
                  <ArrowRight className="w-5 h-5" />
@@ -116,7 +116,7 @@ const HeroSection = () => {
                                  className="p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-beige-200/50 shadow-elegant text-center"
               >
                 <div className="flex justify-center mb-3">
-                                     <div className="p-4 rounded-full bg-tea-600 shadow-soft">
+                                     <div className="p-4 rounded-full bg-green-600 shadow-soft">
                      <stat.icon className="w-6 h-6 text-white" />
                    </div>
                 </div>

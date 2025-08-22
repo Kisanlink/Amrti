@@ -174,6 +174,84 @@ const About = () => {
         </div>
       </section>
 
+      {/* Our Story Section */}
+      <section className="py-20 bg-gradient-to-br from-beige-400 to-beige-500">
+        <div className="container-custom">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            {/* Story Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 sm:mb-6">
+                Our <span className="text-green-600">Story</span>
+              </h2>
+              <p className="text-base sm:text-lg text-russet-700 leading-relaxed mb-4 sm:mb-6 font-medium">
+                Amrti is a brand conceived with the intention of empowering farmers and Self-Help Groups (SHGs) 
+                through an innovative buy-back model utilizing solar dryers. Our mission is to transform the 
+                agricultural landscape by providing farmers with sustainable solutions that enhance their livelihoods 
+                while promoting eco-friendly practices.
+              </p>
+              <p className="text-base sm:text-lg text-black-700 leading-relaxed mb-6 sm:mb-8">
+                At Amrti, we specialize in processing dried vegetables and fruits into high-quality powders. 
+                This not only extends the shelf life of these nutritious products but also adds value to the 
+                raw materials sourced from our farmers.
+              </p>
+            </motion.div>
+
+            {/* Story Benefits */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="grid grid-cols-1 gap-6"
+            >
+              {[
+                {
+                  icon: Users,
+                  title: 'Empowerment for Farmers',
+                  description: 'Providing farmers with a steady income stream through our reliable buy-back model',
+                },
+                {
+                  icon: Heart,
+                  title: 'Support for SHGs',
+                  description: 'Collaborating with Self-Help Groups to foster community development',
+                },
+                {
+                  icon: Leaf,
+                  title: 'Consumer Health',
+                  description: 'Nutrient-rich products free from preservatives and additives',
+                },
+              ].map((benefit, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  whileHover={{ x: 5 }}
+                  className="flex items-start space-x-4 p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 hover:border-green-300/50 transition-all duration-300 shadow-elegant"
+                >
+                  <div className="flex-shrink-0">
+                    <div className="w-14 h-14 rounded-xl bg-green-300 flex items-center justify-center shadow-soft">
+                      <benefit.icon className="w-7 h-7 text-russet-800" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-heading font-bold text-russet-800 mb-3">
+                      {benefit.title}
+                    </h3>
+                    <p className="text-russet-600 leading-relaxed font-medium">
+                      {benefit.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Values Section */}
       <section className="py-20 bg-gradient-to-br from-beige-300 to-beige-400">
         <div className="container-custom">

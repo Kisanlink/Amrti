@@ -9,7 +9,6 @@ export interface Product {
   rating: number;
   reviews: number;
   inStock: boolean;
-  featured: boolean;
 }
 
 // Static product data
@@ -24,8 +23,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.8,
     reviews: 156,
-    inStock: true,
-    featured: true
+    inStock: true
   },
   {
     id: 'amla-powder',
@@ -37,8 +35,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.7,
     reviews: 134,
-    inStock: true,
-    featured: true
+    inStock: true
   },
   {
     id: 'ashwagandha-powder',
@@ -50,8 +47,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.9,
     reviews: 189,
-    inStock: true,
-    featured: true
+    inStock: true
   },
   {
     id: 'papaya-powder',
@@ -63,8 +59,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.6,
     reviews: 98,
-    inStock: true,
-    featured: false
+    inStock: true
   },
   {
     id: 'tomato-powder',
@@ -76,8 +71,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.7,
     reviews: 112,
-    inStock: true,
-    featured: true
+    inStock: true
   },
   {
     id: 'beetroot-powder',
@@ -89,8 +83,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.8,
     reviews: 145,
-    inStock: true,
-    featured: true
+    inStock: true
   },
   {
     id: 'spinach-powder',
@@ -102,8 +95,7 @@ export const products: Product[] = [
     category: 'Natural Powders',
     rating: 4.6,
     reviews: 89,
-    inStock: true,
-    featured: false
+    inStock: true
   }
 ];
 
@@ -112,9 +104,9 @@ export const getAllProducts = (): Product[] => {
   return products;
 };
 
-// Get featured products
+// Get featured products (now returns first 4 products)
 export const getFeaturedProducts = (): Product[] => {
-  return products.filter(product => product.featured);
+  return products.slice(0, 4);
 };
 
 // Get product by ID
@@ -129,7 +121,7 @@ export const getProductsByCategory = (category: string): Product[] => {
 
 // Get product categories
 export const getProductCategories = () => {
-  const categories = ['All Products', 'Natural Powders', 'Kombucha', 'Wellness Drinks'];
+  const categories = ['All Products', 'Natural Powders'];
   return categories.map(category => ({
     name: category,
     count: category === 'All Products' 

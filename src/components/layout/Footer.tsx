@@ -8,12 +8,11 @@ const Footer = () => {
   const footerLinks = {
     company: [
       { name: 'About Us', path: '/about' },
-      { name: 'Our Mission', path: '/about' },
-      { name: 'Contact', path: '/contact' },
     ],
     products: [
       { name: 'Powders', path: '/products' },
-      { name: 'Kombucha', path: '/products' },
+    ],
+    Recipes: [
       { name: 'Recipes', path: '/recipes' },
     ],
     support: [
@@ -45,11 +44,10 @@ const Footer = () => {
             >
               <div className="flex items-center space-x-2 mb-4">
                 <img 
-                  src="/logo.png" 
-                  alt="Amrti Logo" 
-                  className="h-12 w-12 object-contain"
+                  src="/footer_logo.png" 
+                  alt="Amrti Nature's Elixir" 
+                  className="h-16 w-auto object-contain"
                 />
-                                 <h3 className="text-2xl font-heading font-bold tracking-tight">AMRTI</h3>
               </div>
               <p className="text-gray-300 mb-6 leading-relaxed">
                 Premium natural products for health and wellness. Empowering farmers through sustainable practices.
@@ -61,12 +59,13 @@ const Footer = () => {
                 </div>
                 <div className="flex items-center space-x-3 text-gray-300">
                   <Phone size={16} />
-                  <span>+91-XXXXXXXXXX</span>
+                  <span>+91-7386727007</span>
                 </div>
                 <div className="flex items-start space-x-3 text-gray-300">
                   <MapPin size={16} className="mt-1" />
                   <span className="text-sm">
-                    [Insert your office/registered address here]
+                  Plot no 27, Nandi Hills, Road No. 51,
+                  Jubilee Hills, Hyderabad, 500033
                   </span>
                 </div>
               </div>
