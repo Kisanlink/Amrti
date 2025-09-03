@@ -1,8 +1,8 @@
 version: 0.2
 
 # Use standard CodeBuild environment with AWS CLI pre-installed
-# runtime-versions:
-#   aws-cli: 2
+runtime-versions:
+  aws-cli: 2
 
 env:
   variables:
