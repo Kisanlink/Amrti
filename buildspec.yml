@@ -10,10 +10,6 @@ env:
     ECS_CLUSTER_NAME: "amrti-cluster"
     ECS_SERVICE_NAME: "amrti-service"
     CONTAINER_NAME: "amrti-container"
-  parameter-store:
-    # Store sensitive values in AWS Systems Manager Parameter Store
-    # Example: /amrti/database/url
-    # DATABASE_URL: /amrti/database/url
 
 phases:
   pre_build:
