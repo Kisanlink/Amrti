@@ -1,196 +1,90 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, Truck, Shield, RotateCcw } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import RecipeService from '../services/recipeService';
+import type { Recipe } from '../context/AppContext';
 
 const Recipes = () => {
   const { id } = useParams();
   const [selectedCategory, setSelectedCategory] = useState('All Recipes');
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const recipes = [
-    {
-      id: 'moringa-smoothie',
-      title: 'Moringa Smoothie',
-      category: 'Beverages',
-      description: 'This vibrant green smoothie combines the superfood power of moringa with fresh fruits for a delicious and nutritious energy boost. Perfect for breakfast or post-workout recovery.',
-      longDescription: 'Start your day with this nutrient-packed smoothie that combines the incredible benefits of moringa with fresh fruits. This recipe is perfect for those looking to boost their energy levels naturally while enjoying a delicious and refreshing drink.',
-      image: '/Recipes/moringa smoothie.jpg',
-      prepTime: '5 mins',
-      servings: 1,
-      difficulty: 'Easy',
-      rating: 4.7,
-      reviews: 89,
-      tags: ['Energy', 'Recovery', 'Breakfast', 'Superfood'],
-      ingredients: [
-        '1 tsp Moringa Powder',
-        '1 banana',
-        '1 cup spinach',
-        '1/2 cup frozen mango',
-        '1 cup almond milk',
-        '1 tbsp honey (optional)',
-        'Ice cubes'
-      ],
-      instructions: [
-        'Add all ingredients to a high-speed blender',
-        'Blend until smooth and creamy',
-        'Add more almond milk if too thick',
-        'Serve immediately for best taste'
-      ],
-      nutrition: {
-        'Calories': '180 kcal',
-        'Protein': '8g',
-        'Fiber': '6g',
-        'Vitamin C': '45mg'
-      },
-      tips: [
-        'Use frozen banana for a creamier texture',
-        'Add chia seeds for extra protein',
-        'Substitute with coconut milk for tropical flavor'
-      ]
-    },
-    {
-      id: 'moringa-tea',
-      title: 'Moringa Tea',
-      category: 'Beverages',
-      description: 'A soothing and nutritious tea made with fresh moringa leaves or powder. This traditional drink offers numerous health benefits and is perfect for any time of day.',
-      longDescription: 'Moringa tea is a traditional beverage that has been consumed for centuries for its medicinal properties. This simple yet powerful drink can be enjoyed hot or cold and provides a natural energy boost without caffeine.',
-      image: '/Recipes/tea moringa.jpg',
-      prepTime: '3 mins',
-      servings: 1,
-      difficulty: 'Easy',
-      rating: 4.8,
-      reviews: 156,
-      tags: ['Wellness', 'Immunity', 'Detox', 'Traditional'],
-      ingredients: [
-        '1 tsp Moringa Powder',
-        '1 cup hot water',
-        '1 tsp honey (optional)',
-        '1/2 lemon slice (optional)',
-        '1/4 tsp ginger powder (optional)'
-      ],
-      instructions: [
-        'Boil water to 80-90°C (not boiling)',
-        'Add moringa powder to a tea infuser or strainer',
-        'Pour hot water over the powder',
-        'Let steep for 3-5 minutes',
-        'Add honey and lemon if desired',
-        'Strain and serve hot'
-      ],
-      nutrition: {
-        'Calories': '15 kcal',
-        'Antioxidants': 'High',
-        'Vitamin C': '25mg',
-        'Iron': '2mg'
-      },
-      tips: [
-        'Don\'t use boiling water as it can destroy nutrients',
-        'Steep longer for stronger flavor',
-        'Add mint leaves for refreshing taste'
-      ]
-    },
-    {
-      id: 'moringa-dessert',
-      title: 'Moringa Desert',
-      category: 'Desserts',
-      description: 'Nutritious and delicious energy balls made with moringa powder, dates, and nuts. Perfect as a healthy snack or post-workout treat.',
-      longDescription: 'These energy balls are a perfect combination of taste and nutrition. Packed with natural ingredients and the superfood power of moringa, they make an ideal healthy snack that will keep you energized throughout the day.',
-      image: '/Recipes/moringa dessert.jpg',
-      prepTime: '15 mins',
-      servings: 12,
-      difficulty: 'Easy',
-      rating: 4.6,
-      reviews: 78,
-      tags: ['Snack', 'Energy', 'Healthy', 'No-Bake'],
-      ingredients: [
-        '1 cup dates, pitted',
-        '1/2 cup almonds',
-        '1/4 cup walnuts',
-        '2 tbsp Moringa Powder',
-        '2 tbsp chia seeds',
-        '1 tbsp honey',
-        '1/2 tsp vanilla extract',
-        'Pinch of salt'
-      ],
-      instructions: [
-        'Soak dates in warm water for 10 minutes',
-        'Process almonds and walnuts in food processor',
-        'Add soaked dates and blend until sticky',
-        'Add moringa powder, chia seeds, and honey',
-        'Mix until well combined',
-        'Roll into 12 small balls',
-        'Refrigerate for 30 minutes before serving'
-      ],
-      nutrition: {
-        'Calories': '120 kcal',
-        'Protein': '4g',
-        'Fiber': '3g',
-        'Healthy Fats': '6g'
-      },
-      tips: [
-        'Store in refrigerator for up to 1 week',
-        'Roll in coconut flakes for extra flavor',
-        'Add dark chocolate chips for indulgence'
-      ]
-    },
-    {
-      id: 'moringa-soup',
-      title: 'Moringa Vegetable Soup',
-      category: 'Soups',
-      description: 'A hearty and nutritious soup loaded with vegetables and moringa powder. Perfect for boosting immunity and staying warm during cold weather.',
-      longDescription: 'This comforting soup combines the goodness of fresh vegetables with the nutritional powerhouse of moringa. It\'s a perfect meal for those looking to boost their immunity and enjoy a warm, satisfying dish.',
-      image: '/Recipes/dosa moringa.jpg',
-      prepTime: '20 mins',
-      servings: 4,
-      difficulty: 'Medium',
-      rating: 4.5,
-      reviews: 92,
-      tags: ['Immunity', 'Comfort', 'Vegetarian', 'Warm'],
-      ingredients: [
-        '2 tbsp olive oil',
-        '1 onion, diced',
-        '2 carrots, chopped',
-        '2 celery stalks, chopped',
-        '3 garlic cloves, minced',
-        '1 tsp Moringa Powder',
-        '4 cups vegetable broth',
-        '1 cup spinach',
-        'Salt and pepper to taste',
-        'Fresh herbs for garnish'
-      ],
-      instructions: [
-        'Heat oil in a large pot over medium heat',
-        'Sauté onion, carrots, and celery for 5 minutes',
-        'Add garlic and cook for 1 minute',
-        'Add vegetable broth and bring to boil',
-        'Simmer for 15 minutes until vegetables are tender',
-        'Add moringa powder and spinach',
-        'Season with salt and pepper',
-        'Serve hot with fresh herbs'
-      ],
-      nutrition: {
-        'Calories': '85 kcal',
-        'Protein': '3g',
-        'Fiber': '4g',
-        'Vitamin A': '120%'
-      },
-      tips: [
-        'Add quinoa for extra protein',
-        'Use homemade vegetable broth for better flavor',
-        'Garnish with fresh parsley or cilantro'
-      ]
-    }
-  ];
+  useEffect(() => {
+    const loadRecipes = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        let response;
+        if (selectedCategory === 'All Recipes') {
+          response = await RecipeService.getAllRecipes(1, 50);
+        } else {
+          response = await RecipeService.getRecipesByCategory(selectedCategory, 1, 50);
+        }
+        
+        setRecipes(response.recipes);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load recipes');
+        console.error('Failed to load recipes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecipes();
+  }, [selectedCategory]);
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
 
   const categories = [
-    { name: 'All Recipes', count: recipes.length },
-    { name: 'Beverages', count: recipes.filter(r => r.category === 'Beverages').length },
-    { name: 'Desserts', count: recipes.filter(r => r.category === 'Desserts').length },
-    { name: 'Soups', count: recipes.filter(r => r.category === 'Soups').length }
+    { name: 'All Recipes', count: recipes?.length || 0 },
+    { name: 'Breakfast', count: recipes?.filter(r => r.category === 'Breakfast').length || 0 },
+    { name: 'Dessert', count: recipes?.filter(r => r.category === 'Dessert').length || 0 },
+    { name: 'Superfoods', count: recipes?.filter(r => r.category === 'Superfoods').length || 0 }
   ];
 
   const filteredRecipes = selectedCategory === 'All Recipes' 
-    ? recipes 
-    : recipes.filter(recipe => recipe.category === selectedCategory);
+    ? recipes || []
+    : (recipes || []).filter(recipe => recipe.category === selectedCategory);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-black-700">Loading recipes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-600 text-2xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-black-900 mb-2">Error Loading Recipes</h2>
+          <p className="text-black-700 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-16 sm:pt-20 bg-beige-300">
@@ -286,7 +180,8 @@ const Recipes = () => {
 
           {/* Featured Recipe Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-            {filteredRecipes.slice(0, 3).map((recipe, index) => (
+            {filteredRecipes && filteredRecipes.length > 0 ? (
+              filteredRecipes.slice(0, 3).map((recipe, index) => (
               <motion.div
                 key={recipe.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -299,7 +194,7 @@ const Recipes = () => {
                   <div className="relative overflow-hidden flex-shrink-0">
                     <img
                       src={recipe.image}
-                      alt={recipe.title}
+                        alt={recipe.name}
                       className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-500"
                       style={{ maxHeight: '300px' }}
                     />
@@ -310,7 +205,7 @@ const Recipes = () => {
                   
                   <div className="relative p-6 flex flex-col flex-grow">
                     <h3 className="text-xl font-heading font-bold text-black-900 mb-3 group-hover:text-green-700 transition-colors duration-300">
-                      {recipe.title}
+                        {recipe.name}
                     </h3>
                     <p className="text-black-700 mb-4 leading-relaxed flex-grow">
                       {recipe.description}
@@ -331,7 +226,7 @@ const Recipes = () => {
                     <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
                         <Clock className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                        <p className="text-sm font-semibold text-black-900">{recipe.prepTime}</p>
+                          <p className="text-sm font-semibold text-black-900">{recipe.prep_time}</p>
                         <p className="text-xs text-black-600">Prep Time</p>
                       </div>
                       <div className="text-center">
@@ -361,7 +256,12 @@ const Recipes = () => {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-black-700">No recipes found.</p>
+              </div>
+            )}
           </div>
 
           {/* All Recipes Grid */}
@@ -389,7 +289,7 @@ const Recipes = () => {
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
                         src={recipe.image}
-                        alt={recipe.title}
+                        alt={recipe.name}
                         className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ maxHeight: '200px' }}
                       />

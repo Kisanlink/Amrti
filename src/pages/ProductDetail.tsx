@@ -3,9 +3,9 @@ import { ArrowLeft, Star, Heart, Leaf, Shield, Truck, RotateCcw, Award, Plus, Mi
 import { Link, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import { getProductById, getAllProducts } from '../services/productService';
-import { addToCart, getCartItem } from '../services/cartService';
-import { addToWishlist, removeFromWishlist, isInWishlist } from '../services/wishlistService';
+import ProductService from '../services/productService';
+import CartService from '../services/cartService';
+import WishlistService from '../services/wishlistService';
 import { useNotification } from '../context/NotificationContext';
 
 const ProductDetail = () => {
@@ -34,28 +34,36 @@ const ProductDetail = () => {
 
   // Load product and suggested products on mount
   useEffect(() => {
-    if (id) {
-      const productData = getProductById(id);
-      if (productData) {
-        setProduct(productData);
-        
-        // Get suggested products (same category, excluding current product)
-        const allProducts = getAllProducts();
-        const suggested = allProducts
-          .filter(p => p.id !== id && p.category === productData.category)
-          .slice(0, 4); // Show max 4 suggested products
-        
-        // If not enough products in same category, add some from other categories
-        if (suggested.length < 4) {
-          const otherProducts = allProducts
-            .filter(p => p.id !== id && p.category !== productData.category)
-            .slice(0, 4 - suggested.length);
-          setSuggestedProducts([...suggested, ...otherProducts]);
-        } else {
-          setSuggestedProducts(suggested);
+    const loadProduct = async () => {
+      if (id) {
+        try {
+          const productData = await ProductService.getProductById(id);
+          setProduct(productData);
+          
+          // Get suggested products (same category, excluding current product)
+          const allProductsResponse = await ProductService.getAllProducts(1, 100);
+          const allProducts = allProductsResponse.data;
+          const suggested = allProducts
+            .filter(p => p.id !== id && p.category === productData.category)
+            .slice(0, 4); // Show max 4 suggested products
+          
+          // If not enough products in same category, add some from other categories
+          if (suggested.length < 4) {
+            const otherProducts = allProducts
+              .filter(p => p.id !== id && p.category !== productData.category)
+              .slice(0, 4 - suggested.length);
+            setSuggestedProducts([...suggested, ...otherProducts]);
+          } else {
+            setSuggestedProducts(suggested);
+          }
+        } catch (error) {
+          console.error('Failed to load product:', error);
+          setProduct(null);
         }
       }
-    }
+    };
+    
+    loadProduct();
   }, [id]);
 
   if (!product) {
@@ -267,10 +275,10 @@ const ProductDetail = () => {
               {/* Action Buttons */}
               <div className="space-y-3 sm:space-y-4">
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     setIsAddingToCart(true);
                     try {
-                      addToCart(product.id, quantity, product);
+                      await CartService.addItem(product.id, quantity);
                       showNotification({
                         type: 'success',
                         message: `${product.name} added to cart successfully!`
@@ -894,7 +902,7 @@ const ProductDetail = () => {
               </div>
             </form>
           </motion.div>
-    </div>
+        </div>
       )}
     </>
   );

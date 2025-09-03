@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award } from 'lucide-react';
-import { login } from '../services/authService';
+import AuthService from '../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,7 +10,7 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
 
@@ -35,7 +35,7 @@ const Login = () => {
     setError(null);
 
     try {
-      await login(formData.username, formData.password);
+      await AuthService.login({ email: formData.username, password: formData.password });
       navigate('/'); // Redirect to home page after successful login
     } catch (err: any) {
       setError(err.message || 'Login failed');

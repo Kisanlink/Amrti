@@ -1,148 +1,202 @@
+import { favoritesApi, type FavoritesResponse, type FavoriteCheckResponse, type AddFavoriteResponse } from './api';
+import type { Product } from '../context/AppContext';
+
 export interface WishlistItem {
   id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  category: string;
-  addedAt: string;
+  product_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  user_id: string;
+  product?: Product; // Make product optional to match Favorite interface
 }
 
-// Static product data
-const products = {
-  'moringa-powder': {
-    id: 'moringa-powder',
-    name: 'Moringa Powder',
-    price: 299,
-    originalPrice: 399,
-    image: '/products/pouch front mockup.jpg',
-    category: 'Natural Powders'
-  },
-  'amla-powder': {
-    id: 'amla-powder',
-    name: 'Amla Powder',
-    price: 349,
-    originalPrice: 449,
-    image: '/products/amla bg.png',
-    category: 'Natural Powders'
-  },
-  'ashwagandha-powder': {
-    id: 'ashwagandha-powder',
-    name: 'Ashwagandha Powder',
-    price: 399,
-    originalPrice: 499,
-    image: '/products/aswagandha bg.png',
-    category: 'Natural Powders'
-  },
-  'papaya-powder': {
-    id: 'papaya-powder',
-    name: 'Papaya Powder',
-    price: 279,
-    originalPrice: 359,
-    image: '/products/papaya bg.png',
-    category: 'Natural Powders'
-  }
-};
+export interface WishlistResponse {
+  data: WishlistItem[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+  };
+}
 
-// Get wishlist from localStorage
-export const getWishlist = (): WishlistItem[] => {
-  const savedWishlist = localStorage.getItem('wishlist');
-  if (savedWishlist) {
+export interface WishlistCountResponse {
+  count: number;
+}
+
+export interface AddToWishlistRequest {
+  product_id: string;
+}
+
+export class WishlistService {
+  /**
+   * Get user's wishlist
+   * @returns Promise with wishlist items
+   */
+  static async getWishlist(): Promise<WishlistItem[]> {
     try {
-      return JSON.parse(savedWishlist);
-    } catch (err) {
-      console.error('Error loading wishlist from localStorage:', err);
+      const response = await favoritesApi.getFavorites();
+      return response.favorites;
+    } catch (error) {
+      console.error('Failed to fetch wishlist:', error);
+      throw new Error('Failed to fetch wishlist. Please try again later.');
     }
   }
-  
-  return [];
-};
 
-// Save wishlist to localStorage
-const saveWishlist = (wishlist: WishlistItem[]) => {
-  localStorage.setItem('wishlist', JSON.stringify(wishlist));
-  // Dispatch custom event to notify other components
-  window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-};
-
-// Add item to wishlist
-export const addToWishlist = (productId: string, productData?: any): WishlistItem[] => {
-  const wishlist = getWishlist();
-  
-  // Use provided product data or get from static data
-  const product = productData || products[productId as keyof typeof products];
-  
-  if (!product) {
-    throw new Error('Product not found');
+  /**
+   * Add product to wishlist
+   * @param productId - Product ID to add
+   * @returns Promise with updated wishlist
+   */
+  static async addToWishlist(productId: string): Promise<WishlistItem[]> {
+    try {
+      await favoritesApi.addToFavorites(productId);
+      // Refresh wishlist after adding
+      return await this.getWishlist();
+    } catch (error) {
+      console.error('Failed to add to wishlist:', error);
+      throw new Error('Failed to add to wishlist. Please try again later.');
+    }
   }
 
-  const existingItem = wishlist.find(item => item.id === productId);
-  if (!existingItem) {
-    const newItem: WishlistItem = {
-      ...product,
-      addedAt: new Date().toISOString()
-    };
+  /**
+   * Remove product from wishlist
+   * @param productId - Product ID to remove
+   * @returns Promise with updated wishlist
+   */
+  static async removeFromWishlist(productId: string): Promise<WishlistItem[]> {
+    try {
+      await favoritesApi.removeFromFavorites(productId);
+      // Refresh wishlist after removing
+      return await this.getWishlist();
+    } catch (error) {
+      console.error('Failed to remove from wishlist:', error);
+      throw new Error('Failed to remove from wishlist. Please try again later.');
+    }
+  }
+
+  /**
+   * Check if product is in wishlist
+   * @param productId - Product ID to check
+   * @returns Promise with boolean indicating if product is in wishlist
+   */
+  static async isInWishlist(productId: string): Promise<boolean> {
+    // Temporarily disabled to stop API calls
+    return false;
     
-    const newWishlist = [...wishlist, newItem];
-    saveWishlist(newWishlist);
-    return newWishlist;
+    // Original implementation (commented out):
+    // try {
+    //   const response = await favoritesApi.checkFavorite(productId);
+    //   return response.is_favorite;
+    // } catch (error) {
+    //   console.error('Failed to check wishlist status:', error);
+    //   return false;
+    // }
   }
-  
-  return wishlist;
-};
 
-// Remove item from wishlist
-export const removeFromWishlist = (productId: string): WishlistItem[] => {
-  const wishlist = getWishlist();
-  
-  const newWishlist = wishlist.filter(item => item.id !== productId);
-  saveWishlist(newWishlist);
-  return newWishlist;
-};
+  /**
+   * Get wishlist count
+   * @returns Promise with wishlist count
+   */
+  static async getWishlistCount(): Promise<number> {
+    try {
+      const wishlist = await this.getWishlist();
+      return wishlist.length;
+    } catch (error) {
+      console.error('Failed to get wishlist count:', error);
+      return 0;
+    }
+  }
 
-// Clear wishlist
-export const clearWishlist = (): WishlistItem[] => {
-  const emptyWishlist: WishlistItem[] = [];
-  saveWishlist(emptyWishlist);
-  return emptyWishlist;
-};
+  /**
+   * Clear entire wishlist
+   * @returns Promise with empty wishlist
+   */
+  static async clearWishlist(): Promise<WishlistItem[]> {
+    try {
+      const wishlist = await this.getWishlist();
+      
+      // Remove all items one by one using product ID
+      for (const item of wishlist) {
+        await this.removeFromWishlist(item.product_id); // Use product_id, not favorite ID
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Failed to clear wishlist:', error);
+      throw new Error('Failed to clear wishlist. Please try again later.');
+    }
+  }
 
-// Move item from wishlist to cart
-export const moveToCart = (productId: string): { wishlist: WishlistItem[], cart: any } => {
-  const wishlist = getWishlist();
-  const item = wishlist.find(item => item.id === productId);
+  /**
+   * Move item from wishlist to cart
+   * @param favoriteId - Favorite ID to move (not product ID)
+   * @returns Promise with updated wishlist
+   */
+  static async moveToCart(favoriteId: string): Promise<WishlistItem[]> {
+    try {
+      // Import CartService dynamically to avoid circular dependencies
+      const { default: CartService } = await import('./cartService');
+      
+      // Get the wishlist item to get the product ID
+      const wishlist = await this.getWishlist();
+      const item = wishlist.find(w => w.id === favoriteId);
   
   if (!item) {
-    throw new Error('Item not found in wishlist');
+        throw new Error('Wishlist item not found');
+      }
+      
+      // Add to cart using product ID
+      await CartService.addItem(item.product_id, 1);
+      
+      // Remove from wishlist using favorite ID (but we need to use product_id for API)
+      return await this.removeFromWishlist(item.product_id);
+    } catch (error) {
+      console.error('Failed to move item to cart:', error);
+      throw new Error('Failed to move item to cart. Please try again later.');
+    }
   }
-  
-  const newWishlist = wishlist.filter(item => item.id !== productId);
-  saveWishlist(newWishlist);
-  
-  // Import cart service to add item to cart
-  const { addToCart } = require('./cartService');
-  const cart = addToCart(productId, 1, item);
-  
-  return {
-    wishlist: newWishlist,
-    cart
-  };
-};
 
-// Check if item is in wishlist
-export const isInWishlist = (productId: string): boolean => {
-  const wishlist = getWishlist();
-  return wishlist.some(item => item.id === productId);
-};
+  /**
+   * Add all wishlist items to cart
+   * @returns Promise with updated wishlist (empty after moving all items)
+   */
+  static async addAllToCart(): Promise<WishlistItem[]> {
+    try {
+      // Import CartService dynamically to avoid circular dependencies
+      const { default: CartService } = await import('./cartService');
+      
+      const wishlist = await this.getWishlist();
+      
+      // Add all items to cart
+      for (const item of wishlist) {
+        try {
+          await CartService.addItem(item.product_id, 1);
+        } catch (error) {
+          console.error(`Failed to add ${item.product_id} to cart:`, error);
+          // Continue with other items even if one fails
+        }
+      }
+      
+      // Clear the wishlist after adding all items to cart
+      // We need to remove items one by one using product_id since API expects product_id
+      for (const item of wishlist) {
+        try {
+          await this.removeFromWishlist(item.product_id);
+        } catch (error) {
+          console.error(`Failed to remove ${item.product_id} from wishlist:`, error);
+          // Continue with other items even if one fails
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Failed to add all items to cart:', error);
+      throw new Error('Failed to add all items to cart. Please try again later.');
+    }
+  }
+}
 
-// Get wishlist count
-export const getWishlistCount = (): number => {
-  const wishlist = getWishlist();
-  return wishlist.length;
-};
-
-// Get specific wishlist item
-export const getWishlistItem = (productId: string): WishlistItem | undefined => {
-  const wishlist = getWishlist();
-  return wishlist.find(item => item.id === productId);
-}; 
+export default WishlistService; 

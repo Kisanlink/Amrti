@@ -1,0 +1,8 @@
+[33mcommit ff8e22d8e67710031ef39a0c58258daf5cf6c34c[m
+Author: Charan <charan@kisnalink.in>
+Date:   Fri Aug 15 15:05:51 2025 +0530
+
+    [fix] quality report is unable to view in deployed version
+
+src/pages/MoringaProduct.tsx
+vercel.json

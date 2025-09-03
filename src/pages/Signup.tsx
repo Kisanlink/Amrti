@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, User, Lock, ArrowLeft, UserPlus, Phone } from 'lucide-react';
-import { signup } from '../services/authService';
+import { Eye, EyeOff, User, Lock, ArrowLeft, UserPlus, Mail } from 'lucide-react';
+import AuthService from '../services/authService';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -11,9 +11,8 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
-    fullName: '',
-    mobileNumber: '',
+    name: '',
+    email: '',
     password: '',
     confirmPassword: ''
   });
@@ -30,7 +29,7 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.username || !formData.fullName || !formData.mobileNumber || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       return;
     }
 
@@ -43,7 +42,7 @@ const Signup = () => {
     setError(null);
 
     try {
-      await signup(formData);
+      await AuthService.signup(formData);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -103,68 +102,49 @@ const Signup = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="username" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Username *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-black-400" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Choose a username"
-                />
-              </div>
-            </div>
+                         <div>
+               <label htmlFor="name" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                 Full Name *
+               </label>
+               <div className="relative">
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <User className="h-5 w-5 text-black-400" />
+                 </div>
+                 <input
+                   id="name"
+                   name="name"
+                   type="text"
+                   required
+                   value={formData.name}
+                   onChange={handleInputChange}
+                   className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                   placeholder="Enter your full name"
+                 />
+               </div>
+             </div>
 
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Full Name *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-black-400" />
-                </div>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter your full name"
-                />
-              </div>
-            </div>
+                         <div>
+               <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                 Email Address *
+               </label>
+               <div className="relative">
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <Mail className="h-5 w-5 text-black-400" />
+                 </div>
+                 <input
+                   id="email"
+                   name="email"
+                   type="email"
+                   required
+                   value={formData.email}
+                   onChange={handleInputChange}
+                   className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                   placeholder="Enter your email address"
+                 />
+               </div>
+             </div>
 
-            <div>
-              <label htmlFor="mobileNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Mobile Number *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-black-400" />
-                </div>
-                <input
-                  id="mobileNumber"
-                  name="mobileNumber"
-                  type="tel"
-                  required
-                  value={formData.mobileNumber}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter your mobile number"
-                />
-              </div>
-            </div>
+            
 
             <div>
               <label htmlFor="password" className="block text-sm font-heading font-semibold text-black-900 mb-2">
@@ -264,7 +244,7 @@ const Signup = () => {
 
             <button
               type="submit"
-              disabled={loading || !formData.username || !formData.fullName || !formData.mobileNumber || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword}
+                             disabled={loading || !formData.name || !formData.email || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {loading ? (

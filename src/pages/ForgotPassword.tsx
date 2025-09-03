@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, Shield } from 'lucide-react';
-import { forgotPassword } from '../services/authService';
+import AuthService from '../services/authService';
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ const ForgotPassword = () => {
     setError(null);
 
     try {
-      await forgotPassword(email);
+      await AuthService.forgotPassword(email);
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'Failed to send reset email');

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingCart, User, Search, Heart, LogOut } from 'lucide-react';
-import { getCartItemCount } from '../../services/cartService';
-import { getWishlistCount } from '../../services/wishlistService';
-import { getCurrentUser, isAuthenticated, logout, User as AuthUser } from '../../services/authService';
+import CartService from '../../services/cartService';
+import WishlistService from '../../services/wishlistService';
+import AuthService, { AuthUser } from '../../services/authService';
 import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
 
@@ -22,42 +22,57 @@ const Navbar = () => {
 
   // Load user and authentication state on mount
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    setAuthenticated(isAuthenticated());
-    setCartCount(getCartItemCount());
-    setWishlistCount(getWishlistCount());
+    const loadInitialData = async () => {
+      const currentUser = AuthService.getCurrentUser();
+      setUser(currentUser);
+      setAuthenticated(AuthService.isAuthenticated());
+      
+      try {
+        const cartCount = await CartService.getItemCount();
+        setCartCount(cartCount);
+      } catch (error) {
+        console.error('Failed to load cart count:', error);
+        setCartCount(0);
+      }
+      
+      try {
+        const wishlistCount = await WishlistService.getWishlistCount();
+        setWishlistCount(wishlistCount);
+      } catch (error) {
+        console.error('Failed to load wishlist count:', error);
+        setWishlistCount(0);
+      }
+    };
+    
+    loadInitialData();
   }, []);
 
-  // Update cart and wishlist counts periodically and on storage changes
+  // Update cart and wishlist counts periodically
   useEffect(() => {
-    const updateCounts = () => {
-      setCartCount(getCartItemCount());
-      setWishlistCount(getWishlistCount());
+    const updateCounts = async () => {
+      try {
+        const cartCount = await CartService.getItemCount();
+        setCartCount(cartCount);
+      } catch (error) {
+        console.error('Failed to update cart count:', error);
+      }
+      
+      try {
+        const wishlistCount = await WishlistService.getWishlistCount();
+        setWishlistCount(wishlistCount);
+      } catch (error) {
+        console.error('Failed to update wishlist count:', error);
+      }
     };
 
     // Update counts immediately
     updateCounts();
 
-    // Listen for storage changes (when cart/wishlist is updated in other tabs)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cart' || e.key === 'wishlist') {
-        updateCounts();
-      }
-    };
-
-    // Listen for custom events (when cart/wishlist is updated in same tab)
-    const handleCartUpdate = () => updateCounts();
-    const handleWishlistUpdate = () => updateCounts();
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    // Set up interval to refresh counts every 30 seconds
+    const interval = setInterval(updateCounts, 30000);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      clearInterval(interval);
     };
   }, []);
 
@@ -190,8 +205,8 @@ const Navbar = () => {
                     {authenticated ? (
                       <>
                         <div className="px-4 py-2 border-b border-black-200">
-                          <p className="text-sm font-semibold text-black-900">{user?.fullName}</p>
-                          <p className="text-xs text-black-600">{user?.username}</p>
+                          <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
+                          <p className="text-xs text-black-600">{user?.email}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -209,7 +224,7 @@ const Navbar = () => {
                         </Link>
                         <button
                           onClick={() => {
-                            logout();
+                            AuthService.logout();
                             setUser(null);
                             setAuthenticated(false);
                             setShowUserMenu(false);
@@ -308,11 +323,11 @@ const Navbar = () => {
                   </button>
                   
                   {/* User Account */}
-                  {isAuthenticated ? (
+                  {authenticated ? (
                     <>
                       <div className="px-2 py-2 border-t border-black-200">
-                        <p className="text-sm font-semibold text-black-900">{user?.fullName}</p>
-                        <p className="text-xs text-black-600">{user?.username}</p>
+                        <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
+                        <p className="text-xs text-black-600">{user?.email}</p>
                       </div>
                       <Link 
                         to="/profile" 
@@ -330,13 +345,13 @@ const Navbar = () => {
                         <User size={20} />
                         <span>My Orders</span>
                       </Link>
-                      <button 
-                        onClick={() => {
-                          logout();
-                          setUser(null);
-                          setAuthenticated(false);
-                          setIsOpen(false);
-                        }}
+                                              <button 
+                          onClick={() => {
+                            AuthService.logout();
+                            setUser(null);
+                            setAuthenticated(false);
+                            setIsOpen(false);
+                          }}
                         className="flex items-center space-x-2 w-full py-2 text-red-600 hover:text-red-700 transition-colors"
                       >
                         <LogOut size={20} />

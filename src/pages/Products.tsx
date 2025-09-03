@@ -3,9 +3,10 @@ import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filte
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import { getAllProducts, getProductCategories, Product } from '../services/productService';
-import { addToCart, getCartItemCount } from '../services/cartService';
-import { addToWishlist, removeFromWishlist, isInWishlist, getWishlistCount } from '../services/wishlistService';
+import ProductService from '../services/productService';
+import type { Product } from '../context/AppContext';
+import CartService from '../services/cartService';
+import WishlistService from '../services/wishlistService';
 import { useNotification } from '../context/NotificationContext';
 
 const Products = () => {
@@ -16,6 +17,7 @@ const Products = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [showSidebar, setShowSidebar] = useState(false);
+  const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const [filters, setFilters] = useState({
     priceRange: [0, 2000],
     availability: 'all',
@@ -27,10 +29,35 @@ const Products = () => {
 
   // Load products and categories on mount
   useEffect(() => {
-    setProducts(getAllProducts());
-    setCategories(getProductCategories());
-    setCartCount(getCartItemCount());
-    setWishlistCount(getWishlistCount());
+    const loadData = async () => {
+      try {
+        const productsResponse = await ProductService.getAllProducts(1, 100);
+        setProducts(productsResponse.data);
+        // For now, set default categories since getProductCategories doesn't exist
+        setCategories(['Superfoods', 'Herbs']);
+        try {
+          const cartCount = await CartService.getItemCount();
+          setCartCount(cartCount);
+        } catch (error) {
+          console.error('Failed to get cart count:', error);
+          setCartCount(0);
+        }
+        
+        try {
+          const wishlistCount = await WishlistService.getWishlistCount();
+          setWishlistCount(wishlistCount);
+        } catch (error) {
+          console.error('Failed to get wishlist count:', error);
+          setWishlistCount(0);
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+        setProducts([]);
+        setCategories([]);
+      }
+    };
+    
+    loadData();
   }, []);
 
   // Filter products based on selected category and filters
@@ -46,15 +73,15 @@ const Products = () => {
     }
     
     // Availability filter
-    if (filters.availability === 'inStock' && !product.inStock) {
+    if (filters.availability === 'inStock' && product.stock <= 0) {
       return false;
     }
-    if (filters.availability === 'outOfStock' && product.inStock) {
+    if (filters.availability === 'outOfStock' && product.stock > 0) {
       return false;
     }
     
     // Discount filter
-    if (filters.discount && product.originalPrice <= product.price) {
+    if (filters.discount && product.discount_percent <= 0) {
       return false;
     }
     
@@ -72,6 +99,11 @@ const Products = () => {
     
     return true;
   });
+
+  // Helper function to check if product is in wishlist
+  const isProductInWishlist = (productId: string): boolean => {
+    return wishlistItems.has(productId);
+  };
 
   // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -331,7 +363,7 @@ const Products = () => {
                   <div className="overflow-hidden rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
-                        src={product.image}
+                        src={product.image_url}
                         alt={product.name}
                         className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ maxHeight: '200px' }}
@@ -339,11 +371,11 @@ const Products = () => {
                       <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
                         {product.category}
                       </div>
-                      {product.originalPrice > product.price && (
-                        <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
-                          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                        </div>
-                      )}
+                                  {product.actual_price > product.price && (
+              <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+                {Math.round(((product.actual_price - product.price) / product.actual_price) * 100)}% OFF
+              </div>
+            )}
                     </div>
                     
                     <div className="p-3 sm:p-4 lg:p-5 flex flex-col flex-grow">
@@ -363,20 +395,20 @@ const Products = () => {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-black-600">({product.reviews})</span>
+                        <span className="text-xs text-black-600">({product.review_count})</span>
                       </div>
 
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <div className="flex items-center space-x-1 sm:space-x-2">
                           <span className="font-bold text-green-600 text-sm sm:text-base">₹{product.price}</span>
-                          {product.originalPrice > product.price && (
-                            <span className="text-xs sm:text-sm text-black-500 line-through">₹{product.originalPrice}</span>
-                          )}
+                                          {product.actual_price > product.price && (
+                  <span className="text-xs sm:text-sm text-black-500 line-through">₹{product.actual_price}</span>
+                )}
                         </div>
                         <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-semibold ${
-                          product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
-                          {product.inStock ? 'In Stock' : 'Out of Stock'}
+                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </div>
 
@@ -398,11 +430,12 @@ const Products = () => {
                         
                         {/* Add to Cart Button */}
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
                             try {
-                              addToCart(product.id, 1, product);
-                              setCartCount(getCartItemCount());
+                              await CartService.addItem(product.id, 1);
+                              const cartCount = await CartService.getItemCount();
+                              setCartCount(cartCount);
                             } catch (err) {
                               console.error('Failed to add to cart:', err);
                             } finally {
@@ -422,15 +455,28 @@ const Products = () => {
                         
                         {/* Add to Wishlist Button */}
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: true }));
                             try {
-                              if (isInWishlist(product.id)) {
-                                removeFromWishlist(product.id);
+                              if (isProductInWishlist(product.id)) {
+                                await WishlistService.removeFromWishlist(product.id);
+                                // Update local state
+                                setWishlistItems(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(product.id);
+                                  return newSet;
+                                });
                               } else {
-                                addToWishlist(product.id, product);
+                                await WishlistService.addToWishlist(product.id);
+                                // Update local state
+                                setWishlistItems(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.add(product.id);
+                                  return newSet;
+                                });
                               }
-                              setWishlistCount(getWishlistCount());
+                              const wishlistCount = await WishlistService.getWishlistCount();
+                              setWishlistCount(wishlistCount);
                             } catch (err) {
                               console.error('Failed to update wishlist:', err);
                             } finally {
@@ -439,16 +485,16 @@ const Products = () => {
                           }}
                           disabled={loadingStates[`wishlist-${product.id}`]}
                           className={`p-2 border rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isInWishlist(product.id)
+                            isProductInWishlist(product.id)
                               ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white-50'
                               : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50'
                           }`}
-                          title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                          title={isProductInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                         >
                           {loadingStates[`wishlist-${product.id}`] ? (
                             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                           ) : (
-                            <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                            <Heart className={`w-4 h-4 ${isProductInWishlist(product.id) ? 'fill-current' : ''}`} />
                           )}
                         </button>
                       </div>

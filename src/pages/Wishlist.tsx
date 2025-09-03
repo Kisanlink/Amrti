@@ -3,8 +3,9 @@ import { ArrowLeft, Trash2, Heart, ShoppingCart, Plus, Star, Truck, Shield, Rota
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import { getWishlist, removeFromWishlist, clearWishlist, moveToCart, WishlistItem } from '../services/wishlistService';
-import { addToCart } from '../services/cartService';
+import WishlistService from '../services/wishlistService';
+import CartService from '../services/cartService';
+import type { WishlistItem } from '../services/wishlistService';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -14,12 +15,23 @@ const Wishlist = () => {
 
   // Load wishlist on mount
   useEffect(() => {
-    setWishlist(getWishlist());
+    const loadWishlist = async () => {
+      try {
+        const wishlistData = await WishlistService.getWishlist();
+        setWishlist(wishlistData);
+      } catch (err) {
+        console.error('Failed to load wishlist:', err);
+        setError('Failed to load wishlist');
+        setWishlist([]);
+      }
+    };
+    
+    loadWishlist();
   }, []);
 
-  const handleRemoveFromWishlist = (productId: string) => {
+  const handleRemoveFromWishlist = async (productId: string) => {
     try {
-      const updatedWishlist = removeFromWishlist(productId);
+      const updatedWishlist = await WishlistService.removeFromWishlist(productId);
       setWishlist(updatedWishlist);
     } catch (err) {
       console.error('Failed to remove from wishlist:', err);
@@ -27,11 +39,11 @@ const Wishlist = () => {
     }
   };
 
-  const handleMoveToCart = (productId: string) => {
+  const handleMoveToCart = async (productId: string) => {
     setIsProcessing(productId);
     try {
-      const result = moveToCart(productId);
-      setWishlist(result.wishlist);
+      const updatedWishlist = await WishlistService.moveToCart(productId);
+      setWishlist(updatedWishlist);
     } catch (err) {
       console.error('Failed to move to cart:', err);
       setError('Failed to move to cart');
@@ -40,15 +52,30 @@ const Wishlist = () => {
     }
   };
 
-  const handleClearWishlist = () => {
+  const handleClearWishlist = async () => {
     if (window.confirm('Are you sure you want to clear your wishlist?')) {
       try {
-        const updatedWishlist = clearWishlist();
+        const updatedWishlist = await WishlistService.clearWishlist();
         setWishlist(updatedWishlist);
       } catch (err) {
         console.error('Failed to clear wishlist:', err);
         setError('Failed to clear wishlist');
       }
+    }
+  };
+
+  const handleAddAllToCart = async () => {
+    try {
+      setIsProcessing('all');
+      const updatedWishlist = await WishlistService.addAllToCart();
+      setWishlist(updatedWishlist);
+      // Show success message
+      setError(null);
+    } catch (err) {
+      console.error('Failed to add all items to cart:', err);
+      setError('Failed to add all items to cart');
+    } finally {
+      setIsProcessing(null);
     }
   };
 
@@ -148,25 +175,25 @@ const Wishlist = () => {
                     {/* Product Image */}
                     <div className="relative">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={item.product?.image_url || '/placeholder-product.jpg'}
+                        alt={item.product?.name || 'Product'}
                         className="w-full h-48 object-contain bg-beige-100"
                       />
                       <div className="absolute top-3 right-3 bg-green-600 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
-                        {item.category}
+                        {item.product?.category || 'Category'}
                       </div>
-                      <button
-                        onClick={() => handleRemoveFromWishlist(item.id)}
-                        className="absolute top-3 left-3 p-2 bg-red-500 text-white-50 rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                                              <button
+                          onClick={() => handleRemoveFromWishlist(item.product_id)}
+                          className="absolute top-3 left-3 p-2 bg-red-500 text-white-50 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {/* Product Info */}
                     <div className="p-4">
                       <h3 className="font-heading font-semibold text-black-900 mb-2 truncate">
-                        {item.name}
+                        {item.product?.name || 'Product Name'}
                       </h3>
                       
                       <div className="flex items-center space-x-2 mb-3">
@@ -182,16 +209,16 @@ const Wishlist = () => {
                       </div>
 
                       <div className="flex items-center space-x-2 mb-4">
-                        <span className="font-bold text-green-600">₹{item.price}</span>
-                        {item.originalPrice > item.price && (
-                          <span className="text-sm text-black-500 line-through">₹{item.originalPrice}</span>
+                        <span className="font-bold text-green-600">₹{item.product?.price || 0}</span>
+                        {item.product?.actual_price && item.product?.actual_price > (item.product?.price || 0) && (
+                          <span className="text-sm text-black-500 line-through">₹{item.product.actual_price}</span>
                         )}
                       </div>
 
                       {/* Action Buttons */}
                       <div className="space-y-2">
                         <button
-                          onClick={() => handleMoveToCart(item.id)}
+                          onClick={() => handleMoveToCart(item.product_id)}
                           disabled={isProcessing === item.id}
                           className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
@@ -209,8 +236,8 @@ const Wishlist = () => {
                         </button>
                         
                         <Link
-                          to={`/product/${item.id}`}
-                          className="w-full border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                          to={`/product/${item.product_id}`}
+                          className="w-full border border-green-600 text-green-600 hover:bg-green-700 hover:text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
                         >
                           <span>View Details</span>
                           <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -239,7 +266,7 @@ const Wishlist = () => {
                 <div className="flex justify-between">
                   <span className="text-black-700">Total Value</span>
                   <span className="font-semibold">
-                    ₹{wishlist.reduce((sum, item) => sum + item.price, 0)}
+                    ₹{wishlist.reduce((sum, item) => sum + (item.product?.price || 0), 0)}
                   </span>
                 </div>
               </div>
@@ -247,13 +274,21 @@ const Wishlist = () => {
               {/* Quick Actions */}
               <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    // Add all items to cart
-                    wishlist.forEach(item => addToCart(item.id, 1));
-                  }}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  onClick={handleAddAllToCart}
+                  disabled={isProcessing === 'all'}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
-                  Add All to Cart
+                  {isProcessing === 'all' ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>Add All to Cart</span>
+                    </>
+                  )}
                 </button>
                 
                 <Link

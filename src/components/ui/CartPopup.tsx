@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus, Truck, Gift, CreditCard, ThumbsUp, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getCart, updateQuantity, removeFromCart, Cart as CartType } from '../../services/cartService';
+import CartService from '../../services/cartService';
+import type { Cart } from '../../services/cartService';
 import { useNotification } from '../../context/NotificationContext';
 
 interface CartPopupProps {
@@ -11,51 +12,42 @@ interface CartPopupProps {
 }
 
 const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
-  const [cart, setCart] = useState<CartType>({ items: [], total: 0, subtotal: 0, discount: 0, shipping: 0 });
+  const [cart, setCart] = useState<Cart>({ 
+    id: '', 
+    created_at: '', 
+    updated_at: '', 
+    created_by: '', 
+    updated_by: '', 
+    user_id: '', 
+    total_items: 0, 
+    total_price: 0, 
+    discount_amount: 0, 
+    items: [] 
+  });
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const { showNotification } = useNotification();
 
   // Load cart on mount and when popup opens
   useEffect(() => {
     if (isOpen) {
-      const currentCart = getCart();
-      console.log('Cart popup opened, cart data:', currentCart);
+      const loadCart = async () => {
+        try {
+          const currentCart = await CartService.getCart();
+          console.log('Cart popup opened, cart data:', currentCart);
+          setCart(currentCart);
+        } catch (err) {
+          console.error('Failed to load cart:', err);
+          showNotification({
+            type: 'error',
+            message: 'Failed to load cart'
+          });
+        }
+      };
+      
+      loadCart();
       
       // Ensure popup is properly positioned
       document.body.style.overflow = 'hidden';
-      
-      // Check for corrupted cart data and fix it
-      if (currentCart.items && currentCart.items.length > 0) {
-        // Validate cart items
-        const validItems = currentCart.items.filter(item => 
-          item && item.id && item.name && item.price && item.quantity > 0
-        );
-        
-        if (validItems.length !== currentCart.items.length) {
-          console.log('Found corrupted cart items, fixing...');
-          const fixedCart = {
-            ...currentCart,
-            items: validItems
-          };
-          // Recalculate totals
-          const totals = {
-            subtotal: validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-            shipping: validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) > 500 ? 0 : 50,
-            discount: validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) > 1000 ? 
-              validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.1 : 0,
-            total: 0
-          };
-          totals.total = totals.subtotal + totals.shipping - totals.discount;
-          
-          const correctedCart = { ...fixedCart, ...totals };
-          localStorage.setItem('cart', JSON.stringify(correctedCart));
-          setCart(correctedCart);
-        } else {
-          setCart(currentCart);
-        }
-      } else {
-        setCart(currentCart);
-      }
     } else {
       // Restore scroll when popup closes
       document.body.style.overflow = 'auto';
@@ -64,11 +56,15 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
 
   // Listen for cart updates
   useEffect(() => {
-    const handleCartUpdate = () => {
+    const handleCartUpdate = async () => {
       if (isOpen) {
-        const currentCart = getCart();
-        console.log('Cart updated, new cart data:', currentCart);
-        setCart(currentCart);
+        try {
+          const currentCart = await CartService.getCart();
+          console.log('Cart updated, new cart data:', currentCart);
+          setCart(currentCart);
+        } catch (err) {
+          console.error('Failed to refresh cart:', err);
+        }
       }
     };
 
@@ -76,12 +72,12 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [isOpen]);
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     
     setIsUpdating(productId);
     try {
-      const updatedCart = updateQuantity(productId, newQuantity);
+      const updatedCart = await CartService.updateItemQuantity(productId, newQuantity);
       setCart(updatedCart);
     } catch (err) {
       console.error('Failed to update quantity:', err);
@@ -94,9 +90,9 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     }
   };
 
-  const handleRemoveItem = (productId: string) => {
+  const handleRemoveItem = async (productId: string) => {
     try {
-      const updatedCart = removeFromCart(productId);
+      const updatedCart = await CartService.removeItem(productId);
       setCart(updatedCart);
       showNotification({
         type: 'success',
@@ -111,17 +107,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     }
   };
 
-  const handleClearCart = () => {
+  const handleClearCart = async () => {
     try {
-      localStorage.removeItem('cart');
-      const emptyCart = {
-        items: [],
-        total: 0,
-        subtotal: 0,
-        discount: 0,
-        shipping: 0
-      };
-      setCart(emptyCart);
+      const updatedCart = await CartService.clearCart();
+      setCart(updatedCart);
       showNotification({
         type: 'success',
         message: 'Cart cleared successfully'
@@ -137,7 +126,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
 
   // Calculate progress for free shipping
   const freeShippingThreshold = 500;
-  const currentTotal = cart.subtotal;
+  const currentTotal = cart.total_price;
   const progressPercentage = Math.min((currentTotal / freeShippingThreshold) * 100, 100);
   const remainingForFreeShipping = Math.max(freeShippingThreshold - currentTotal, 0);
 
@@ -246,8 +235,8 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                        {/* Product Image */}
                        <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                          <img 
-                           src={item.image} 
-                           alt={item.name} 
+                           src={item.product?.image_url || '/placeholder-product.jpg'} 
+                           alt={item.product?.name || 'Product'} 
                            className="w-full h-full object-cover"
                          />
                        </div>
@@ -257,14 +246,14 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                          <div className="flex items-start justify-between mb-2">
                            <div className="flex-1 min-w-0">
                              <h3 className="font-semibold text-gray-900 text-base truncate">
-                               {item.name}
+                               {item.product?.name || 'Product Name'}
                              </h3>
                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                               {item.description || 'Superfood | Chemical & Preservative Free - Lab Tested'}
+                               {item.product?.description || 'Superfood | Chemical & Preservative Free - Lab Tested'}
                              </p>
                            </div>
                            <button
-                             onClick={() => handleRemoveItem(item.id)}
+                             onClick={() => handleRemoveItem(item.product_id)}
                              className="ml-3 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200"
                            >
                              <Trash2 size={16} />
@@ -277,7 +266,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                              <span className="text-sm text-gray-500">Qty:</span>
                              <div className="flex items-center bg-gray-50 rounded-lg">
                                <button
-                                 onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                                 onClick={() => handleQuantityChange(item.product_id, item.quantity - 1)}
                                  disabled={isUpdating === item.id}
                                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 disabled:opacity-50 rounded-l-lg transition-colors"
                                >
@@ -287,7 +276,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                                  {isUpdating === item.id ? '...' : item.quantity}
                                </span>
                                <button
-                                 onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                                 onClick={() => handleQuantityChange(item.product_id, item.quantity + 1)}
                                  disabled={isUpdating === item.id}
                                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 disabled:opacity-50 rounded-r-lg transition-colors"
                                >
@@ -297,10 +286,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                            </div>
                            <div className="text-right">
                              <span className="text-lg font-bold text-gray-900">
-                               ₹{item.price * item.quantity}
+                               ₹{item.unit_price * item.quantity}
                              </span>
                              {item.quantity > 1 && (
-                               <p className="text-xs text-gray-500">₹{item.price} each</p>
+                               <p className="text-xs text-gray-500">₹{item.unit_price} each</p>
                              )}
                            </div>
                          </div>
@@ -318,23 +307,23 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                  <div className="space-y-2 pb-4 border-b border-gray-100">
                    <div className="flex justify-between text-sm">
                      <span className="text-gray-600">Subtotal ({cart.items.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                     <span className="font-semibold">₹{cart.subtotal}</span>
+                     <span className="font-semibold">₹{cart.total_price}</span>
                    </div>
                    <div className="flex justify-between text-sm">
                      <span className="text-gray-600">Shipping</span>
-                     <span className={cart.shipping === 0 ? 'text-green-600 font-semibold' : 'font-semibold'}>
-                       {cart.shipping === 0 ? 'FREE' : `₹${cart.shipping}`}
+                     <span className={cart.total_price > 500 ? 'text-green-600 font-semibold' : 'font-semibold'}>
+                       {cart.total_price > 500 ? 'FREE' : '₹50'}
                      </span>
                    </div>
-                   {cart.discount > 0 && (
+                   {cart.discount_amount > 0 && (
                      <div className="flex justify-between text-sm">
                        <span className="text-gray-600">Discount</span>
-                       <span className="text-green-600 font-semibold">-₹{cart.discount}</span>
+                       <span className="text-green-600 font-semibold">-₹{cart.discount_amount}</span>
                      </div>
                    )}
                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
                      <span>Total</span>
-                     <span>₹{cart.total}</span>
+                     <span>₹{cart.total_price + (cart.total_price > 500 ? 0 : 50) - cart.discount_amount}</span>
                    </div>
                  </div>
                )}
