@@ -2,13 +2,13 @@ version: 0.2
 
 env:
   variables:
-    AWS_DEFAULT_REGION: "us-east-1"
-    AWS_ACCOUNT_ID: "123456789012"
-    IMAGE_REPO_NAME: "amrti-app"
+    AWS_DEFAULT_REGION: "ap-south-1"
+    AWS_ACCOUNT_ID: "530935696116"
+    IMAGE_REPO_NAME: "amrti-frontend"      # ✅ fixed (hyphen instead of slash)
     IMAGE_TAG: "latest"
-    ECS_CLUSTER_NAME: "amrti-cluster"
-    ECS_SERVICE_NAME: "amrti-service"
-    CONTAINER_NAME: "amrti-container"
+    ECS_CLUSTER_NAME: "amrti-beta-cluster"
+    ECS_SERVICE_NAME: "frontend"
+    CONTAINER_NAME: "frontend"
 
 phases:
   pre_build:
@@ -27,7 +27,6 @@ phases:
       - export IMAGE_TAG=$COMMIT_HASH
       - echo "Repository URI is $REPOSITORY_URI"
       - echo "Image tag is $IMAGE_TAG"
-
   build:
     commands:
       - echo "Build started on $(date)"
@@ -52,10 +51,10 @@ phases:
 artifacts:
   files:
     - imagedefinitions.json
-    - '**/*'
   name: amrti-build
 
-cache:
-  paths:
-    - '/root/.npm/**/*'
-    - 'node_modules/**/*'
+# Optional cache (remove if not building Node frontend)
+# cache:
+#   paths:
+#     - '/root/.npm/**/*'
+#     - 'node_modules/**/*'
