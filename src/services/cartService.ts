@@ -1,182 +1,414 @@
+import { cartApi, type CartResponse, type CartSummaryResponse, type CartCountResponse, type CartValidationResponse } from './api';
+import type { Product } from '../context/AppContext';
+
 export interface CartItem {
   id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  cart_id: string;
+  product_id: string;
   quantity: number;
-  category: string;
+  unit_price: number;
+  total_price: number;
+  product?: Product; // Product details if available
 }
 
 export interface Cart {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  user_id: string;
+  total_items: number;
+  total_price: number;
+  discount_amount: number;
   items: CartItem[];
-  total: number;
-  subtotal: number;
-  discount: number;
-  shipping: number;
 }
 
-// Static product data
-const products = {
-  'moringa-powder': {
-    id: 'moringa-powder',
-    name: 'Moringa Powder',
-    price: 299,
-    originalPrice: 399,
-    image: '/products/pouch front mockup.jpg',
-    category: 'Natural Powders'
-  },
-  'amla-powder': {
-    id: 'amla-powder',
-    name: 'Amla Powder',
-    price: 349,
-    originalPrice: 449,
-    image: '/products/amla bg.png',
-    category: 'Natural Powders'
-  },
-  'ashwagandha-powder': {
-    id: 'ashwagandha-powder',
-    name: 'Ashwagandha Powder',
-    price: 399,
-    originalPrice: 499,
-    image: '/products/aswagandha bg.png',
-    category: 'Natural Powders'
-  },
-  'papaya-powder': {
-    id: 'papaya-powder',
-    name: 'Papaya Powder',
-    price: 279,
-    originalPrice: 359,
-    image: '/products/papaya bg.png',
-    category: 'Natural Powders'
-  }
-};
+export interface AddToCartRequest {
+  product_id: string;
+  quantity: number;
+}
 
-// Calculate cart totals
-const calculateTotals = (items: CartItem[]) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 500 ? 0 : 50; // Free shipping over ₹500
-  const discount = subtotal > 1000 ? subtotal * 0.1 : 0; // 10% discount over ₹1000
-  const total = subtotal + shipping - discount;
+export interface UpdateCartItemRequest {
+  quantity: number;
+}
 
-  return { subtotal, shipping, discount, total };
-};
-
-// Get cart from localStorage
-export const getCart = (): Cart => {
-  const savedCart = localStorage.getItem('cart');
-  if (savedCart) {
+export class CartService {
+  /**
+   * Add item to cart
+   * @param productId - Product ID to add
+   * @param quantity - Quantity to add
+   * @returns Promise with updated cart
+   */
+  static async addItem(productId: string, quantity: number): Promise<Cart> {
     try {
-      return JSON.parse(savedCart);
-    } catch (err) {
-      console.error('Error loading cart from localStorage:', err);
+      const response = await cartApi.addItem(productId, quantity);
+      return response.data.cart;
+    } catch (error) {
+      console.error('Failed to add item to cart:', error);
+      throw new Error('Failed to add item to cart. Please try again later.');
     }
   }
-  
-  return {
-    items: [],
-    total: 0,
-    subtotal: 0,
-    discount: 0,
-    shipping: 0
-  };
-};
 
-// Save cart to localStorage
-const saveCart = (cart: Cart) => {
-  localStorage.setItem('cart', JSON.stringify(cart));
-  // Dispatch custom event to notify other components
-  window.dispatchEvent(new CustomEvent('cartUpdated'));
-};
-
-// Add item to cart
-export const addToCart = (productId: string, quantity: number = 1, productData?: any): Cart => {
-  const cart = getCart();
-  
-  // Use provided product data or get from static data
-  const product = productData || products[productId as keyof typeof products];
-  
-  if (!product) {
-    throw new Error('Product not found');
+  /**
+   * Get user's cart
+   * @returns Promise with cart details
+   */
+  static async getCart(): Promise<Cart> {
+    try {
+      const response = await cartApi.getCart();
+      const cart = response.data.cart;
+      
+      // Fetch product details for each cart item
+      const { default: ProductService } = await import('./productService');
+      
+      const enrichedItems = await Promise.all(
+        cart.items.map(async (item) => {
+          try {
+            console.log(`Fetching product details for ${item.product_id}...`);
+            const product = await ProductService.getProductById(item.product_id);
+            console.log(`Product details for ${item.product_id}:`, product);
+            return {
+              ...item,
+              product
+            };
+          } catch (error) {
+            console.error(`Failed to fetch product ${item.product_id}:`, error);
+            // Return item without product details if fetch fails
+            return item;
+          }
+        })
+      );
+      
+      console.log('Enriched cart items:', enrichedItems);
+      
+      return {
+        ...cart,
+        items: enrichedItems
+      };
+    } catch (error) {
+      console.error('Failed to fetch cart:', error);
+      throw new Error('Failed to fetch cart. Please try again later.');
+    }
   }
 
-  const newItem: CartItem = {
-    ...product,
-    quantity
-  };
-
-  const existingItemIndex = cart.items.findIndex(item => item.id === productId);
-  let newItems;
-
-  if (existingItemIndex >= 0) {
-    newItems = [...cart.items];
-    newItems[existingItemIndex].quantity += quantity;
-  } else {
-    newItems = [...cart.items, newItem];
+  /**
+   * Update item quantity in cart
+   * @param productId - Product ID to update
+   * @param quantity - New quantity
+   * @returns Promise with updated cart
+   */
+  static async updateItemQuantity(productId: string, quantity: number): Promise<Cart> {
+    try {
+      const response = await cartApi.updateItemQuantity(productId, quantity);
+      // Re-fetch the enriched cart to ensure product details are included
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to update cart item quantity:', error);
+      throw new Error('Failed to update cart item quantity. Please try again later.');
+    }
   }
 
-  const totals = calculateTotals(newItems);
-  const newCart = { ...cart, items: newItems, ...totals };
-  
-  saveCart(newCart);
-  return newCart;
-};
+  /**
+   * Remove item from cart
+   * @param productId - Product ID to remove
+   * @returns Promise with updated cart
+   */
+  static async removeItem(productId: string): Promise<Cart> {
+    try {
+      const response = await cartApi.removeItem(productId);
+      // Re-fetch the enriched cart to ensure product details are included
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to remove item from cart:', error);
+      throw new Error('Failed to remove item from cart. Please try again later.');
+    }
+  }
 
-// Update cart item quantity
-export const updateQuantity = (productId: string, quantity: number): Cart => {
-  const cart = getCart();
-  
-  const newItems = cart.items.map(item =>
-    item.id === productId ? { ...item, quantity } : item
-  ).filter(item => item.quantity > 0);
+  /**
+   * Increment item quantity
+   * @param productId - Product ID to increment
+   * @returns Promise with updated cart
+   */
+  static async incrementItem(productId: string): Promise<Cart> {
+    try {
+      const cart = await this.getCart();
+      const item = cart.items.find(item => item.product_id === productId);
+      if (item) {
+        return await this.updateItemQuantity(productId, item.quantity + 1);
+      }
+      throw new Error('Item not found in cart');
+    } catch (error) {
+      console.error('Failed to increment item quantity:', error);
+      throw new Error('Failed to increment item quantity. Please try again later.');
+    }
+  }
 
-  const totals = calculateTotals(newItems);
-  const newCart = { ...cart, items: newItems, ...totals };
-  
-  saveCart(newCart);
-  return newCart;
-};
+  /**
+   * Decrement item quantity
+   * @param productId - Product ID to decrement
+   * @returns Promise with updated cart
+   */
+  static async decrementItem(productId: string): Promise<Cart> {
+    try {
+      const cart = await this.getCart();
+      const item = cart.items.find(item => item.product_id === productId);
+      if (item && item.quantity > 1) {
+        return await this.updateItemQuantity(productId, item.quantity - 1);
+      } else if (item && item.quantity === 1) {
+        return await this.removeItem(productId);
+      }
+      throw new Error('Item not found in cart');
+    } catch (error) {
+      console.error('Failed to decrement item quantity:', error);
+      throw new Error('Failed to decrement item quantity. Please try again later.');
+    }
+  }
 
-// Remove item from cart
-export const removeFromCart = (productId: string): Cart => {
-  const cart = getCart();
-  
-  const newItems = cart.items.filter(item => item.id !== productId);
-  const totals = calculateTotals(newItems);
-  const newCart = { ...cart, items: newItems, ...totals };
-  
-  saveCart(newCart);
-  return newCart;
-};
+  /**
+   * Get cart summary
+   * @returns Promise with cart summary
+   */
+  static async getSummary(): Promise<CartSummaryResponse['data']> {
+    try {
+      const response = await cartApi.getSummary();
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch cart summary:', error);
+      throw new Error('Failed to fetch cart summary. Please try again later.');
+    }
+  }
 
-// Clear cart
-export const clearCart = (): Cart => {
-  const emptyCart = {
-    items: [],
-    total: 0,
-    subtotal: 0,
-    discount: 0,
-    shipping: 0
-  };
-  
-  saveCart(emptyCart);
-  return emptyCart;
-};
+  /**
+   * Get cart item count
+   * @returns Promise with cart item count
+   */
+  static async getItemCount(): Promise<number> {
+    try {
+      const response = await cartApi.getCount();
+      return response.data.item_count;
+    } catch (error) {
+      console.error('Failed to fetch cart item count:', error);
+      return 0;
+    }
+  }
 
-// Get cart item count
-export const getCartItemCount = (): number => {
-  const cart = getCart();
-  return cart.items.reduce((total, item) => total + item.quantity, 0);
-};
+  /**
+   * Validate cart
+   * @returns Promise with cart validation results
+   */
+  static async validateCart(): Promise<CartValidationResponse['data']> {
+    try {
+      const response = await cartApi.validate();
+      return response.data;
+    } catch (error) {
+      console.error('Failed to validate cart:', error);
+      throw new Error('Failed to validate cart. Please try again later.');
+    }
+  }
 
-// Get specific cart item
-export const getCartItem = (productId: string): CartItem | undefined => {
-  const cart = getCart();
-  return cart.items.find(item => item.id === productId);
-};
+  /**
+   * Check if cart is empty
+   * @returns Promise with boolean indicating if cart is empty
+   */
+  static async isCartEmpty(): Promise<boolean> {
+    try {
+      const cart = await this.getCart();
+      return cart.items.length === 0;
+    } catch (error) {
+      console.error('Failed to check if cart is empty:', error);
+      return true;
+    }
+  }
 
-// Check if item is in cart
-export const isInCart = (productId: string): boolean => {
-  const cart = getCart();
-  return cart.items.some(item => item.id === productId);
-}; 
+  /**
+   * Get cart total
+   * @returns Promise with cart total
+   */
+  static async getCartTotal(): Promise<number> {
+    try {
+      const summary = await this.getSummary();
+      return summary.total_price;
+    } catch (error) {
+      console.error('Failed to get cart total:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get cart discount amount
+   * @returns Promise with cart discount amount
+   */
+  static async getCartDiscount(): Promise<number> {
+    try {
+      const summary = await this.getSummary();
+      return summary.discount_amount;
+    } catch (error) {
+      console.error('Failed to get cart discount:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get cart discounted total
+   * @returns Promise with cart discounted total
+   */
+  static async getCartDiscountedTotal(): Promise<number> {
+    try {
+      const summary = await this.getSummary();
+      return summary.discounted_total;
+    } catch (error) {
+      console.error('Failed to get cart discounted total:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if cart has expired
+   * @returns Promise with boolean indicating if cart has expired
+   */
+  static async isCartExpired(): Promise<boolean> {
+    try {
+      const summary = await this.getSummary();
+      return summary.has_expired;
+    } catch (error) {
+      console.error('Failed to check if cart has expired:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get cart items
+   * @returns Promise with cart items
+   */
+  static async getCartItems(): Promise<CartItem[]> {
+    try {
+      const cart = await this.getCart();
+      return cart.items;
+    } catch (error) {
+      console.error('Failed to get cart items:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get specific cart item
+   * @param productId - Product ID to find
+   * @returns Promise with cart item or null
+   */
+  static async getCartItem(productId: string): Promise<CartItem | null> {
+    try {
+      const cart = await this.getCart();
+      return cart.items.find(item => item.product_id === productId) || null;
+    } catch (error) {
+      console.error('Failed to get cart item:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if product is in cart
+   * @param productId - Product ID to check
+   * @returns Promise with boolean indicating if product is in cart
+   */
+  static async isProductInCart(productId: string): Promise<boolean> {
+    try {
+      const item = await this.getCartItem(productId);
+      return item !== null;
+    } catch (error) {
+      console.error('Failed to check if product is in cart:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get product quantity in cart
+   * @param productId - Product ID to check
+   * @returns Promise with product quantity or 0
+   */
+  static async getProductQuantity(productId: string): Promise<number> {
+    try {
+      const item = await this.getCartItem(productId);
+      return item ? item.quantity : 0;
+    } catch (error) {
+      console.error('Failed to get product quantity in cart:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Clear entire cart
+   * @returns Promise with empty cart
+   */
+  static async clearCart(): Promise<Cart> {
+    try {
+      const cart = await this.getCart();
+      
+      // Remove all items one by one
+      for (const item of cart.items) {
+        await this.removeItem(item.product_id);
+      }
+      
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to clear cart:', error);
+      throw new Error('Failed to clear cart. Please try again later.');
+    }
+  }
+
+  /**
+   * Update multiple items at once
+   * @param updates - Array of product ID and quantity updates
+   * @returns Promise with updated cart
+   */
+  static async updateMultipleItems(updates: Array<{ productId: string; quantity: number }>): Promise<Cart> {
+    try {
+      for (const update of updates) {
+        await this.updateItemQuantity(update.productId, update.quantity);
+      }
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to update multiple cart items:', error);
+      throw new Error('Failed to update multiple cart items. Please try again later.');
+    }
+  }
+
+  // Utility methods
+  static formatPrice(price: number): string {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+    }).format(price);
+  }
+
+  static calculateTotalPrice(items: CartItem[]): number {
+    return items.reduce((total, item) => total + item.total_price, 0);
+  }
+
+  static calculateTotalItems(items: CartItem[]): number {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }
+
+  static hasItems(items: CartItem[]): boolean {
+    return items.length > 0;
+  }
+
+  static getItemByProductId(items: CartItem[], productId: string): CartItem | undefined {
+    return items.find(item => item.product_id === productId);
+  }
+
+  static validateQuantity(quantity: number): boolean {
+    return quantity > 0 && quantity <= 99;
+  }
+
+  static getItemSubtotal(price: number, quantity: number): number {
+    return price * quantity;
+  }
+}
+
+export default CartService; 

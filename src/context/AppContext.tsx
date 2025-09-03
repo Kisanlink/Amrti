@@ -3,24 +3,22 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 // Types
 export interface Product {
   id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
   name: string;
+  description: string;
   category: string;
   price: number;
-  originalPrice: number;
-  description: string;
-  longDescription: string;
-  image: string;
-  images: string[];
-  variants: ProductVariant[];
-  benefits: string[];
-  usage: string[];
-  ingredients: string;
-  nutrition: Record<string, string>;
-  certifications: string[];
+  actual_price: number;
+  discount_percent: number;
+  image_url: string;
+  stock: number;
+  stock_status: string;
+  review_count: number;
   rating: number;
-  reviews: number;
-  inStock: boolean;
-  featured: boolean;
+  is_active: boolean;
 }
 
 export interface ProductVariant {
@@ -32,20 +30,25 @@ export interface ProductVariant {
 
 export interface Recipe {
   id: string;
-  title: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  recipe_id: string;
+  name: string;
   category: string;
+  rating: number;
+  reviews: number;
   description: string;
-  prepTime: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  demo_description: string;
+  prep_time: string;
   servings: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
   image: string;
   ingredients: string[];
   instructions: string[];
-  benefits: string[];
-  nutrition: Record<string, string>;
-  featured: boolean;
-  rating: number;
-  reviews: number;
+  nutrition_facts: Record<string, string>;
+  pro_tips: string[];
 }
 
 export interface CartItem {
@@ -221,7 +224,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       }
       
       const cartTotal = newCart.reduce((total, item) => 
-        total + (item.product.variants[item.variantIndex].price * item.quantity), 0
+        total + (item.product.price * item.quantity), 0
       );
       const cartCount = newCart.reduce((count, item) => count + item.quantity, 0);
       
@@ -233,7 +236,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         !(item.productId === action.payload && item.variantIndex === 0)
       );
       const cartTotal = newCart.reduce((total, item) => 
-        total + (item.product.variants[item.variantIndex].price * item.quantity), 0
+        total + (item.product.price * item.quantity), 0
       );
       const cartCount = newCart.reduce((count, item) => count + item.quantity, 0);
       
@@ -248,7 +251,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       ).filter(item => item.quantity > 0);
       
       const cartTotal = newCart.reduce((total, item) => 
-        total + (item.product.variants[item.variantIndex].price * item.quantity), 0
+        total + (item.product.price * item.quantity), 0
       );
       const cartCount = newCart.reduce((count, item) => count + item.quantity, 0);
       

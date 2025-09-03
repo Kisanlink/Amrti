@@ -4,8 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import { useNotification } from '../context/NotificationContext';
-import { addToCart } from '../services/cartService';
-import { addToWishlist, removeFromWishlist, isInWishlist } from '../services/wishlistService';
+import CartService from '../services/cartService';
+import WishlistService from '../services/wishlistService';
 
 const MoringaProduct = () => {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ const MoringaProduct = () => {
   const handleAddToCart = () => {
     setIsAddingToCart(true);
     try {
-      addToCart(product.id, quantity, product);
+      CartService.addToCart(product.id, quantity, product);
       showNotification({
         type: 'success',
         message: `${product.name} added to cart successfully!`
@@ -52,14 +52,14 @@ const MoringaProduct = () => {
   const handleWishlistToggle = () => {
     setIsUpdatingWishlist(true);
     try {
-      if (isInWishlist(product.id)) {
-        removeFromWishlist(product.id);
+      if (WishlistService.isInWishlist(product.id)) {
+        WishlistService.removeFromWishlist(product.id);
         showNotification({
           type: 'success',
           message: `${product.name} removed from wishlist`
         });
       } else {
-        addToWishlist(product.id, product);
+        WishlistService.addToWishlist(product.id, product);
         showNotification({
           type: 'success',
           message: `${product.name} added to wishlist successfully!`

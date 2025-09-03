@@ -1,4 +1,4 @@
-import type { Product, Recipe, User, Order, CartItem } from '../context/AppContext';
+import type { Product, Recipe, User, Order } from '../context/AppContext';
 
 // Define Address interface locally to avoid import issues
 interface Address {
@@ -10,28 +10,41 @@ interface Address {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.amrti.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
 const API_VERSION = 'v1';
 
 // Request headers
-const getHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('authToken');
-  return {
-    'Content-Type': 'application/json',
+export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {
+  // Import AuthService dynamically to avoid circular dependencies
+  const { default: AuthService } = await import('./authService');
+  const token = await AuthService.getIdToken();
+  
+  const headers: HeadersInit = {
     ...(token && { Authorization: `Bearer ${token}` }),
   };
+  
+  // Only set Content-Type for JSON requests, not for FormData
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  return headers;
 };
 
 // Generic API request function
-const apiRequest = async <T>(
+export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
   const url = `${API_BASE_URL}/api/${API_VERSION}${endpoint}`;
   
   try {
+    // Check if the request body is FormData
+    const isFormData = options.body instanceof FormData;
+    const headers = await getHeaders(isFormData);
+    
     const response = await fetch(url, {
-      headers: getHeaders(),
+      headers,
       ...options,
     });
 
@@ -47,171 +60,82 @@ const apiRequest = async <T>(
   }
 };
 
-// ==================== PRODUCTS API ====================
-
-export interface ProductsResponse {
-  products: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-export interface ProductFilters {
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  inStock?: boolean;
-  featured?: boolean;
-  search?: string;
-  sortBy?: 'name' | 'price' | 'rating' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
-
-export const productsApi = {
-  // Get all products with filters
-  getProducts: async (filters: ProductFilters = {}): Promise<ProductsResponse> => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
-      }
-    });
-    
-    return apiRequest<ProductsResponse>(`/products?${params.toString()}`);
-  },
-
-  // Get featured products
-  getFeaturedProducts: async (): Promise<Product[]> => {
-    return apiRequest<Product[]>('/products/featured');
-  },
-
-  // Get product by ID
-  getProductById: async (id: string): Promise<Product> => {
-    return apiRequest<Product>(`/products/${id}`);
-  },
-
-  // Get products by category
-  getProductsByCategory: async (category: string): Promise<Product[]> => {
-    return apiRequest<Product[]>(`/products/category/${category}`);
-  },
-
-  // Search products
-  searchProducts: async (query: string): Promise<Product[]> => {
-    return apiRequest<Product[]>(`/products/search?q=${encodeURIComponent(query)}`);
-  },
-
-  // Get product categories
-  getProductCategories: async (): Promise<string[]> => {
-    return apiRequest<string[]>('/products/categories');
-  },
-
-  // Create product (Admin only)
-  createProduct: async (product: Omit<Product, 'id'>): Promise<Product> => {
-    return apiRequest<Product>('/products', {
-      method: 'POST',
-      body: JSON.stringify(product),
-    });
-  },
-
-  // Update product (Admin only)
-  updateProduct: async (id: string, product: Partial<Product>): Promise<Product> => {
-    return apiRequest<Product>(`/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(product),
-    });
-  },
-
-  // Delete product (Admin only)
-  deleteProduct: async (id: string): Promise<void> => {
-    return apiRequest<void>(`/products/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
 // ==================== RECIPES API ====================
 
 export interface RecipesResponse {
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+  };
   recipes: Recipe[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 
-export interface RecipeFilters {
-  category?: string;
-  difficulty?: 'Easy' | 'Medium' | 'Hard';
-  featured?: boolean;
-  search?: string;
-  sortBy?: 'title' | 'prepTime' | 'rating' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
+export interface RecipeDetailResponse {
+  recipe: Recipe;
 }
 
 export const recipesApi = {
-  // Get all recipes with filters
-  getRecipes: async (filters: RecipeFilters = {}): Promise<RecipesResponse> => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
-      }
-    });
-    
-    return apiRequest<RecipesResponse>(`/recipes?${params.toString()}`);
-  },
-
-  // Get featured recipes
-  getFeaturedRecipes: async (): Promise<Recipe[]> => {
-    return apiRequest<Recipe[]>('/recipes/featured');
-  },
-
-  // Get recipe by ID
-  getRecipeById: async (id: string): Promise<Recipe> => {
-    return apiRequest<Recipe>(`/recipes/${id}`);
+  // Get all recipes with pagination
+  getRecipes: async (page = 1, page_size = 10): Promise<RecipesResponse> => {
+    return apiRequest<RecipesResponse>(`/recipes?page=${page}&page_size=${page_size}`);
   },
 
   // Get recipes by category
-  getRecipesByCategory: async (category: string): Promise<Recipe[]> => {
-    return apiRequest<Recipe[]>(`/recipes/category/${category}`);
+  getRecipesByCategory: async (category: string, page = 1, page_size = 10): Promise<RecipesResponse> => {
+    return apiRequest<RecipesResponse>(`/recipes/category/${category}?page=${page}&page_size=${page_size}`);
   },
 
-  // Search recipes
-  searchRecipes: async (query: string): Promise<Recipe[]> => {
-    return apiRequest<Recipe[]>(`/recipes/search?q=${encodeURIComponent(query)}`);
+  // Get recipe by ID
+  getRecipeById: async (id: string): Promise<RecipeDetailResponse> => {
+    return apiRequest<RecipeDetailResponse>(`/recipes/${id}`);
+  },
+};
+
+// ==================== PRODUCTS API ====================
+
+export interface ProductsResponse {
+  success: boolean;
+  message: string;
+  data: Product[];
+  timestamp: string;
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+export interface ProductDetailResponse {
+  success: boolean;
+  message: string;
+  data: Product;
+  timestamp: string;
+}
+
+export const productsApi = {
+  // Get all products with pagination
+  getProducts: async (page = 1, per_page = 20): Promise<ProductsResponse> => {
+    return apiRequest<ProductsResponse>(`/products?page=${page}&per_page=${per_page}`);
   },
 
-  // Get recipe categories
-  getRecipeCategories: async (): Promise<string[]> => {
-    return apiRequest<string[]>('/recipes/categories');
+  // Get product by ID
+  getProductById: async (product_id: string): Promise<ProductDetailResponse> => {
+    return apiRequest<ProductDetailResponse>(`/products/${product_id}`);
   },
 
-  // Create recipe (Admin only)
-  createRecipe: async (recipe: Omit<Recipe, 'id'>): Promise<Recipe> => {
-    return apiRequest<Recipe>('/recipes', {
-      method: 'POST',
-      body: JSON.stringify(recipe),
-    });
+  // Get products by category
+  getProductsByCategory: async (category: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
+    return apiRequest<ProductsResponse>(`/products/category/${category}?page=${page}&per_page=${per_page}`);
   },
 
-  // Update recipe (Admin only)
-  updateRecipe: async (id: string, recipe: Partial<Recipe>): Promise<Recipe> => {
-    return apiRequest<Recipe>(`/recipes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(recipe),
-    });
-  },
-
-  // Delete recipe (Admin only)
-  deleteRecipe: async (id: string): Promise<void> => {
-    return apiRequest<void>(`/recipes/${id}`, {
-      method: 'DELETE',
-    });
+  // Search products
+  searchProducts: async (search_term: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
+    return apiRequest<ProductsResponse>(`/products/search?q=${encodeURIComponent(search_term)}&page=${page}&per_page=${per_page}`);
   },
 };
 
@@ -226,156 +150,278 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  phone?: string;
+}
+
+export interface GoogleOAuthRequest {
+  id_token: string;
+}
+
+export interface VerifyTokenRequest {
+  id_token: string;
+}
+
+export interface AuthTokens {
+  expires_in: string;
+  id_token: string;
+  refresh_token: string;
+}
+
+export interface AuthUser {
+  created_at: string | number;
+  email: string;
+  id: string;
+  is_active: boolean;
+  is_verified: boolean;
+  name: string;
+  uid: string;
+  email_verified?: boolean;
+  last_login?: number;
+  phone_number?: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  refreshToken: string;
+  success: boolean;
+  message: string;
+  data: {
+    message: string;
+    tokens: AuthTokens;
+    user: AuthUser;
+  };
+  timestamp: string;
+}
+
+export interface GoogleOAuthResponse {
+  google_oauth_setup: {
+    client_setup: string;
+    frontend_sdk: string;
+  };
+  instructions: {
+    step1: string;
+    step2: string;
+    step3: string;
+  };
+  message: string;
 }
 
 export const authApi = {
-  // Login user
-  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await apiRequest<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
+  // Verify token (for backend API calls when needed)
+  verifyToken: async (idToken: string): Promise<{ success: boolean; message: string }> => {
+    return apiRequest<{ success: boolean; message: string }>('/auth/verify-token', {
+      method: 'GET',
+      body: JSON.stringify({ id_token: idToken }),
     });
-    
-    // Store tokens
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    
-    return response;
   },
 
-  // Register user
-  register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    const response = await apiRequest<AuthResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-    
-    // Store tokens
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    
-    return response;
-  },
-
-  // Logout user
+  // Backend logout (if needed for server-side session management)
   logout: async (): Promise<void> => {
     try {
       await apiRequest<void>('/auth/logout', {
         method: 'POST',
       });
-    } finally {
-      // Clear tokens regardless of API response
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+    } catch (error) {
+      console.error('Backend logout failed:', error);
+      // Continue with local cleanup even if backend fails
     }
-  },
-
-  // Refresh token
-  refreshToken: async (): Promise<AuthResponse> => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await apiRequest<AuthResponse>('/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
-    
-    // Update tokens
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    
-    return response;
-  },
-
-  // Get current user
-  getCurrentUser: async (): Promise<User> => {
-    return apiRequest<User>('/auth/me');
-  },
-
-  // Update user profile
-  updateProfile: async (userData: Partial<User>): Promise<User> => {
-    return apiRequest<User>('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
-  },
-
-  // Change password
-  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    return apiRequest<void>('/auth/change-password', {
-      method: 'PUT',
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
-  },
-
-  // Forgot password
-  forgotPassword: async (email: string): Promise<void> => {
-    return apiRequest<void>('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  },
-
-  // Reset password
-  resetPassword: async (token: string, newPassword: string): Promise<void> => {
-    return apiRequest<void>('/auth/reset-password', {
-      method: 'PUT',
-      body: JSON.stringify({ token, newPassword }),
-    });
   },
 };
 
 // ==================== CART API ====================
 
-export interface CartResponse {
+export interface CartItem {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  cart_id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface Cart {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  user_id: string;
+  total_items: number;
+  total_price: number;
+  discount_amount: number;
   items: CartItem[];
-  total: number;
-  count: number;
+}
+
+export interface CartResponse {
+  data: {
+    cart: Cart;
+    discount_amount: number;
+    discounted_total: number;
+  };
+  message: string;
+  success: boolean;
+}
+
+export interface CartSummaryResponse {
+  data: {
+    user_id: string;
+    total_items: number;
+    total_price: number;
+    discount_amount: number;
+    discounted_total: number;
+    items_count: number;
+    last_updated: string;
+    has_expired: boolean;
+    expires_at: string;
+    is_from_cache: boolean;
+  };
+  message: string;
+  success: boolean;
+}
+
+export interface CartCountResponse {
+  data: {
+    item_count: number;
+  };
+  message: string;
+  success: boolean;
+}
+
+export interface CartValidationResponse {
+  data: {
+    cart: Cart;
+    cart_updated: boolean;
+    validation_issues: string[];
+  };
+  message: string;
+  success: boolean;
 }
 
 export const cartApi = {
-  // Get user's cart
+  // Add item to cart
+  addItem: async (productId: string, quantity: number): Promise<CartResponse> => {
+    return apiRequest<CartResponse>('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: productId, quantity }),
+    });
+  },
+
+  // Get cart
   getCart: async (): Promise<CartResponse> => {
     return apiRequest<CartResponse>('/cart');
   },
 
-  // Add item to cart
-  addToCart: async (productId: string, variantIndex: number, quantity: number): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart/add', {
-      method: 'POST',
-      body: JSON.stringify({ productId, variantIndex, quantity }),
-    });
-  },
-
   // Update cart item quantity
-  updateCartItem: async (productId: string, variantIndex: number, quantity: number): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart/update', {
+  updateItemQuantity: async (productId: string, quantity: number): Promise<CartResponse> => {
+    return apiRequest<CartResponse>('/cart', {
       method: 'PUT',
-      body: JSON.stringify({ productId, variantIndex, quantity }),
+      body: JSON.stringify({ 
+        product_id: productId, 
+        quantity: quantity 
+      }),
     });
   },
 
   // Remove item from cart
-  removeFromCart: async (productId: string, variantIndex: number): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart/remove', {
+  removeItem: async (productId: string): Promise<CartResponse> => {
+    return apiRequest<CartResponse>('/cart', {
       method: 'DELETE',
-      body: JSON.stringify({ productId, variantIndex }),
+      body: JSON.stringify({ product_id: productId }),
     });
   },
 
-  // Clear cart
-  clearCart: async (): Promise<void> => {
-    return apiRequest<void>('/cart/clear', {
+  // Increment item quantity
+  incrementItem: async (productId: string): Promise<CartResponse> => {
+    return apiRequest<CartResponse>('/cart', {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        product_id: productId, 
+        action: 'increment' 
+      }),
+    });
+  },
+
+  // Decrement item quantity
+  decrementItem: async (productId: string): Promise<CartResponse> => {
+    return apiRequest<CartResponse>('/cart', {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        product_id: productId, 
+        action: 'decrement' 
+      }),
+    });
+  },
+
+  // Get cart summary
+  getSummary: async (): Promise<CartSummaryResponse> => {
+    return apiRequest<CartSummaryResponse>('/cart/summary');
+  },
+
+  // Get cart item count
+  getCount: async (): Promise<CartCountResponse> => {
+    return apiRequest<CartCountResponse>('/cart/count');
+  },
+
+  // Validate cart
+  validate: async (): Promise<CartValidationResponse> => {
+    return apiRequest<CartValidationResponse>('/cart/validate');
+  },
+};
+
+// ==================== FAVORITES API ====================
+
+export interface Favorite {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  user_id: string;
+  product_id: string;
+  product?: Product;
+}
+
+export interface FavoritesResponse {
+  count: number;
+  favorites: Favorite[];
+  message: string;
+}
+
+export interface FavoriteCheckResponse {
+  is_favorite: boolean;
+  message: string;
+}
+
+export interface AddFavoriteResponse {
+  favorite: Favorite;
+  message: string;
+}
+
+export const favoritesApi = {
+  // Check if product is in favorites
+  checkFavorite: async (productId: string): Promise<FavoriteCheckResponse> => {
+    return apiRequest<FavoriteCheckResponse>(`/favorites/check/${productId}`);
+  },
+
+  // Add to favorites
+  addToFavorites: async (productId: string): Promise<AddFavoriteResponse> => {
+    return apiRequest<AddFavoriteResponse>('/favorites', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: productId }),
+    });
+  },
+
+  // Get user favorites
+  getFavorites: async (): Promise<FavoritesResponse> => {
+    return apiRequest<FavoritesResponse>('/favorites');
+  },
+
+  // Remove from favorites
+  removeFromFavorites: async (productId: string): Promise<{ message: string }> => {
+    return apiRequest<{ message: string }>('/favorites', {
       method: 'DELETE',
+      body: JSON.stringify({ product_id: productId }),
     });
   },
 };
@@ -430,6 +476,98 @@ export const ordersApi = {
   // Get order status
   getOrderStatus: async (id: string): Promise<{ status: Order['status'] }> => {
     return apiRequest<{ status: Order['status'] }>(`/orders/${id}/status`);
+  },
+};
+
+// ==================== PROFILE API ====================
+
+export interface UserProfile {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string | null;
+  gender: string;
+  address_line_1: string;
+  address_line_2: string;
+  city: string;
+  state: string;
+  country: string;
+  pincode: string;
+  profile_picture_url: string;
+  profile_picture_s3_key: string;
+  bio: string;
+  newsletter_subscribed: boolean;
+  preferred_language: string;
+  is_active: boolean;
+  is_verified: boolean;
+}
+
+export interface ProfileResponse {
+  data: UserProfile;
+  message: string;
+}
+
+export interface ProfileUpdateRequest {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  date_of_birth?: string;
+  gender?: string;
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  bio?: string;
+  newsletter_subscribed?: boolean;
+  preferred_language?: string;
+}
+
+export interface ProfileImageResponse {
+  data: UserProfile;
+  image_url: string;
+  message: string;
+  s3_key: string;
+}
+
+export const profileApi = {
+  // Auto-fill profile (first time setup)
+  autoFillProfile: async (): Promise<ProfileResponse> => {
+    return apiRequest<ProfileResponse>('/profiles/auto', {
+      method: 'POST',
+    });
+  },
+
+  // Get user profile
+  getProfile: async (): Promise<ProfileResponse> => {
+    return apiRequest<ProfileResponse>('/profiles');
+  },
+
+  // Update user profile
+  updateProfile: async (profileData: ProfileUpdateRequest): Promise<ProfileResponse> => {
+    return apiRequest<ProfileResponse>('/profiles', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  },
+
+  // Upload profile picture
+  uploadProfileImage: async (imageFile: File): Promise<ProfileImageResponse> => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    return apiRequest<ProfileImageResponse>('/profiles/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
   },
 };
 
@@ -539,110 +677,14 @@ export const utilityApi = {
   },
 };
 
-// ==================== MOCK DATA FOR DEVELOPMENT ====================
-
-// This section contains mock data that can be used during development
-// Replace these with actual API calls when backend is ready
-
-export const mockProducts: Product[] = [
-  {
-    id: '65b4e0f56d5fdf8013a98d53',
-    name: 'Turmeric Powder',
-    category: 'Natural Powders',
-    price: 299,
-    originalPrice: 399,
-    description: 'Pure organic turmeric powder with high curcumin content',
-    longDescription: 'Our premium turmeric powder is sourced from the finest organic farms and contains high levels of curcumin, the active compound responsible for turmeric\'s powerful anti-inflammatory and antioxidant properties.',
-    image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=500&h=500&fit=crop',
-    images: [
-      'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=500&h=500&fit=crop',
-      'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&h=500&fit=crop',
-    ],
-    variants: [
-      { size: '100g', price: 299, originalPrice: 399, stock: 50 },
-      { size: '250g', price: 699, originalPrice: 899, stock: 30 },
-      { size: '500g', price: 1299, originalPrice: 1699, stock: 20 }
-    ],
-    benefits: [
-      'High curcumin content for maximum potency',
-      'Natural anti-inflammatory properties',
-      'Rich in antioxidants',
-      'Supports joint health',
-      'Boosts immune system',
-      'Aids digestion'
-    ],
-    usage: [
-      'Add 1 tsp to warm milk for golden milk',
-      'Use in cooking curries and soups',
-      'Mix with honey for face mask',
-      'Blend in smoothies'
-    ],
-    ingredients: '100% Organic Turmeric (Curcuma longa)',
-    nutrition: {
-      'Curcumin': '3-5%',
-      'Fiber': '22g per 100g',
-      'Iron': '41mg per 100g',
-      'Potassium': '2525mg per 100g'
-    },
-    certifications: ['Organic', 'Non-GMO', 'Gluten-Free', 'Vegan'],
-    rating: 4.8,
-    reviews: 156,
-    inStock: true,
-    featured: true
-  },
-  // Add more mock products here...
-];
-
-export const mockRecipes: Recipe[] = [
-  {
-    id: 'recipe-1',
-    title: 'Golden Milk with Turmeric',
-    category: 'Beverages',
-    description: 'A warming and healing drink perfect for cold evenings',
-    prepTime: '5 minutes',
-    difficulty: 'Easy',
-    servings: 2,
-    image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&h=500&fit=crop',
-    ingredients: [
-      '2 cups milk (dairy or plant-based)',
-      '1 tsp Amrti Turmeric Powder',
-      '1/2 tsp ground cinnamon',
-      '1/4 tsp ground ginger',
-      '1 tbsp honey or maple syrup',
-      'Pinch of black pepper'
-    ],
-    instructions: [
-      'Heat milk in a saucepan over medium heat',
-      'Add turmeric, cinnamon, ginger, and black pepper',
-      'Whisk until well combined and heated through',
-      'Stir in honey or maple syrup to taste',
-      'Pour into mugs and enjoy warm'
-    ],
-    benefits: [
-      'Anti-inflammatory properties',
-      'Boosts immunity',
-      'Aids digestion',
-      'Promotes better sleep'
-    ],
-    nutrition: {
-      'Calories': '120 per serving',
-      'Protein': '8g',
-      'Fat': '5g',
-      'Carbohydrates': '12g'
-    },
-    featured: true,
-    rating: 4.9,
-    reviews: 89
-  },
-  // Add more mock recipes here...
-];
-
 // Export all APIs
 export default {
   products: productsApi,
   recipes: recipesApi,
   auth: authApi,
   cart: cartApi,
+  favorites: favoritesApi,
+  profile: profileApi,
   orders: ordersApi,
   payment: paymentApi,
   utility: utilityApi,

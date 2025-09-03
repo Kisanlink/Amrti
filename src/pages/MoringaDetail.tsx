@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import { useNotification } from '../context/NotificationContext';
-import { addToCart } from '../services/cartService';
-import { addToWishlist, removeFromWishlist, isInWishlist } from '../services/wishlistService';
+import CartService from '../services/cartService';
+import WishlistService from '../services/wishlistService';
 
 const MoringaDetail = () => {
   const { showNotification } = useNotification();
@@ -35,7 +35,7 @@ const MoringaDetail = () => {
   const handleAddToCart = () => {
     setIsAddingToCart(true);
     try {
-      addToCart(product.id, quantity, product);
+      CartService.addToCart(product.id, quantity, product);
       showNotification({
         type: 'success',
         message: `${product.name} added to cart successfully!`
