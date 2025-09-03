@@ -40,6 +40,7 @@ function App() {
                 <Route path="/products" element={<Products />} />
                 <Route path="/products/:id" element={<ProductDetail />} />
                 <Route path="/moringa" element={<MoringaProduct />} />
+                <Route path="/product/moringa/101" element={<MoringaProduct />} />
                 <Route path="/recipes" element={<Recipes />} />
                 <Route path="/recipes/:id" element={<RecipeDetail />} />
                 <Route path="/cart" element={<Cart />} />
