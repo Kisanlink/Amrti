@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, RotateCcw, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
 import type { Cart as CartType } from '../services/cartService';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const [cart, setCart] = useState<CartType>({ 
     id: '', 
     created_at: '', 
@@ -333,7 +334,10 @@ const Cart = () => {
               </div>
 
               {/* Checkout Button */}
-              <button className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 rounded-lg transition-all duration-300 mb-4">
+              <button 
+                onClick={() => navigate('/checkout')}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 rounded-lg transition-all duration-300 mb-4"
+              >
                 PROCEED TO CHECKOUT
               </button>
 

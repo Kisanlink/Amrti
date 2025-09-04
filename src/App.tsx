@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/layout/Navbar';
@@ -12,6 +13,8 @@ import Recipes from './pages/Recipes';
 import RecipeDetail from './pages/RecipeDetail';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
+import Checkout from './pages/Checkout';
+import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -24,9 +27,33 @@ import Shipping from './pages/Shipping';
 import Returns from './pages/Returns';
 import CancellationRefund from './pages/CancellationRefund';
 import ScrollToTop from './components/ui/ScrollToTop';
+import LoginRequiredModal from './components/ui/LoginRequiredModal';
 import './index.css';
 
 function App() {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalData, setLoginModalData] = useState({
+    message: 'Please login to continue',
+    redirectUrl: '/'
+  });
+
+  // Listen for login required events
+  useEffect(() => {
+    const handleLoginRequired = (event: CustomEvent) => {
+      setLoginModalData({
+        message: event.detail.message || 'Please login to continue',
+        redirectUrl: event.detail.redirectUrl || window.location.pathname
+      });
+      setShowLoginModal(true);
+    };
+
+    window.addEventListener('loginRequired', handleLoginRequired as EventListener);
+    
+    return () => {
+      window.removeEventListener('loginRequired', handleLoginRequired as EventListener);
+    };
+  }, []);
+
   return (
     <AppProvider>
       <NotificationProvider>
@@ -46,6 +73,8 @@ function App() {
                 <Route path="/recipes/:id" element={<RecipeDetail />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders/:orderId" element={<Orders />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -61,6 +90,14 @@ function App() {
             </main>
             <Footer />
           </div>
+          
+          {/* Login Required Modal */}
+          <LoginRequiredModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+            message={loginModalData.message}
+            redirectUrl={loginModalData.redirectUrl}
+          />
         </Router>
       </NotificationProvider>
     </AppProvider>

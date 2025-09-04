@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, User, Lock, ArrowLeft, UserPlus, Mail } from 'lucide-react';
 import AuthService from '../services/authService';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,9 @@ const Signup = () => {
     password: '',
     confirmPassword: ''
   });
+
+  // Get redirect URL from location state or default to home
+  const from = (location.state as any)?.from || '/';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,7 +47,7 @@ const Signup = () => {
 
     try {
       await AuthService.signup(formData);
-      navigate('/');
+      navigate(from);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       console.error('Registration failed:', err);

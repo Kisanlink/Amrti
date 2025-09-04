@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingCart, User, Search, Heart, LogOut } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2 } from 'lucide-react';
 import CartService from '../../services/cartService';
 import WishlistService from '../../services/wishlistService';
 import AuthService, { AuthUser } from '../../services/authService';
@@ -17,8 +17,18 @@ const Navbar = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  
   const location = useLocation();
+  const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Load user and authentication state on mount
   useEffect(() => {
@@ -45,6 +55,32 @@ const Navbar = () => {
     };
     
     loadInitialData();
+  }, []);
+
+  // Listen to authentication state changes
+  useEffect(() => {
+    const handleUserLogin = (event: CustomEvent) => {
+      const currentUser = AuthService.getCurrentUser();
+    setUser(currentUser);
+      setAuthenticated(true);
+    };
+
+    const handleUserLogout = () => {
+      setUser(null);
+      setAuthenticated(false);
+      setCartCount(0);
+      setWishlistCount(0);
+    };
+
+    // Add event listeners
+    window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
+    window.addEventListener('userLoggedOut', handleUserLogout);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
+      window.removeEventListener('userLoggedOut', handleUserLogout);
+    };
   }, []);
 
   // Update cart and wishlist counts periodically
@@ -90,11 +126,94 @@ const Navbar = () => {
       if (showUserMenu && !(event.target as Element).closest('.user-menu')) {
         setShowUserMenu(false);
       }
+      if (showSearch && !searchRef.current?.contains(event.target as Element)) {
+        setShowSearch(false);
+        setShowSearchResults(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showUserMenu]);
+  }, [showUserMenu, showSearch]);
+
+  // Search functionality
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Import the API service dynamically to avoid circular dependencies
+      const { apiRequest } = await import('../../services/api');
+      const response = await apiRequest<any>(`/products/search?q=${encodeURIComponent(query)}`);
+      
+      // Log the response to debug
+      console.log('Search response:', response);
+      
+      // Extract products from the correct path in the response
+      let products = [];
+      if (response.data && Array.isArray(response.data)) {
+        products = response.data;
+      } else if (response.products && Array.isArray(response.products)) {
+        products = response.products;
+      } else if (Array.isArray(response)) {
+        products = response;
+      }
+      
+      console.log('Extracted products:', products);
+      setSearchResults(products);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.trim()) {
+      // Debounce search
+      const timeoutId = setTimeout(() => {
+        handleSearch(query);
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
+
+  const handleSearchResultClick = (productId: string) => {
+    setShowSearch(false);
+    setShowSearchResults(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    navigate(`/product/${productId}`);
+  };
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false);
+        setShowSearchResults(false);
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch]);
 
   const navItems = [
     { name: 'Home', path: '/' },
@@ -157,9 +276,90 @@ const Navbar = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-                          <button className="p-2 text-russet-700 hover:text-green-600 transition-colors">
+            {/* Search */}
+            <div className="relative" ref={searchRef}>
+              {showSearch ? (
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchInputChange}
+                      placeholder="Search products..."
+                      className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      autoFocus
+                    />
+                    {isSearching && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-spin text-gray-400" size={16} />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowSearch(false);
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                    className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowSearch(true)}
+                  className="p-2 text-russet-700 hover:text-green-600 transition-colors"
+                >
               <Search size={20} />
             </button>
+              )}
+              
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {showSearchResults && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto"
+                  >
+                    {searchResults.length > 0 ? (
+                      searchResults.map((product) => (
+                        <div
+                          key={product.id}
+                          onClick={() => handleSearchResultClick(product.id)}
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                            {product.image_url ? (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                            <p className="text-xs text-gray-500 truncate">{product.category}</p>
+                            <p className="text-sm font-semibold text-green-600">₹{product.price}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-6 text-center text-gray-500">
+                        <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">No products found</p>
+                        <p className="text-xs">Try a different search term</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             
             {/* Wishlist */}
                           <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors relative">
@@ -295,10 +495,87 @@ const Navbar = () => {
                   </Link>
                 ))}
                 <div className="pt-4 border-t border-black-200 space-y-2">
-                  <button className="flex items-center space-x-2 w-full py-3 px-2 text-gray-600 hover:text-green-600 hover:bg-beige-200 transition-colors rounded-lg">
+                  {/* Mobile Search */}
+                  <div className="px-2">
+                    {showSearch ? (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearchInputChange}
+                            placeholder="Search products..."
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                            autoFocus
+                          />
+                          {isSearching && (
+                            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-spin text-gray-400" size={16} />
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowSearch(false);
+                            setShowSearchResults(false);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                          }}
+                          className="w-full py-2 px-4 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowSearch(true)}
+                        className="flex items-center space-x-2 w-full py-3 px-2 text-gray-600 hover:text-green-600 hover:bg-beige-200 transition-colors rounded-lg"
+                      >
                     <Search size={20} />
                     <span>Search</span>
                   </button>
+                    )}
+                    
+                    {/* Mobile Search Results */}
+                    {showSearchResults && (
+                      <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
+                        {searchResults.length > 0 ? (
+                          searchResults.map((product) => (
+                            <div
+                              key={product.id}
+                              onClick={() => {
+                                handleSearchResultClick(product.id);
+                                setIsOpen(false);
+                              }}
+                              className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                            >
+                              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                {product.image_url ? (
+                                  <img
+                                    src={product.image_url}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover rounded-lg"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500 truncate">{product.category}</p>
+                                <p className="text-sm font-semibold text-green-600">₹{product.price}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-gray-500">
+                            <Search className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No products found</p>
+                            <p className="text-xs">Try a different search term</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Wishlist */}
                   <Link 
@@ -345,13 +622,13 @@ const Navbar = () => {
                         <User size={20} />
                         <span>My Orders</span>
                       </Link>
-                                              <button 
-                          onClick={() => {
+                      <button 
+                        onClick={() => {
                             AuthService.logout();
-                            setUser(null);
-                            setAuthenticated(false);
-                            setIsOpen(false);
-                          }}
+                          setUser(null);
+                          setAuthenticated(false);
+                          setIsOpen(false);
+                        }}
                         className="flex items-center space-x-2 w-full py-2 text-red-600 hover:text-red-700 transition-colors"
                       >
                         <LogOut size={20} />

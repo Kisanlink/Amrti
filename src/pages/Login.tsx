@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, User, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award } from 'lucide-react';
 import AuthService from '../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +14,9 @@ const Login = () => {
     email: '',
     password: ''
   });
+
+  // Get redirect URL from location state or default to home
+  const from = (location.state as any)?.from || '/';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,7 +31,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.username || !formData.password) {
+    if (!formData.email || !formData.password) {
       return;
     }
 
@@ -35,8 +39,8 @@ const Login = () => {
     setError(null);
 
     try {
-      await AuthService.login({ email: formData.username, password: formData.password });
-      navigate('/'); // Redirect to home page after successful login
+      await AuthService.login({ email: formData.email, password: formData.password });
+      navigate(from); // Redirect to the page they were trying to access
     } catch (err: any) {
       setError(err.message || 'Login failed');
       console.error('Login failed:', err);
@@ -97,24 +101,24 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
+            {/* Email Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Username
+              <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-black-400" />
                 </div>
                 <input
-                  id="username"
-                  name="username"
-                  type="text"
+                  id="email"
+                  name="email"
+                  type="email"
                   required
-                  value={formData.username}
+                  value={formData.email}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
@@ -176,7 +180,7 @@ const Login = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || !formData.username || !formData.password}
+              disabled={loading || !formData.email || !formData.password}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {loading ? (
@@ -193,14 +197,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800 font-semibold mb-2">Demo Credentials:</p>
-            <p className="text-xs text-green-700">
-              Username: <span className="font-mono">demo</span><br />
-              Password: <span className="font-mono">password</span>
-            </p>
-          </div>
+
         </motion.div>
 
         {/* Sign Up Link */}

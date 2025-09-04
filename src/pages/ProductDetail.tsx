@@ -13,6 +13,7 @@ const ProductDetail = () => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -21,7 +22,7 @@ const ProductDetail = () => {
     benefits: false,
     storage: false
   });
-  const [selectedSize, setSelectedSize] = useState('100g');
+
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
@@ -37,6 +38,7 @@ const ProductDetail = () => {
     const loadProduct = async () => {
       if (id) {
         try {
+          setLoading(true);
           const productData = await ProductService.getProductById(id);
           setProduct(productData);
           
@@ -59,18 +61,34 @@ const ProductDetail = () => {
         } catch (error) {
           console.error('Failed to load product:', error);
           setProduct(null);
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     
     loadProduct();
   }, [id]);
 
+  if (loading) {
+    return (
+      <div className="pt-20 bg-beige-300 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="pt-20 bg-beige-300 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-heading font-bold text-black-900 mb-4">Product Not Found</h1>
+          <p className="text-gray-600 mb-4">The product you are looking for could not be found.</p>
           <Link to="/products" className="text-green-600 hover:text-green-700 font-semibold">
             ← Back to Products
           </Link>
@@ -79,7 +97,7 @@ const ProductDetail = () => {
     );
   }
 
-  // For now, use basic product data since the service doesn't have variants
+  // Fixed 100g variant
   const currentVariant = { size: '100g', price: product.price, originalPrice: product.originalPrice };
   const discount = Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100);
 
@@ -112,41 +130,61 @@ const ProductDetail = () => {
                  <div className="flex sm:flex-col gap-3">
                    <div className="relative overflow-hidden rounded-lg bg-white p-2 border-2 border-green-600 shadow-md w-16 h-16 sm:w-20 sm:h-20">
                      <img 
-                       src={product.image} 
+                       src={product.image_url} 
                        alt={product.name} 
                        className="w-full h-full object-contain" 
+                       onError={(e) => {
+                         console.error('Failed to load thumbnail image:', product.image_url);
+                         e.currentTarget.style.display = 'none';
+                       }}
                      />
                    </div>
                    
                    <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
                      <img 
-                       src={product.image} 
+                       src={product.image_url} 
                        alt={product.name} 
                        className="w-full h-full object-contain" 
+                       onError={(e) => {
+                         console.error('Failed to load thumbnail image:', product.image_url);
+                         e.currentTarget.style.display = 'none';
+                       }}
                      />
                    </div>
                    
                    <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
                      <img 
-                       src={product.image} 
+                       src={product.image_url} 
                        alt={product.name} 
                        className="w-full h-full object-contain" 
+                       onError={(e) => {
+                         console.error('Failed to load thumbnail image:', product.image_url);
+                         e.currentTarget.style.display = 'none';
+                       }}
                      />
                    </div>
                    
                    <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
                      <img 
-                       src={product.image} 
+                       src={product.image_url} 
                        alt={product.name} 
                        className="w-full h-full object-contain" 
+                       onError={(e) => {
+                         console.error('Failed to load thumbnail image:', product.image_url);
+                         e.currentTarget.style.display = 'none';
+                       }}
                      />
                    </div>
                    
                    <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
                      <img 
-                       src={product.image} 
+                       src={product.image_url} 
                        alt={product.name} 
                        className="w-full h-full object-contain" 
+                       onError={(e) => {
+                         console.error('Failed to load thumbnail image:', product.image_url);
+                         e.currentTarget.style.display = 'none';
+                       }}
                      />
                    </div>
                  </div>
@@ -156,9 +194,13 @@ const ProductDetail = () => {
                <div className="flex-1">
                  <div className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square sm:h-full">
                 <img 
-                  src={product.image} 
+                  src={product.image_url} 
                   alt={product.name} 
-                     className="w-full h-full object-contain p-4" 
+                  className="w-full h-full object-contain p-4" 
+                  onError={(e) => {
+                    console.error('Failed to load product image:', product.image_url);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
                 {discount > 0 && (
                      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-bold">
@@ -212,40 +254,11 @@ const ProductDetail = () => {
                 <p className="text-xs sm:text-sm text-black-600">Inclusive of all taxes</p>
               </div>
 
-                {/* Size Options */}
+                {/* Size Display - Fixed 100g */}
                 <div className="space-y-3">
-                  <h3 className="font-heading font-semibold text-black-900 text-sm sm:text-base">Select Size:</h3>
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
-                  <button
-                      onClick={() => setSelectedSize('100g')}
-                      className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg border-2 font-semibold transition-all duration-300 text-sm sm:text-base ${
-                        selectedSize === '100g' 
-                          ? 'border-green-600 bg-green-600 text-white' 
-                          : 'border-gray-300 text-black-700 hover:border-green-600'
-                      }`}
-                  >
+                  <h3 className="font-heading font-semibold text-black-900 text-sm sm:text-base">Size:</h3>
+                  <div className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg border-2 border-green-600 bg-green-600 text-white font-semibold text-sm sm:text-base w-fit">
                     100g
-                  </button>
-                    <button 
-                      onClick={() => setSelectedSize('250g')}
-                      className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg border-2 font-semibold transition-all duration-300 text-sm sm:text-base ${
-                        selectedSize === '250g' 
-                          ? 'border-green-600 bg-green-600 text-white' 
-                          : 'border-gray-300 text-black-700 hover:border-green-600'
-                      }`}
-                    >
-                      250g
-                    </button>
-                    <button 
-                      onClick={() => setSelectedSize('500g')}
-                      className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg border-2 font-semibold transition-all duration-300 text-sm sm:text-base ${
-                        selectedSize === '500g' 
-                          ? 'border-green-600 bg-green-600 text-white' 
-                          : 'border-gray-300 text-black-700 hover:border-green-600'
-                      }`}
-                    >
-                      500g
-                    </button>
                   </div>
                 </div>
 
@@ -309,9 +322,7 @@ const ProductDetail = () => {
                     )}
                   </button>
                   
-                  <button className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-semibold py-3 sm:py-4 rounded-lg transition-all duration-300 text-sm sm:text-base">
-                    BUY NOW
-                  </button>
+
                 </div>
 
 
@@ -711,9 +722,13 @@ const ProductDetail = () => {
                       <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
                         <div className="relative overflow-hidden flex-shrink-0">
                           <img
-                            src={suggestedProduct.image}
+                            src={suggestedProduct.image_url}
                             alt={suggestedProduct.name}
                             className="w-full h-48 object-contain group-hover:scale-105 transition-transform duration-300 p-4"
+                            onError={(e) => {
+                              console.error('Failed to load suggested product image:', suggestedProduct.image_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                           {suggestedProduct.originalPrice > suggestedProduct.price && (
                             <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
@@ -787,10 +802,10 @@ const ProductDetail = () => {
                   </motion.span>
                 </Link>
               </motion.div>
-        </div>
-      </section>
+            </div>
+          </section>
         )}
-          </div>
+      </div>
 
       {/* Review Modal */}
       {showReviewModal && (
