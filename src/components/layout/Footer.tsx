@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { productsApi } from '../../services/api';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const footerLinks = {
     company: [
       { name: 'About Us', path: '/about' },
-    ],
-    products: [
-      { name: 'Powders', path: '/products' },
-    ],
-    Recipes: [
-      { name: 'Recipes', path: '/recipes' },
     ],
     support: [
       { name: 'Privacy Policy', path: '/privacy' },
@@ -26,15 +24,33 @@ const Footer = () => {
   };
 
   const socialLinks = [
-
     { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/amrti.foods/' },
   ];
+
+  // Fetch products for footer
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await productsApi.getProducts(1, 20); // Get first 20 products
+        if (response.data && Array.isArray(response.data)) {
+          setProducts(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch products for footer:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <footer className="bg-russet-900 text-white">
       <div className="container-custom">
         <div className="section-padding">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Company Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -98,18 +114,55 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-                             <h4 className="text-lg font-heading font-bold mb-4">Products</h4>
+              <h4 className="text-lg font-heading font-bold mb-4">Products</h4>
+              {loading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, index) => (
+                    <div key={index} className="h-4 bg-gray-700 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {products.slice(0, 8).map((product) => (
+                    <li key={product.id}>
+                      <Link
+                        to={`/product/${product.id}`}
+                        className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+                      >
+                        {product.name}
+                      </Link>
+                    </li>
+                  ))}
+                  {products.length > 8 && (
+                    <li>
+                      <Link
+                        to="/products"
+                        className="text-green-400 hover:text-green-300 transition-colors duration-200 text-sm font-medium"
+                      >
+                        View All Products →
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </motion.div>
+
+            {/* Recipes Links */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+            >
+              <h4 className="text-lg font-heading font-bold mb-4">Recipes</h4>
               <ul className="space-y-2">
-                {footerLinks.products.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      to={link.path}
-                      className="text-gray-300 hover:text-white transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
+                <li>
+                  <Link
+                    to="/recipes"
+                    className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+                  >
+                    All Recipes
+                  </Link>
+                </li>
               </ul>
             </motion.div>
 

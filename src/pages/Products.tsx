@@ -17,6 +17,7 @@ const Products = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(false);
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const [filters, setFilters] = useState({
     priceRange: [0, 2000],
@@ -189,13 +190,25 @@ const Products = () => {
             </p>
           </motion.div>
 
-            {/* Mobile Filter Button */}
-            <button
-              onClick={() => setShowSidebar(true)}
-              className="lg:hidden p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Filter className="w-5 h-5" />
-            </button>
+            {/* Filter Buttons */}
+            <div className="flex gap-3">
+              {/* Desktop Filter Button */}
+              <button
+                onClick={() => setShowDesktopSidebar(!showDesktopSidebar)}
+                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="font-medium">Filters</span>
+              </button>
+              
+              {/* Mobile Filter Button */}
+              <button
+                onClick={() => setShowSidebar(true)}
+                className="lg:hidden p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Filter className="w-5 h-5" />
+              </button>
+            </div>
                     </div>
 
           {/* Filter Summary */}
@@ -224,45 +237,72 @@ const Products = () => {
           {/* Products Grid */}
           <div className="flex gap-6 lg:gap-8">
             {/* Sidebar - Desktop */}
-            <div className="hidden lg:block w-64 flex-shrink-0">
+            {showDesktopSidebar && (
+              <div className="hidden lg:block w-64 flex-shrink-0">
               <div className="sticky top-24 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-                <h3 className="text-lg font-heading font-bold text-black-900 mb-6 flex items-center">
-                  <Sliders className="w-5 h-5 mr-2" />
-                  Filters
-                    </h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-heading font-bold text-black-900 flex items-center">
+                    <Sliders className="w-5 h-5 mr-2" />
+                    Filters
+                  </h3>
+                  <button
+                    onClick={() => setShowDesktopSidebar(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Close Filters"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
                 
                 {/* Price Range */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-black-900 mb-3">Price Range</h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm text-black-600">
-                      <span>₹{filters.priceRange[0]}</span>
-                      <span>₹{filters.priceRange[1]}</span>
+                    {/* Clear Min/Max Labels */}
+                    <div className="flex justify-between text-sm font-medium text-gray-700">
+                      <span>Min: ₹{filters.priceRange[0]}</span>
+                      <span>Max: ₹{filters.priceRange[1]}</span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="2000"
-                      value={filters.priceRange[1]}
-                      onChange={(e) => setFilters(prev => ({
-                        ...prev,
-                        priceRange: [prev.priceRange[0], parseInt(e.target.value)]
-                      }))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="2000"
-                      value={filters.priceRange[0]}
-                      onChange={(e) => setFilters(prev => ({
-                        ...prev,
-                        priceRange: [parseInt(e.target.value), prev.priceRange[1]]
-                      }))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                      </div>
+                    
+                    {/* Simple Range Slider */}
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="2000"
+                        value={filters.priceRange[0]}
+                        onChange={(e) => {
+                          const value = Math.min(parseInt(e.target.value), filters.priceRange[1]);
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [value, prev.priceRange[1]]
+                          }));
+                        }}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="2000"
+                        value={filters.priceRange[1]}
+                        onChange={(e) => {
+                          const value = Math.max(parseInt(e.target.value), filters.priceRange[0]);
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [prev.priceRange[0], value]
+                          }));
+                        }}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      />
                     </div>
+                    
+                    {/* Range Labels */}
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>₹0</span>
+                      <span>₹2000</span>
+                    </div>
+                  </div>
+                </div>
                     
                 {/* Availability */}
                 <div className="mb-6">
@@ -340,7 +380,8 @@ const Products = () => {
                   </select>
                 </div>
               </div>
-          </div>
+              </div>
+            )}
 
             {/* Products Grid */}
             <div className="flex-1">
@@ -360,7 +401,7 @@ const Products = () => {
                   whileHover={{ y: -5 }}
                   className="group cursor-pointer"
                 >
-                  <div className="overflow-hidden rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                  <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
                         src={product.image_url}
@@ -368,9 +409,9 @@ const Products = () => {
                         className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ maxHeight: '200px' }}
                       />
-                      <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
+                      {/* <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
                         {product.category}
-                      </div>
+                      </div> */}
                                   {product.actual_price > product.price && (
               <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
                 {Math.round(((product.actual_price - product.price) / product.actual_price) * 100)}% OFF
@@ -584,32 +625,49 @@ const Products = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-black-900 mb-3">Price Range</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-black-600">
-                    <span>₹{filters.priceRange[0]}</span>
-                    <span>₹{filters.priceRange[1]}</span>
+                  {/* Clear Min/Max Labels */}
+                  <div className="flex justify-between text-sm font-medium text-gray-700">
+                    <span>Min: ₹{filters.priceRange[0]}</span>
+                    <span>Max: ₹{filters.priceRange[1]}</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2000"
-                    value={filters.priceRange[1]}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      priceRange: [prev.priceRange[0], parseInt(e.target.value)]
-                    }))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="2000"
-                    value={filters.priceRange[0]}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      priceRange: [parseInt(e.target.value), prev.priceRange[1]]
-                    }))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
+                  
+                  {/* Simple Range Slider */}
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="2000"
+                      value={filters.priceRange[0]}
+                      onChange={(e) => {
+                        const value = Math.min(parseInt(e.target.value), filters.priceRange[1]);
+                        setFilters(prev => ({
+                          ...prev,
+                          priceRange: [value, prev.priceRange[1]]
+                        }));
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="2000"
+                      value={filters.priceRange[1]}
+                      onChange={(e) => {
+                        const value = Math.max(parseInt(e.target.value), filters.priceRange[0]);
+                        setFilters(prev => ({
+                          ...prev,
+                          priceRange: [prev.priceRange[0], value]
+                        }));
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  
+                  {/* Range Labels */}
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>₹0</span>
+                    <span>₹2000</span>
+                  </div>
                 </div>
               </div>
 

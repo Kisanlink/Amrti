@@ -150,7 +150,7 @@ const Wishlist = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Wishlist Items */}
           <div className="lg:col-span-3">
-            <div className="bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-heading font-bold text-black-900">
                   Wishlist Items
@@ -252,7 +252,7 @@ const Wishlist = () => {
 
           {/* Wishlist Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6 sticky top-24">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6 sticky top-24">
               <h2 className="text-2xl font-heading font-bold text-black-900 mb-6">
                 Wishlist Summary
               </h2>
@@ -331,7 +331,7 @@ const Wishlist = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Add recommended products here */}
-            <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl p-4 text-center">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-xl p-4 text-center">
               <div className="w-16 h-16 bg-green-100 rounded-lg mx-auto mb-3 flex items-center justify-center">
                 <Plus className="w-8 h-8 text-green-600" />
               </div>

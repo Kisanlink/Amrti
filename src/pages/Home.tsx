@@ -83,7 +83,7 @@ const Home = () => {
         <TestimonialsSection />
         
         {/* Call to Action Section - Final Conversion */}
-        <motion.section 
+        {/* <motion.section 
           className="py-16 sm:py-20 bg-gradient-to-br from-beige-100 via-beige-200 to-beige-300"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -144,7 +144,7 @@ const Home = () => {
             </div>
           </motion.div>
         </div>
-      </motion.section>
+      </motion.section> */}
     </div>
     </>
   );

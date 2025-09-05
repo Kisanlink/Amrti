@@ -5,6 +5,98 @@ import { useState, useEffect } from 'react';
 import RecipeService from '../services/recipeService';
 import type { Recipe } from '../context/AppContext';
 
+// Fallback static moringa recipes data for when API fails
+const fallbackMoringaRecipes: Recipe[] = [
+  {
+    id: 'moringa-smoothie',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: 'system',
+    updated_by: 'system',
+    recipe_id: 'moringa-smoothie',
+    name: 'Moringa Green Smoothie',
+    category: 'Superfoods',
+    rating: 4.9,
+    reviews: 892,
+    description: 'A refreshing and nutritious smoothie packed with moringa powder, spinach, and tropical fruits. Perfect for a healthy breakfast or post-workout boost.',
+    demo_description: 'A refreshing and nutritious smoothie packed with moringa powder, spinach, and tropical fruits.',
+    prep_time: '5 min',
+    servings: 2,
+    difficulty: 'Easy',
+    image: '/Recipes/moringa smoothie.jpg',
+    ingredients: [],
+    instructions: [],
+    nutrition_facts: {},
+    pro_tips: []
+  },
+  {
+    id: 'moringa-tea',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: 'system',
+    updated_by: 'system',
+    recipe_id: 'moringa-tea',
+    name: 'Moringa Herbal Tea',
+    category: 'Superfoods',
+    rating: 4.7,
+    reviews: 567,
+    description: 'A soothing and antioxidant-rich tea made with fresh moringa leaves and warming spices. Perfect for relaxation and wellness.',
+    demo_description: 'A soothing and antioxidant-rich tea made with fresh moringa leaves and warming spices.',
+    prep_time: '10 min',
+    servings: 4,
+    difficulty: 'Easy',
+    image: '/Recipes/tea moringa.jpg',
+    ingredients: [],
+    instructions: [],
+    nutrition_facts: {},
+    pro_tips: []
+  },
+  {
+    id: 'moringa-dessert',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: 'system',
+    updated_by: 'system',
+    recipe_id: 'moringa-dessert',
+    name: 'Moringa Energy Balls',
+    category: 'Dessert',
+    rating: 4.8,
+    reviews: 734,
+    description: 'Delicious and nutritious energy balls made with moringa powder, dates, and nuts. A perfect healthy snack for any time of day.',
+    demo_description: 'Delicious and nutritious energy balls made with moringa powder, dates, and nuts.',
+    prep_time: '20 min',
+    servings: 12,
+    difficulty: 'Easy',
+    image: '/Recipes/moringa dessert.jpg',
+    ingredients: [],
+    instructions: [],
+    nutrition_facts: {},
+    pro_tips: []
+  },
+  {
+    id: 'moringa-dosa',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: 'system',
+    updated_by: 'system',
+    recipe_id: 'moringa-dosa',
+    name: 'Moringa Dosa',
+    category: 'Breakfast',
+    rating: 4.6,
+    reviews: 456,
+    description: 'A traditional South Indian dosa enhanced with moringa powder for extra nutrition. Crispy, delicious, and packed with health benefits.',
+    demo_description: 'A traditional South Indian dosa enhanced with moringa powder for extra nutrition.',
+    prep_time: '8 hours (including soaking)',
+    servings: 6,
+    difficulty: 'Medium',
+    image: '/Recipes/dosa moringa.jpg',
+    ingredients: [],
+    instructions: [],
+    nutrition_facts: {},
+    pro_tips: []
+  }
+];
+
 const Recipes = () => {
   const { id } = useParams();
   const [selectedCategory, setSelectedCategory] = useState('All Recipes');
@@ -24,11 +116,12 @@ const Recipes = () => {
         } else {
           response = await RecipeService.getRecipesByCategory(selectedCategory, 1, 50);
         }
-        
         setRecipes(response.recipes);
       } catch (err: any) {
-        setError(err.message || 'Failed to load recipes');
-        console.error('Failed to load recipes:', err);
+        console.error('Failed to load recipes from API:', err);
+        setError(err.message || 'Failed to load recipes from server');
+        // Fallback to static recipes on error
+        setRecipes(fallbackMoringaRecipes);
       } finally {
         setLoading(false);
       }
@@ -65,8 +158,8 @@ const Recipes = () => {
     );
   }
 
-  // Show error state
-  if (error) {
+  // Show error state only if we have no recipes at all
+  if (error && recipes.length === 0) {
     return (
       <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -88,6 +181,22 @@ const Recipes = () => {
 
   return (
     <div className="pt-16 sm:pt-20 bg-beige-300">
+      {/* API Error Notification */}
+      {error && recipes.length > 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-4 mt-4 rounded">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <span className="text-yellow-400">⚠️</span>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                Showing sample recipes. Unable to load latest recipes from server.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="section-padding bg-gradient-to-br from-beige-400 via-beige-300 to-beige-500">
         <div className="container-custom">
@@ -124,7 +233,7 @@ const Recipes = () => {
       </section>
 
       {/* Recipe Categories */}
-      <section className="py-12 sm:py-16 bg-gradient-to-r from-beige-500 via-beige-400 to-beige-500">
+      <section className="py-12 sm:py-16 bg-white">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -190,7 +299,7 @@ const Recipes = () => {
                 whileHover={{ y: -8, scale: 1.02 }}
                 className="group cursor-pointer"
               >
-                <div className="relative overflow-hidden rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
+                <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
                   <div className="relative overflow-hidden flex-shrink-0">
                     <img
                       src={recipe.image}
@@ -285,7 +394,7 @@ const Recipes = () => {
                   whileHover={{ y: -5 }}
                   className="group cursor-pointer"
                 >
-                  <div className="overflow-hidden rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                  <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
                         src={recipe.image}
@@ -300,7 +409,7 @@ const Recipes = () => {
                     
                     <div className="p-5 flex flex-col flex-grow">
                       <h3 className="text-lg font-heading font-semibold text-black-900 mb-2 group-hover:text-green-700 transition-colors duration-300">
-                        {recipe.title}
+                        {recipe.name}
                       </h3>
                       <p className="text-black-700 text-sm mb-3 leading-relaxed flex-grow">
                         {recipe.description}
@@ -321,7 +430,7 @@ const Recipes = () => {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           <Clock className="w-3 h-3 text-green-600" />
-                          <span className="text-xs text-black-600">{recipe.prepTime}</span>
+                          <span className="text-xs text-black-600">{recipe.prep_time}</span>
                         </div>
                         <span className="text-xs text-black-600">{recipe.difficulty}</span>
                       </div>

@@ -4,6 +4,8 @@ import type { RazorpayResponse } from '../types/razorpay';
 // ==================== CHECKOUT INTERFACES ====================
 
 export interface ShippingAddress {
+  first_name: string;
+  mobile: string;
   street: string;
   city: string;
   state: string;
@@ -116,12 +118,16 @@ export const checkoutApi = {
   createOrder: async (shippingAddress: ShippingAddress): Promise<CreateOrderResponse> => {
     // Try multiple payload formats to find the correct one
     const payloads = [
-      // Format 1: Simple address string
+      // Format 1: With required first_name and mobile fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         shipping_address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`
       },
-      // Format 2: Structured address object
+      // Format 2: Structured address object with required fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         shipping_address: {
           street: shippingAddress.street,
           city: shippingAddress.city,
@@ -130,16 +136,20 @@ export const checkoutApi = {
           country: shippingAddress.country
         }
       },
-      // Format 3: Flat structure
+      // Format 3: Flat structure with required fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         street: shippingAddress.street,
         city: shippingAddress.city,
         state: shippingAddress.state,
         postal_code: shippingAddress.postal_code,
         country: shippingAddress.country
       },
-      // Format 4: Address field
+      // Format 4: Address field with required fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         address: {
           street: shippingAddress.street,
           city: shippingAddress.city,
@@ -150,12 +160,16 @@ export const checkoutApi = {
       },
       // Format 5: With additional required fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         shipping_address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`,
         user_id: "current_user", // Placeholder
         cart_id: "current_cart" // Placeholder
       },
       // Format 6: Minimal required fields
       {
+        first_name: shippingAddress.first_name,
+        mobile: shippingAddress.mobile,
         address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`
       }
     ];

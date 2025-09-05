@@ -28,9 +28,12 @@ import Returns from './pages/Returns';
 import CancellationRefund from './pages/CancellationRefund';
 import ScrollToTop from './components/ui/ScrollToTop';
 import LoginRequiredModal from './components/ui/LoginRequiredModal';
+import WelcomeScreen from './components/ui/WelcomeScreen';
+import { useWelcomeScreen } from './hooks/useWelcomeScreen';
 import './index.css';
 
 function App() {
+  const { showWelcome, handleWelcomeComplete } = useWelcomeScreen();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalData, setLoginModalData] = useState({
     message: 'Please login to continue',
@@ -59,6 +62,9 @@ function App() {
       <NotificationProvider>
         <Router>
           <ScrollToTop />
+          {showWelcome && (
+            <WelcomeScreen onComplete={handleWelcomeComplete} duration={4000} />
+          )}
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">
@@ -74,6 +80,7 @@ function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/:orderId" element={<Orders />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/login" element={<Login />} />

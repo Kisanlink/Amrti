@@ -16,6 +16,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     ingredients: true,
     usage: false,
@@ -41,6 +42,7 @@ const ProductDetail = () => {
           setLoading(true);
           const productData = await ProductService.getProductById(id);
           setProduct(productData);
+          setSelectedImageIndex(0); // Reset to first image when loading new product
           
           // Get suggested products (same category, excluding current product)
           const allProductsResponse = await ProductService.getAllProducts(1, 100);
@@ -128,80 +130,78 @@ const ProductDetail = () => {
                <div className="flex sm:flex-col gap-3 justify-start sm:justify-between">
                  {/* Product thumbnails */}
                  <div className="flex sm:flex-col gap-3">
-                   <div className="relative overflow-hidden rounded-lg bg-white p-2 border-2 border-green-600 shadow-md w-16 h-16 sm:w-20 sm:h-20">
-                     <img 
-                       src={product.image_url} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain" 
-                       onError={(e) => {
-                         console.error('Failed to load thumbnail image:', product.image_url);
-                         e.currentTarget.style.display = 'none';
-                       }}
-                     />
-                   </div>
-                   
-                   <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
-                     <img 
-                       src={product.image_url} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain" 
-                       onError={(e) => {
-                         console.error('Failed to load thumbnail image:', product.image_url);
-                         e.currentTarget.style.display = 'none';
-                       }}
-                     />
-                   </div>
-                   
-                   <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
-                     <img 
-                       src={product.image_url} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain" 
-                       onError={(e) => {
-                         console.error('Failed to load thumbnail image:', product.image_url);
-                         e.currentTarget.style.display = 'none';
-                       }}
-                     />
-                   </div>
-                   
-                   <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
-                     <img 
-                       src={product.image_url} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain" 
-                       onError={(e) => {
-                         console.error('Failed to load thumbnail image:', product.image_url);
-                         e.currentTarget.style.display = 'none';
-                       }}
-                     />
-                   </div>
-                   
-                   <div className="relative overflow-hidden rounded-lg bg-white p-2 border border-gray-200 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20">
-                     <img 
-                       src={product.image_url} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain" 
-                       onError={(e) => {
-                         console.error('Failed to load thumbnail image:', product.image_url);
-                         e.currentTarget.style.display = 'none';
-                       }}
-                     />
-                   </div>
+                   {/* Create array of all available image URLs */}
+                   {(() => {
+                     const allImageUrls = [
+                       product.image_url,
+                       product.image_url_1,
+                       product.image_url_2,
+                       product.image_url_3,
+                       product.image_url_4
+                     ];
+                     
+                     // Filter out empty URLs but ensure we always have at least the main image
+                     const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '');
+                     
+                     // If we only have one image, show it multiple times for better UX
+                     const imageUrls = validImageUrls.length > 1 
+                       ? validImageUrls 
+                       : [product.image_url, product.image_url, product.image_url, product.image_url, product.image_url];
+                     
+                     return imageUrls.slice(0, 5).map((imageUrl, index) => (
+                       <div 
+                         key={index}
+                         onClick={() => setSelectedImageIndex(index)}
+                         className={`relative overflow-hidden rounded-lg bg-white p-2 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-16 h-16 sm:w-20 sm:h-20 ${
+                           index === selectedImageIndex ? 'border-2 border-green-600 shadow-md' : 'border border-gray-200'
+                         }`}
+                       >
+                         <img 
+                           src={imageUrl} 
+                           alt={`${product.name} - Image ${index + 1}`} 
+                           className="w-full h-full object-contain" 
+                           onError={(e) => {
+                             console.error('Failed to load thumbnail image:', imageUrl);
+                             e.currentTarget.style.display = 'none';
+                           }}
+                         />
+                       </div>
+                     ));
+                   })()}
                  </div>
                </div>
                
                {/* Main Product Image - Right Side */}
                <div className="flex-1">
                  <div className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square sm:h-full">
-                <img 
-                  src={product.image_url} 
-                  alt={product.name} 
-                  className="w-full h-full object-contain p-4" 
-                  onError={(e) => {
-                    console.error('Failed to load product image:', product.image_url);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+                {(() => {
+                  const allImageUrls = [
+                    product.image_url,
+                    product.image_url_1,
+                    product.image_url_2,
+                    product.image_url_3,
+                    product.image_url_4
+                  ];
+                  
+                  const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '');
+                  const imageUrls = validImageUrls.length > 1 
+                    ? validImageUrls 
+                    : [product.image_url, product.image_url, product.image_url, product.image_url, product.image_url];
+                  
+                  const currentImage = imageUrls[selectedImageIndex] || product.image_url;
+                  
+                  return (
+                    <img 
+                      src={currentImage} 
+                      alt={product.name} 
+                      className="w-full h-full object-contain p-4" 
+                      onError={(e) => {
+                        console.error('Failed to load product image:', currentImage);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  );
+                })()}
                 {discount > 0 && (
                      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-bold">
                     {discount}% OFF

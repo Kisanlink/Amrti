@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2 } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2, Package } from 'lucide-react';
 import CartService from '../../services/cartService';
 import WishlistService from '../../services/wishlistService';
 import AuthService, { AuthUser } from '../../services/authService';
@@ -415,6 +415,7 @@ const Navbar = () => {
                         >
                           My Profile
                         </Link>
+
                         <Link
                           to="/orders"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
@@ -422,6 +423,7 @@ const Navbar = () => {
                         >
                           My Orders
                         </Link>
+
                         <button
                           onClick={() => {
                             AuthService.logout();
@@ -614,14 +616,16 @@ const Navbar = () => {
                         <User size={20} />
                         <span>My Profile</span>
                       </Link>
+
                       <Link 
                         to="/orders" 
                         onClick={() => setIsOpen(false)}
                         className="flex items-center space-x-2 w-full py-2 text-gray-600 hover:text-green-600 transition-colors"
                       >
-                        <User size={20} />
+                        <Package size={20} />
                         <span>My Orders</span>
                       </Link>
+
                       <button 
                         onClick={() => {
                             AuthService.logout();
