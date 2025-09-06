@@ -486,92 +486,12 @@ const ProductDetail = () => {
                   <p className="text-black-700 leading-relaxed">Great organic moringa powder. The packaging is excellent and the product quality is outstanding. Will definitely buy again!</p>
                 </motion.div>
 
-                {/* Review 3 */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">RS</span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-black-900">Rahul Singh</div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                          ))}
-                          <span className="text-sm text-black-600 ml-2">2 weeks ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-black-700 leading-relaxed">Pure and authentic moringa powder. I like the fact that it is a certified organic product. The taste is great and it's easy to mix in my daily routine.</p>
-                </motion.div>
-
-                {/* Review 4 */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">MJ</span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-black-900">Meera Joshi</div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(4)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                          ))}
-                          {[...Array(1)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-gray-300" />
-                          ))}
-                          <span className="text-sm text-black-600 ml-2">3 weeks ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-black-700 leading-relaxed">Good quality product. The moringa powder is fresh and has a nice earthy taste. I use it in my tea and smoothies. Delivery was fast too!</p>
-                </motion.div>
-
-                {/* Review 5 */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">VP</span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-black-900">Vikram Patel</div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                          ))}
-                          <span className="text-sm text-black-600 ml-2">1 month ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-black-700 leading-relaxed">Amazing product! The moringa powder is of premium quality. I've been using it for my health supplements and the results are fantastic. Highly recommended for anyone looking for natural health products.</p>
-                </motion.div>
 
                 {/* Load More Reviews Button */}
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                   className="text-center pt-6"
                 >
                   <button className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors">
