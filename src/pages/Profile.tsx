@@ -15,6 +15,11 @@ const Profile: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
 
+  // Debug log for formData state
+  useEffect(() => {
+    console.log('Form data state changed:', formData);
+  }, [formData]);
+
   useEffect(() => {
     console.log('Profile component mounted, user:', user);
     
@@ -45,8 +50,11 @@ const Profile: React.FC = () => {
       }
       
       const profileData = await ProfileService.getProfile();
+      console.log('Profile data loaded:', profileData); // Debug log
+      
       setProfile(profileData);
-      setFormData({
+      
+      const initialFormData = {
         first_name: profileData.first_name || '',
         last_name: profileData.last_name || '',
         phone: profileData.phone || '',
@@ -61,7 +69,11 @@ const Profile: React.FC = () => {
         bio: profileData.bio || '',
         newsletter_subscribed: profileData.newsletter_subscribed || false,
         preferred_language: profileData.preferred_language || 'en'
-      });
+      };
+      
+      console.log('Setting initial form data:', initialFormData); // Debug log
+      setFormData(initialFormData);
+      
     } catch (err) {
       console.error('Failed to load profile:', err);
       setError('Failed to load profile. Please try again later.');
@@ -72,11 +84,21 @@ const Profile: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    console.log('Input change:', name, value, type); // Debug log
+    
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData(prev => {
+        const newData = { ...prev, [name]: checked };
+        console.log('New form data (checkbox):', newData); // Debug log
+        return newData;
+      });
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => {
+        const newData = { ...prev, [name]: value };
+        console.log('New form data (text):', newData); // Debug log
+        return newData;
+      });
     }
   };
 

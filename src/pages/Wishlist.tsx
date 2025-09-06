@@ -150,7 +150,7 @@ const Wishlist = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Wishlist Items */}
           <div className="lg:col-span-3">
-            <div className="bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-heading font-bold text-black-900">
                   Wishlist Items
@@ -179,7 +179,7 @@ const Wishlist = () => {
                         alt={item.product?.name || 'Product'}
                         className="w-full h-48 object-contain bg-beige-100"
                       />
-                      <div className="absolute top-3 right-3 bg-green-600 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+                      <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
                         {item.product?.category || 'Category'}
                       </div>
                                               <button
@@ -220,7 +220,7 @@ const Wishlist = () => {
                         <button
                           onClick={() => handleMoveToCart(item.product_id)}
                           disabled={isProcessing === item.id}
-                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
                           {isProcessing === item.id ? (
                             <>
@@ -252,7 +252,7 @@ const Wishlist = () => {
 
           {/* Wishlist Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6 sticky top-24">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-6 sticky top-24">
               <h2 className="text-2xl font-heading font-bold text-black-900 mb-6">
                 Wishlist Summary
               </h2>
@@ -276,7 +276,7 @@ const Wishlist = () => {
                 <button
                   onClick={handleAddAllToCart}
                   disabled={isProcessing === 'all'}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {isProcessing === 'all' ? (
                     <>
@@ -293,7 +293,7 @@ const Wishlist = () => {
                 
                 <Link
                   to="/products"
-                  className="w-full border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                  className="w-full border border-green-600 text-green-600 hover:bg-green-600 hover:text-white font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add More Items</span>
@@ -331,7 +331,7 @@ const Wishlist = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Add recommended products here */}
-            <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl p-4 text-center">
+            <div className="bg-white backdrop-blur-sm border border-beige-400/50 rounded-xl p-4 text-center">
               <div className="w-16 h-16 bg-green-100 rounded-lg mx-auto mb-3 flex items-center justify-center">
                 <Plus className="w-8 h-8 text-green-600" />
               </div>

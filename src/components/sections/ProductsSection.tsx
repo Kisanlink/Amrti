@@ -22,6 +22,21 @@ const ProductsSection = () => {
       try {
         const response = await ProductService.getAllProducts(1, 4);
         setProducts(response.data);
+        
+        // Load wishlist items for each product
+        const wishlistSet = new Set<string>();
+        for (const product of response.data) {
+          try {
+            const isInWishlist = await WishlistService.isInWishlist(product.id);
+            if (isInWishlist) {
+              wishlistSet.add(product.id);
+            }
+          } catch (error) {
+            console.error(`Failed to check wishlist status for product ${product.id}:`, error);
+          }
+        }
+        setWishlistItems(wishlistSet);
+        
         try {
           const cartCount = await CartService.getItemCount();
           setCartCount(cartCount);
@@ -62,7 +77,7 @@ const ProductsSection = () => {
         transition={{ duration: 0.6 }}
         className="group cursor-pointer"
       >
-                 <div className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
+                 <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
           <div className="relative overflow-hidden flex-shrink-0">
             <img
               src={product.image_url}
@@ -70,11 +85,9 @@ const ProductsSection = () => {
               className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
               style={{ maxHeight: '200px' }}
             />
-                            <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              {product.category}
-            </div>
+
             {discount > 0 && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
                 {discount}% OFF
               </div>
             )}
@@ -112,7 +125,7 @@ const ProductsSection = () => {
             <div className="flex items-center space-x-2 mt-auto">
               <Link
                 to={`/product/${product.id}`}
-                                 className="flex-1 inline-flex items-center justify-center font-heading font-semibold text-green-600 hover:text-green-700 transition-colors duration-300 group-hover:translate-x-1 text-sm py-2 px-4 border border-green-600 rounded-lg hover:bg-green-600 hover:text-white"
+                                 className="flex-1 inline-flex items-center justify-center font-heading font-semibold text-green-600 transition-colors duration-300 group-hover:translate-x-1 text-sm py-2 px-4 border border-green-600 rounded-lg hover:bg-green-600 hover:text-white"
               >
                 View Details
                 <motion.span
@@ -162,14 +175,20 @@ const ProductsSection = () => {
                 onClick={async () => {
                   setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: true }));
                   try {
-                    if (await WishlistService.isInWishlist(product.id)) {
+                    if (isProductInWishlist(product.id)) {
                       await WishlistService.removeFromWishlist(product.id);
+                      setWishlistItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(product.id);
+                        return newSet;
+                      });
                       showNotification({
                         type: 'success',
                         message: `${product.name} removed from wishlist`
                       });
                     } else {
                       await WishlistService.addToWishlist(product.id);
+                      setWishlistItems(prev => new Set(prev).add(product.id));
                       showNotification({
                         type: 'success',
                         message: `${product.name} added to wishlist successfully!`
@@ -189,16 +208,16 @@ const ProductsSection = () => {
                 }}
                 disabled={loadingStates[`wishlist-${product.id}`]}
                 className={`p-2 border rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  WishlistService.isInWishlist(product.id)
-                    ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white-50'
+                  isProductInWishlist(product.id)
+                    ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'
                     : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
                 }`}
-                title={WishlistService.isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                title={isProductInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
               >
                 {loadingStates[`wishlist-${product.id}`] ? (
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <Heart className={`w-4 h-4 ${WishlistService.isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${isProductInWishlist(product.id) ? 'fill-current' : ''}`} />
                 )}
               </button>
             </div>

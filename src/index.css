@@ -201,29 +201,4 @@
   .text-shadow-lg {
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
-  
-  .shadow-elegant {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-  
-  .shadow-premium {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-  
-  .font-heading {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-weight: 600;
-  }
-  
-  .bg-tea-600 {
-    background-color: #059669;
-  }
-  
-  .bg-tea-700 {
-    background-color: #047857;
-  }
-  
-  .hover\:bg-tea-700:hover {
-    background-color: #047857;
-  }
 }
