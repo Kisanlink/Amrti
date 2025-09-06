@@ -176,10 +176,10 @@ const Orders: React.FC = () => {
   // Show loading state for orders listing
   if (!orderId && ordersLoading) {
     return (
-      <div className="pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your orders...</p>
+          <div className="w-8 h-8 sm:w-12 sm:h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading your orders...</p>
         </div>
       </div>
     );
@@ -188,10 +188,10 @@ const Orders: React.FC = () => {
   // Show loading state for order details
   if (orderId && loading) {
     return (
-      <div className="pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order details...</p>
+          <div className="w-8 h-8 sm:w-12 sm:h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading order details...</p>
         </div>
       </div>
     );
@@ -200,22 +200,22 @@ const Orders: React.FC = () => {
   // Show error state for orders listing
   if (!orderId && ordersError) {
     return (
-      <div className="pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Failed to Load Orders</h1>
-          <p className="text-gray-600 mb-6">{ordersError}</p>
-          <div className="space-y-3">
+      <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center px-4">
+          <Package className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Failed to Load Orders</h1>
+          <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">{ordersError}</p>
+          <div className="space-y-2 sm:space-y-3">
             <button
               onClick={fetchOrders}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
               Try Again
             </button>
             <br />
             <Link
               to="/"
-              className="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm sm:text-base"
             >
               Back to Home
             </Link>
@@ -228,22 +228,22 @@ const Orders: React.FC = () => {
   // Show error state for order details
   if (orderId && (error || !order)) {
     return (
-      <div className="pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Order Not Found</h1>
-          <p className="text-gray-600 mb-6">{error || 'The order you are looking for could not be found.'}</p>
-          <div className="space-y-3">
+      <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center px-4">
+          <Package className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Order Not Found</h1>
+          <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">{error || 'The order you are looking for could not be found.'}</p>
+          <div className="space-y-2 sm:space-y-3">
             <button
               onClick={fetchOrderDetails}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
               Try Again
             </button>
             <br />
             <Link
               to="/orders"
-              className="px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm sm:text-base"
             >
               Back to Orders
             </Link>
@@ -259,29 +259,29 @@ const Orders: React.FC = () => {
       <>
         <ScrollToTop />
         <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             {/* Header */}
-            <div className="mb-10">
+            <div className="mb-6 sm:mb-10">
               <Link
                 to="/"
-                className="inline-flex items-center text-green-600 hover:text-green-700 mb-6 transition-colors"
+                className="inline-flex items-center text-green-600 hover:text-green-700 mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
               >
-                <ArrowLeft className="w-5 h-5 mr-2" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Back to Home
               </Link>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
                 <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
-                  <p className="text-lg text-gray-600">Track and manage your orders</p>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">My Orders</h1>
+                  <p className="text-base sm:text-lg text-gray-600">Track and manage your orders</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                   {/* Sort Dropdown */}
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                    <label className="text-xs sm:text-sm font-medium text-gray-700">Sort by:</label>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as 'latest' | 'oldest' | 'status')}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                      className="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
                     >
                       <option value="latest">Latest First</option>
                       <option value="oldest">Oldest First</option>
@@ -291,9 +291,9 @@ const Orders: React.FC = () => {
                   
                   <button
                     onClick={handleRefreshOrders}
-                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base"
                   >
-                    <RefreshCw className="w-5 h-5 mr-2" />
+                    <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Refresh
                   </button>
                 </div>
@@ -302,95 +302,95 @@ const Orders: React.FC = () => {
 
             {/* Orders List */}
             {orders.length > 0 ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {sortedOrders.map((orderItem, index) => (
                   <motion.div
                     key={orderItem.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-all duration-300"
+                    className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-all duration-300"
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-4 bg-green-50 rounded-xl border border-green-100">
-                          <Package className="w-7 h-7 text-green-600" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+                      <div className="flex items-center space-x-3 sm:space-x-4">
+                        <div className="p-2 sm:p-3 lg:p-4 bg-green-50 rounded-xl border border-green-100">
+                          <Package className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-green-600" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-1">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
                             Order #{orderItem.id}
                           </h3>
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
+                          <p className="text-xs sm:text-sm text-gray-500 flex items-center">
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                             {OrderService.formatDate(orderItem.created_at)}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${OrderService.getStatusColor(orderItem.status)}`}>
+                      <div className="text-left sm:text-right">
+                        <span className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold ${OrderService.getStatusColor(orderItem.status)}`}>
                           {OrderService.formatStatus(orderItem.status)}
                         </span>
-                        <p className="text-2xl font-bold text-green-600 mt-2">
+                        <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1 sm:mt-2">
                           ₹{orderItem.total_amount.toFixed(2)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <CreditCard className="w-4 h-4 text-blue-600" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
+                          <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                            <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                           </div>
-                          <span className="text-sm font-semibold text-gray-700">Payment</span>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Payment</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 capitalize">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 capitalize">
                           {orderItem.payment_method}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <Truck className="w-4 h-4 text-purple-600" />
+                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
+                          <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                            <Truck className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
                           </div>
-                          <span className="text-sm font-semibold text-gray-700">Shipping</span>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Shipping</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900">
                           {orderItem.shipping_carrier}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className="p-2 bg-orange-100 rounded-lg">
-                            <MapPin className="w-4 h-4 text-orange-600" />
+                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100 sm:col-span-2 lg:col-span-1">
+                        <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
+                          <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                           </div>
-                          <span className="text-sm font-semibold text-gray-700">Address</span>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Address</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                           {orderItem.shipping_address}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                      <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 sm:pt-6 border-t border-gray-100 gap-3 sm:gap-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {orderItem.tracking_url && (
                           <a
                             href={orderItem.tracking_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
                           >
-                            <Truck className="w-4 h-4 mr-2" />
+                            <Truck className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Track Package
                           </a>
                         )}
                         {orderItem.invoice_url && (
                           <button
                             onClick={() => window.open(orderItem.invoice_url, '_blank')}
-                            className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
                           >
-                            <Download className="w-4 h-4 mr-2" />
+                            <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Invoice
                           </button>
                         )}
@@ -398,9 +398,9 @@ const Orders: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Link
                           to={`/orders/${orderItem.id}`}
-                          className="inline-flex items-center px-6 py-3 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                          className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
-                          <Eye className="w-4 h-4 mr-2" />
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                           View Details
                         </Link>
                       </div>
@@ -409,15 +409,15 @@ const Orders: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-16">
-                <div className="p-6 bg-gray-50 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                  <Package className="w-12 h-12 text-gray-400" />
+              <div className="text-center py-12 sm:py-16">
+                <div className="p-4 sm:p-6 bg-gray-50 rounded-full w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+                  <Package className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">No Orders Found</h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">You haven't placed any orders yet. Start shopping to see your orders here.</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">No Orders Found</h3>
+                <p className="text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">You haven't placed any orders yet. Start shopping to see your orders here.</p>
                 <Link
                   to="/products"
-                  className="inline-flex items-center px-8 py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base"
                 >
                   Start Shopping
                 </Link>
@@ -434,57 +434,57 @@ const Orders: React.FC = () => {
     <>
       <ScrollToTop />
       <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <Link
               to="/orders"
-              className="inline-flex items-center text-green-600 hover:text-green-700 mb-4"
+              className="inline-flex items-center text-green-600 hover:text-green-700 mb-3 sm:mb-4 text-sm sm:text-base"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Orders
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
-            <p className="text-gray-600 mt-2">Order #{order?.id}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Order Details</h1>
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Order #{order?.id}</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Main Order Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Order Status Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Order Status</h2>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${OrderService.getStatusColor(order.status)}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Order Status</h2>
+                  <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${OrderService.getStatusColor(order.status)}`}>
                     {OrderService.formatStatus(order.status)}
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-400" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Order Date</p>
-                      <p className="font-medium text-gray-900">{OrderService.formatDate(order.created_at)}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Order Date</p>
+                      <p className="font-medium text-gray-900 text-sm sm:text-base">{OrderService.formatDate(order.created_at)}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <Package className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Payment Method</p>
-                      <p className="font-medium text-gray-900 capitalize">{order.payment_method}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Payment Method</p>
+                      <p className="font-medium text-gray-900 capitalize text-sm sm:text-base">{order.payment_method}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <CreditCard className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Payment Status</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Payment Status</p>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         order.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
                         order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -495,11 +495,11 @@ const Orders: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <Truck className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Shipping Carrier</p>
-                      <p className="font-medium text-gray-900">{order.shipping_carrier}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Shipping Carrier</p>
+                      <p className="font-medium text-gray-900 text-sm sm:text-base">{order.shipping_carrier}</p>
                     </div>
                   </div>
                 </div>
@@ -510,13 +510,13 @@ const Orders: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
               >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <MapPin className="w-5 h-5 text-green-600 mr-2" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-2" />
                   Shipping Address
                 </h2>
-                <p className="text-gray-700">{order.shipping_address}</p>
+                <p className="text-gray-700 text-sm sm:text-base">{order.shipping_address}</p>
               </motion.div>
 
               {/* Order Tracking Information */}

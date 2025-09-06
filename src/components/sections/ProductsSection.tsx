@@ -77,7 +77,7 @@ const ProductsSection = () => {
         transition={{ duration: 0.6 }}
         className="group cursor-pointer"
       >
-                 <div className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
+                 <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
           <div className="relative overflow-hidden flex-shrink-0">
             <img
               src={product.image_url}
@@ -85,11 +85,9 @@ const ProductsSection = () => {
               className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
               style={{ maxHeight: '200px' }}
             />
-                            <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              {product.category}
-            </div>
+
             {discount > 0 && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
                 {discount}% OFF
               </div>
             )}

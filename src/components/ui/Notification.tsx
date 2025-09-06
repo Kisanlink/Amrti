@@ -24,13 +24,13 @@ const Notification = ({ type, message, isVisible, onClose, duration = 3000 }: No
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />;
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-600" />;
+        return <XCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />;
       case 'info':
-        return <Info className="w-5 h-5 text-blue-600" />;
+        return <Info className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />;
       default:
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />;
     }
   };
 
@@ -55,18 +55,18 @@ const Notification = ({ type, message, isVisible, onClose, duration = 3000 }: No
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -50, scale: 0.9 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-sm w-full mx-4 ${getBgColor()} border rounded-lg shadow-lg backdrop-blur-sm`}
+          className={`fixed top-40 sm:top-44 left-1/2 transform -translate-x-1/2 z-50 w-[calc(100%-1rem)] sm:w-auto sm:max-w-sm mx-2 sm:mx-0 ${getBgColor()} border rounded-lg shadow-lg backdrop-blur-sm`}
         >
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between p-1.5 sm:p-3">
+            <div className="flex items-center space-x-1.5 sm:space-x-3 flex-1 min-w-0">
               {getIcon()}
-              <span className="font-medium text-sm">{message}</span>
+              <span className="font-medium text-[10px] sm:text-sm truncate">{message}</span>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-1 sm:ml-2"
             >
-              <X className="w-4 h-4" />
+              <X className="w-2.5 h-2.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </motion.div>

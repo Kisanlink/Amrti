@@ -229,14 +229,14 @@ const Navbar = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-              className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-elegant border-b border-beige-200/50'
-            : 'bg-transparent'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled
+          ? 'bg-white/95 backdrop-blur-md shadow-elegant border-b border-beige-200/50'
+          : 'bg-transparent'
+      }`}
     >
-      <div className="container-custom">
-        <div className="flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
+      <div className="container-custom px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <motion.div
@@ -244,15 +244,15 @@ const Navbar = () => {
               className="flex items-center space-x-1 sm:space-x-2"
             >
               <img 
-                src="/logo2.png" 
+                src="/navbar_logo.svg" 
                 alt="Amrti Nature's Elixir" 
-                className="h-12 w-auto sm:h-14 md:h-16 object-contain"
+                className="h-24 w-auto sm:h-22 lg:h-24 object-contain"
               />
             </motion.div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -275,7 +275,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
             {/* Search */}
             <div className="relative" ref={searchRef}>
               {showSearch ? (
@@ -365,7 +365,7 @@ const Navbar = () => {
                           <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors relative">
               <Heart size={20} />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white-50 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-red-400 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
@@ -466,9 +466,9 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-gray-600 hover:text-green-600 transition-colors"
+            className="md:hidden p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
@@ -481,7 +481,7 @@ const Navbar = () => {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden bg-beige-300 border-t border-black-200"
             >
-              <div className="px-4 py-6 space-y-3">
+              <div className="px-4 py-4 sm:py-6 space-y-2 sm:space-y-3">
                 {navItems.map((item) => (
                   <Link
                     key={item.name}

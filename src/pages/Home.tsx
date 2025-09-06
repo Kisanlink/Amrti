@@ -12,29 +12,29 @@ const Home = () => {
     <>
       <ScrollToTop />
       <div className="pt-16 sm:pt-20 bg-beige-200">
-                {/* Product Banner Section - Compact & Efficient */}
+                {/* Product Banner Section - Mobile Optimized */}
         <motion.section 
-          className="py-8 sm:py-12 bg-gradient-to-br from-beige-300 to-beige-400"
+          className="py-6 sm:py-8 lg:py-12 bg-gradient-to-br from-beige-300 to-beige-400"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <div className="container-custom">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="container-custom px-4 sm:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
               {/* Content Side */}
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
-                className="text-center lg:text-left"
+                className="text-center lg:text-left order-2 lg:order-1"
               >
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-russet-900 mb-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-russet-900 mb-3 sm:mb-4">
                   Pure <span className="text-green-600">Goodness</span>
                 </h2>
-                <p className="text-lg sm:text-xl text-russet-800 mb-6 leading-relaxed">
+                <p className="text-base sm:text-lg md:text-xl text-russet-800 mb-4 sm:mb-6 leading-relaxed">
                   Packed with Nature's Power
                 </p>
-                <p className="text-base sm:text-lg text-russet-700 leading-relaxed mb-6">
+                <p className="text-sm sm:text-base md:text-lg text-russet-700 leading-relaxed mb-4 sm:mb-6">
                   Our mission is to provide high quality health and wellness products sourced through organic and sustainable practices.
                 </p>
                 <motion.div
@@ -44,7 +44,7 @@ const Home = () => {
                 >
                   <Link
                     to="/products"
-                    className="inline-flex items-center space-x-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
+                    className="inline-flex items-center space-x-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 text-sm sm:text-base"
                   >
                     <span>Explore Products</span>
                     <ArrowRight className="w-4 h-4" />
@@ -57,14 +57,14 @@ const Home = () => {
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative"
+                className="relative order-1 lg:order-2"
               >
                 <img
                   src="/products/product_banner.jpg"
                   alt="Amrti Natural Products Collection"
-                  className="w-full h-auto rounded-2xl shadow-elegant"
+                  className="w-full h-auto rounded-xl sm:rounded-2xl shadow-elegant max-h-64 sm:max-h-80 lg:max-h-none object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-russet-900/20 to-transparent rounded-2xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-russet-900/20 to-transparent rounded-xl sm:rounded-2xl"></div>
               </motion.div>
             </div>
           </div>

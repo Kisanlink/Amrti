@@ -48,38 +48,38 @@ const Footer = () => {
 
   return (
     <footer className="bg-russet-900 text-white">
-      <div className="container-custom">
-        <div className="section-padding">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+      <div className="container-custom px-4 sm:px-6">
+        <div className="py-8 sm:py-12 lg:py-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8">
             {/* Company Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-1"
+              className="sm:col-span-2 lg:col-span-1"
             >
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center space-x-2 mb-3 sm:mb-4">
                 <img 
                   src="/footer_logo.png" 
                   alt="Amrti Nature's Elixir" 
-                  className="h-16 w-auto object-contain"
+                  className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
                 />
               </div>
-              <p className="text-gray-300 mb-6 leading-relaxed">
+              <p className="text-gray-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">
                 Premium natural products for health and wellness. Empowering farmers through sustainable practices.
               </p>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 text-gray-300">
-                  <Mail size={16} />
-                  <span>info@amrti.com</span>
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex items-center space-x-2 sm:space-x-3 text-gray-300">
+                  <Mail size={14} className="sm:w-4 sm:h-4" />
+                  <span className="text-sm sm:text-base">info@amrti.com</span>
                 </div>
-                <div className="flex items-center space-x-3 text-gray-300">
-                  <Phone size={16} />
-                  <span>+91-7386727007</span>
+                <div className="flex items-center space-x-2 sm:space-x-3 text-gray-300">
+                  <Phone size={14} className="sm:w-4 sm:h-4" />
+                  <span className="text-sm sm:text-base">+91-7386727007</span>
                 </div>
-                <div className="flex items-start space-x-3 text-gray-300">
-                  <MapPin size={16} className="mt-1" />
-                  <span className="text-sm">
+                <div className="flex items-start space-x-2 sm:space-x-3 text-gray-300">
+                  <MapPin size={14} className="mt-1 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">
                   Plot no 27, Nandi Hills, Road No. 51,
                   Jubilee Hills, Hyderabad, 500033
                   </span>
@@ -93,13 +93,13 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-                             <h4 className="text-lg font-heading font-bold mb-4">Company</h4>
-              <ul className="space-y-2">
+              <h4 className="text-base sm:text-lg font-heading font-bold mb-3 sm:mb-4">Company</h4>
+              <ul className="space-y-1 sm:space-y-2">
                 {footerLinks.company.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      className="text-gray-300 hover:text-white transition-colors duration-200 text-sm sm:text-base"
                     >
                       {link.name}
                     </Link>
@@ -114,7 +114,7 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h4 className="text-lg font-heading font-bold mb-4">Products</h4>
+              <h4 className="text-base sm:text-lg font-heading font-bold mb-3 sm:mb-4">Products</h4>
               {loading ? (
                 <div className="space-y-2">
                   {[...Array(5)].map((_, index) => (
@@ -172,13 +172,13 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-                              <h4 className="text-lg font-heading font-bold mb-4">Support</h4>
-              <ul className="space-y-2">
+              <h4 className="text-base sm:text-lg font-heading font-bold mb-3 sm:mb-4">Support</h4>
+              <ul className="space-y-1 sm:space-y-2">
                 {footerLinks.support.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      className="text-gray-300 hover:text-white transition-colors duration-200 text-sm sm:text-base"
                     >
                       {link.name}
                     </Link>
@@ -193,22 +193,22 @@ const Footer = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="border-t border-gray-700 mt-12 pt-8"
+            className="border-t border-gray-700 mt-8 sm:mt-12 pt-6 sm:pt-8"
           >
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <div className="text-gray-300 text-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+              <div className="text-gray-300 text-xs sm:text-sm">
                 © {currentYear} Agros link Pvt. All Rights Reserved.
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 {socialLinks.map((social) => (
                   <motion.a
                     key={social.name}
                     href={social.href}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 bg-russet-800 rounded-full text-gray-300 hover:text-white hover:bg-russet-700 transition-all duration-200"
+                    className="p-1.5 sm:p-2 bg-russet-800 rounded-full text-gray-300 hover:text-white hover:bg-russet-700 transition-all duration-200"
                   >
-                    <social.icon size={18} />
+                    <social.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </motion.a>
                 ))}
               </div>

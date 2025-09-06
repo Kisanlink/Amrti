@@ -5,7 +5,9 @@ import type { RazorpayResponse } from '../types/razorpay';
 
 export interface ShippingAddress {
   first_name: string;
+  last_name: string;
   mobile: string;
+  mobile_secondary: string;
   street: string;
   city: string;
   state: string;
@@ -58,6 +60,7 @@ export interface CheckoutPrepareResponse {
 
 export interface ShippingEstimateResponse {
   data: {
+    address_id: string;
     shipping_options: ShippingOption[];
     subtotal: number;
     user_id: string;
@@ -108,104 +111,47 @@ export const checkoutApi = {
 
   // Estimate shipping
   estimateShipping: async (address: ShippingAddress): Promise<ShippingEstimateResponse> => {
+    const payload = {
+      address: {
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        postal_code: address.postal_code,
+        country: address.country
+      }
+    };
+    
+    console.log('Estimating shipping with payload:', payload); // Debug log
+    
     return apiRequest<ShippingEstimateResponse>('/cart/checkout/estimate-shipping', {
       method: 'POST',
-      body: JSON.stringify({ address }),
+      body: JSON.stringify(payload),
     });
   },
 
   // Create payment order
-  createOrder: async (shippingAddress: ShippingAddress): Promise<CreateOrderResponse> => {
-    // Try multiple payload formats to find the correct one
-    const payloads = [
-      // Format 1: With required first_name and mobile fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        shipping_address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`
-      },
-      // Format 2: Structured address object with required fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        shipping_address: {
-          street: shippingAddress.street,
-          city: shippingAddress.city,
-          state: shippingAddress.state,
-          postal_code: shippingAddress.postal_code,
-          country: shippingAddress.country
-        }
-      },
-      // Format 3: Flat structure with required fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        street: shippingAddress.street,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        postal_code: shippingAddress.postal_code,
-        country: shippingAddress.country
-      },
-      // Format 4: Address field with required fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        address: {
-          street: shippingAddress.street,
-          city: shippingAddress.city,
-          state: shippingAddress.state,
-          postal_code: shippingAddress.postal_code,
-          country: shippingAddress.country
-        }
-      },
-      // Format 5: With additional required fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        shipping_address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`,
-        user_id: "current_user", // Placeholder
-        cart_id: "current_cart" // Placeholder
-      },
-      // Format 6: Minimal required fields
-      {
-        first_name: shippingAddress.first_name,
-        mobile: shippingAddress.mobile,
-        address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postal_code}, ${shippingAddress.country}`
-      }
-    ];
+  createOrder: async (shippingAddress: ShippingAddress, addressId: string): Promise<CreateOrderResponse> => {
+    // Use the correct payload format with address_id
+    const payload = {
+      first_name: shippingAddress.first_name,
+      last_name: shippingAddress.last_name,
+      mobile: shippingAddress.mobile,
+      shipping_address_id: addressId
+    };
     
-    console.log('Shipping address object:', shippingAddress); // Debug log
-    
-    // Try each payload format until one works
-    for (let i = 0; i < payloads.length; i++) {
-      const payload = payloads[i];
-      console.log(`Trying payload format ${i + 1}:`, payload);
+    console.log('Creating order with payload:', payload); // Debug log
       
       try {
         const response = await apiRequest<CreateOrderResponse>('/payments/create-order', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        console.log(`Payload format ${i + 1} succeeded!`);
+      console.log('Order created successfully:', response);
         return response;
       } catch (error: any) {
-        console.log(`Payload format ${i + 1} failed:`, error.message);
-        console.log(`Full error object:`, error);
-        
-        // Try to extract more error details
-        if (error.message && error.message.includes('Invalid request data')) {
-          console.log(`API rejected payload format ${i + 1} as invalid`);
-        }
-        
-        if (i === payloads.length - 1) {
-          // Last attempt failed, throw the error
-          console.error('All payload formats failed. Last error:', error);
+      console.error('Failed to create order:', error);
           throw error;
-        }
-      }
     }
-    
-    throw new Error('All payload formats failed');
   },
 
   // Verify payment
@@ -249,10 +195,10 @@ export class CheckoutService {
   /**
    * Create payment order
    */
-  static async createOrder(shippingAddress: ShippingAddress): Promise<CreateOrderResponse> {
+  static async createOrder(shippingAddress: ShippingAddress, addressId: string): Promise<CreateOrderResponse> {
     try {
-      console.log('CheckoutService.createOrder called with address:', shippingAddress); // Debug log
-      const response = await checkoutApi.createOrder(shippingAddress);
+      console.log('CheckoutService.createOrder called with address:', shippingAddress, 'and addressId:', addressId); // Debug log
+      const response = await checkoutApi.createOrder(shippingAddress, addressId);
       console.log('Order created successfully:', response); // Debug log
       return response;
     } catch (error) {

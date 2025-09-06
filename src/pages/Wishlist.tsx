@@ -179,7 +179,7 @@ const Wishlist = () => {
                         alt={item.product?.name || 'Product'}
                         className="w-full h-48 object-contain bg-beige-100"
                       />
-                      <div className="absolute top-3 right-3 bg-green-600 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+                      <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
                         {item.product?.category || 'Category'}
                       </div>
                                               <button
@@ -220,7 +220,7 @@ const Wishlist = () => {
                         <button
                           onClick={() => handleMoveToCart(item.product_id)}
                           disabled={isProcessing === item.id}
-                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
                           {isProcessing === item.id ? (
                             <>
@@ -276,7 +276,7 @@ const Wishlist = () => {
                 <button
                   onClick={handleAddAllToCart}
                   disabled={isProcessing === 'all'}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {isProcessing === 'all' ? (
                     <>
@@ -293,7 +293,7 @@ const Wishlist = () => {
                 
                 <Link
                   to="/products"
-                  className="w-full border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                  className="w-full border border-green-600 text-green-600 hover:bg-green-600 hover:text-white font-heading font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add More Items</span>

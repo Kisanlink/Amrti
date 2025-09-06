@@ -92,29 +92,51 @@ export const apiRequest = async <T>(
       
       // Handle different HTTP status codes
       if (response.status === 401) {
-        // Unauthorized - dispatch event for login required
-        window.dispatchEvent(new CustomEvent('loginRequired', { 
-          detail: { 
-            message: errorData.message || 'Please login to continue',
-            redirectUrl: window.location.pathname 
-          } 
-        }));
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          // Check if we've already shown a login modal recently to prevent spam
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) { // 5 second cooldown
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: errorData.message || 'Please login to continue',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
       } else if (response.status === 403) {
-        // Forbidden - user doesn't have permission
-        window.dispatchEvent(new CustomEvent('loginRequired', { 
-          detail: { 
-            message: 'You do not have permission to access this resource. Please login with an account that has the required permissions.',
-            redirectUrl: window.location.pathname 
-          } 
-        }));
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: 'You do not have permission to access this resource. Please login with an account that has the required permissions.',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
       } else if (response.status === 419) {
-        // Token expired - user needs to login again
-        window.dispatchEvent(new CustomEvent('loginRequired', { 
-          detail: { 
-            message: 'Your session has expired. Please login again to continue.',
-            redirectUrl: window.location.pathname 
-          } 
-        }));
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: 'Your session has expired. Please login again to continue.',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
       }
       
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
