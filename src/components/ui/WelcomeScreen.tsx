@@ -233,7 +233,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <img 
                   src="/logo2.png" 
                   alt="Amrti Logo" 
-                  className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto drop-shadow-2xl"
+                  className="w-20 h-20 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto drop-shadow-2xl object-contain"
+                  style={{ 
+                    aspectRatio: '1/1',
+                    objectFit: 'contain'
+                  }}
                   onError={(e) => {
                     console.error('Failed to load logo:', e);
                     e.currentTarget.style.display = 'none';
@@ -242,7 +246,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 
                 {/* Enhanced Glow Effect */}
                 <motion.div
-                  className="absolute inset-0 w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto bg-green-200/20 rounded-full blur-2xl"
+                  className="absolute inset-0 w-20 h-20 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto bg-green-200/20 rounded-full blur-2xl"
                   animate={{ 
                     scale: [1, 1.3, 1],
                     opacity: [0.2, 0.5, 0.2]
