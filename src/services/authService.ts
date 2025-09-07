@@ -198,6 +198,17 @@ export class AuthService {
    */
   static async logout(): Promise<void> {
     try {
+      // Call the logout API endpoint
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      // Firebase signout
       await signOut(auth);
       
       // Clear all stored data
@@ -210,7 +221,7 @@ export class AuthService {
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
     } catch (error) {
       console.error('Logout failed:', error);
-      // Still clear local data even if Firebase logout fails
+      // Still clear local data even if API call or Firebase logout fails
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
       localStorage.removeItem('cart');

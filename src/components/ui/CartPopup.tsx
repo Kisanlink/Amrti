@@ -332,7 +332,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                <button
                  onClick={() => {
                    onClose();
-                   window.location.href = '/cart';
+                   window.location.href = '/checkout';
                  }}
                  disabled={cart.items.length === 0}
                  className={`w-full font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${

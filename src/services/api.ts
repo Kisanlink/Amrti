@@ -10,7 +10,7 @@ interface Address {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const API_VERSION = 'v1';
 
 // Request headers
@@ -38,10 +38,34 @@ export const apiRequest = async <T>(
 ): Promise<T> => {
   const url = `${API_BASE_URL}/api/${API_VERSION}${endpoint}`;
   
+  // Debug logging for orders API calls
+  if (endpoint.includes('/orders/')) {
+    console.log('Orders API Request Debug:');
+    console.log('Full URL:', url);
+    console.log('Method:', options.method || 'GET');
+    console.log('API Base URL:', API_BASE_URL);
+    console.log('API Version:', API_VERSION);
+    console.log('Endpoint:', endpoint);
+  }
+  
   try {
     // Check if the request body is FormData
     const isFormData = options.body instanceof FormData;
     const headers = await getHeaders(isFormData);
+    
+    // Debug headers for orders API calls
+    if (endpoint.includes('/orders/')) {
+      console.log('Orders API Headers Debug:');
+      console.log('Headers:', headers);
+      console.log('Authorization header present:', !!(headers as any).Authorization);
+      console.log('Content-Type header present:', !!(headers as any)['Content-Type']);
+    }
+    
+    if (endpoint.includes('create-order')) {
+      console.log('Headers:', headers);
+      console.log('Authorization header present:', !!(headers as any).Authorization);
+      console.log('Content-Type header present:', !!(headers as any)['Content-Type']);
+    }
     
     const response = await fetch(url, {
       headers,
@@ -50,10 +74,84 @@ export const apiRequest = async <T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Enhanced debugging for orders API calls
+      if (endpoint.includes('/orders/')) {
+        console.log('Orders API Error Response:');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Error data:', errorData);
+      }
+      
+      // Enhanced debugging for create-order requests
+      if (endpoint.includes('create-order')) {
+        console.log('Create-order API response status:', response.status);
+        console.log('Create-order API response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Create-order API error response:', errorData);
+      }
+      
+      // Handle different HTTP status codes
+      if (response.status === 401) {
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          // Check if we've already shown a login modal recently to prevent spam
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) { // 5 second cooldown
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: errorData.message || 'Please login to continue',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
+      } else if (response.status === 403) {
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: 'You do not have permission to access this resource. Please login with an account that has the required permissions.',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
+      } else if (response.status === 419) {
+        // Only show login modal if user is not already on login/signup pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          const lastLoginModal = localStorage.getItem('lastLoginModal');
+          const now = Date.now();
+          if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {
+            localStorage.setItem('lastLoginModal', now.toString());
+            window.dispatchEvent(new CustomEvent('loginRequired', { 
+              detail: { 
+                message: 'Your session has expired. Please login again to continue.',
+                redirectUrl: window.location.pathname 
+              } 
+            }));
+          }
+        }
+      }
+      
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const responseData = await response.json();
+    
+    // Debug successful orders API responses
+    if (endpoint.includes('/orders/')) {
+      console.log('Orders API Success Response:');
+      console.log('Response status:', response.status);
+      console.log('Response data:', responseData);
+    }
+    
+    return responseData;
   } catch (error) {
     console.error('API Request failed:', error);
     throw error;
@@ -238,6 +336,7 @@ export interface CartItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  product?: Product; // Product details if available
 }
 
 export interface Cart {
@@ -254,6 +353,12 @@ export interface Cart {
 }
 
 export interface CartResponse {
+  data: Cart;
+  message: string;
+  success: boolean;
+}
+
+export interface CartListResponse {
   data: {
     cart: Cart;
     discount_amount: number;
@@ -301,55 +406,43 @@ export interface CartValidationResponse {
 export const cartApi = {
   // Add item to cart
   addItem: async (productId: string, quantity: number): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart', {
+    return apiRequest<CartResponse>('/cart/items', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   },
 
   // Get cart
-  getCart: async (): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart');
+  getCart: async (): Promise<CartListResponse> => {
+    return apiRequest<CartListResponse>('/cart');
   },
 
   // Update cart item quantity
   updateItemQuantity: async (productId: string, quantity: number): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart', {
+    return apiRequest<CartResponse>(`/cart/items/${productId}`, {
       method: 'PUT',
-      body: JSON.stringify({ 
-        product_id: productId, 
-        quantity: quantity 
-      }),
+      body: JSON.stringify({ quantity }),
     });
   },
 
   // Remove item from cart
   removeItem: async (productId: string): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart', {
+    return apiRequest<CartResponse>(`/cart/items/${productId}`, {
       method: 'DELETE',
-      body: JSON.stringify({ product_id: productId }),
     });
   },
 
   // Increment item quantity
   incrementItem: async (productId: string): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart', {
-      method: 'PUT',
-      body: JSON.stringify({ 
-        product_id: productId, 
-        action: 'increment' 
-      }),
+    return apiRequest<CartResponse>(`/cart/items/${productId}/increment`, {
+      method: 'POST',
     });
   },
 
   // Decrement item quantity
   decrementItem: async (productId: string): Promise<CartResponse> => {
-    return apiRequest<CartResponse>('/cart', {
-      method: 'PUT',
-      body: JSON.stringify({ 
-        product_id: productId, 
-        action: 'decrement' 
-      }),
+    return apiRequest<CartResponse>(`/cart/items/${productId}/decrement`, {
+      method: 'POST',
     });
   },
 

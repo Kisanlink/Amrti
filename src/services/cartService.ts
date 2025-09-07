@@ -1,32 +1,5 @@
-import { cartApi, type CartResponse, type CartSummaryResponse, type CartCountResponse, type CartValidationResponse } from './api';
+import { cartApi, type CartResponse, type CartSummaryResponse, type CartCountResponse, type CartValidationResponse, type Cart, type CartItem } from './api';
 import type { Product } from '../context/AppContext';
-
-export interface CartItem {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
-  cart_id: string;
-  product_id: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  product?: Product; // Product details if available
-}
-
-export interface Cart {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
-  user_id: string;
-  total_items: number;
-  total_price: number;
-  discount_amount: number;
-  items: CartItem[];
-}
 
 export interface AddToCartRequest {
   product_id: string;
@@ -46,8 +19,10 @@ export class CartService {
    */
   static async addItem(productId: string, quantity: number): Promise<Cart> {
     try {
+      console.log(`Adding item to cart: ${productId}, quantity: ${quantity}`);
       const response = await cartApi.addItem(productId, quantity);
-      return response.data.cart;
+      console.log('Add item response:', response);
+      return response.data;
     } catch (error) {
       console.error('Failed to add item to cart:', error);
       throw new Error('Failed to add item to cart. Please try again later.');
@@ -104,7 +79,9 @@ export class CartService {
    */
   static async updateItemQuantity(productId: string, quantity: number): Promise<Cart> {
     try {
+      console.log(`Updating cart item quantity: ${productId}, quantity: ${quantity}`);
       const response = await cartApi.updateItemQuantity(productId, quantity);
+      console.log('Update item response:', response);
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {
@@ -120,7 +97,9 @@ export class CartService {
    */
   static async removeItem(productId: string): Promise<Cart> {
     try {
+      console.log(`Removing item from cart: ${productId}`);
       const response = await cartApi.removeItem(productId);
+      console.log('Remove item response:', response);
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {
@@ -136,12 +115,11 @@ export class CartService {
    */
   static async incrementItem(productId: string): Promise<Cart> {
     try {
-      const cart = await this.getCart();
-      const item = cart.items.find(item => item.product_id === productId);
-      if (item) {
-        return await this.updateItemQuantity(productId, item.quantity + 1);
-      }
-      throw new Error('Item not found in cart');
+      console.log(`Incrementing item quantity: ${productId}`);
+      const response = await cartApi.incrementItem(productId);
+      console.log('Increment item response:', response);
+      // Re-fetch the enriched cart to ensure product details are included
+      return await this.getCart();
     } catch (error) {
       console.error('Failed to increment item quantity:', error);
       throw new Error('Failed to increment item quantity. Please try again later.');
@@ -155,14 +133,11 @@ export class CartService {
    */
   static async decrementItem(productId: string): Promise<Cart> {
     try {
-      const cart = await this.getCart();
-      const item = cart.items.find(item => item.product_id === productId);
-      if (item && item.quantity > 1) {
-        return await this.updateItemQuantity(productId, item.quantity - 1);
-      } else if (item && item.quantity === 1) {
-        return await this.removeItem(productId);
-      }
-      throw new Error('Item not found in cart');
+      console.log(`Decrementing item quantity: ${productId}`);
+      const response = await cartApi.decrementItem(productId);
+      console.log('Decrement item response:', response);
+      // Re-fetch the enriched cart to ensure product details are included
+      return await this.getCart();
     } catch (error) {
       console.error('Failed to decrement item quantity:', error);
       throw new Error('Failed to decrement item quantity. Please try again later.');

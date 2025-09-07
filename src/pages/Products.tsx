@@ -17,6 +17,7 @@ const Products = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(false);
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const [filters, setFilters] = useState({
     priceRange: [0, 2000],
@@ -73,10 +74,10 @@ const Products = () => {
     }
     
     // Availability filter
-    if (filters.availability === 'inStock' && product.stock <= 0) {
+    if (filters.availability === 'inStock' && product.stock_status !== 'In Stock') {
       return false;
     }
-    if (filters.availability === 'outOfStock' && product.stock > 0) {
+    if (filters.availability === 'outOfStock' && product.stock_status === 'In Stock') {
       return false;
     }
     
@@ -126,77 +127,46 @@ const Products = () => {
     <>
       <ScrollToTop />
       <div className="pt-16 sm:pt-20 bg-beige-300">
-      {/* Product Categories */}
-      {/* <section className="py-12 sm:py-16 bg-gradient-to-r from-beige-500 via-beige-400 to-beige-500">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-8 sm:mb-12"
-          >
-            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-3 sm:mb-4">
-              Product Categories
-            </h2>
-            <p className="text-base sm:text-lg text-black-700 px-4 sm:px-0">
-              Explore our range of natural products by category
-            </p>
-          </motion.div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className="group cursor-pointer"
-              >
-                <div className="p-4 sm:p-6 rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 text-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Leaf className="w-5 h-5 sm:w-6 sm:h-6 text-white-50" />
-                  </div>
-                  <h3 className="text-sm sm:text-lg font-heading font-semibold text-black-900 mb-1 sm:mb-2">
-                    {category.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-black-600">
-                    {category.count} products
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
       {/* All Products */}
-      <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
-        <div className="container-custom">
-          {/* Header with Filter Toggle */}
-          <div className="flex items-center justify-between mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-              className="text-center flex-1"
-          >
-              <h2 className="text-3xl sm:text-4xl font-heading font-bold text-black-900 mb-4 sm:mb-6">
-                Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Natural Products</span>
-            </h2>
-              <p className="text-lg sm:text-xl text-black-700 max-w-3xl mx-auto">
-                Discover our complete collection of premium natural products
-            </p>
-          </motion.div>
-
-            {/* Mobile Filter Button */}
-            <button
-              onClick={() => setShowSidebar(true)}
-              className="lg:hidden p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+        <div className="container-custom px-4 sm:px-6">
+          {/* Header with Filter Toggle - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-center sm:text-left flex-1"
             >
-              <Filter className="w-5 h-5" />
-            </button>
-                    </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-black-900 mb-2 sm:mb-4 lg:mb-6">
+                Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Natural Products</span>
+              </h2>
+              <p className="text-base sm:text-lg lg:text-xl text-black-700 max-w-3xl mx-auto sm:mx-0">
+                Discover our complete collection of premium natural products
+              </p>
+            </motion.div>
+
+            {/* Filter Buttons */}
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* Desktop Filter Button */}
+              <button
+                onClick={() => setShowDesktopSidebar(!showDesktopSidebar)}
+                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="font-medium">Filters</span>
+              </button>
+              
+              {/* Mobile Filter Button */}
+              <button
+                onClick={() => setShowSidebar(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
+              >
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="font-medium">Filters</span>
+              </button>
+            </div>
+          </div>
 
           {/* Filter Summary */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -221,48 +191,75 @@ const Products = () => {
                     )}
                   </div>
                   
-          {/* Products Grid */}
-          <div className="flex gap-6 lg:gap-8">
+          {/* Products Grid - Mobile Optimized */}
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
             {/* Sidebar - Desktop */}
-            <div className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-24 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-                <h3 className="text-lg font-heading font-bold text-black-900 mb-6 flex items-center">
-                  <Sliders className="w-5 h-5 mr-2" />
-                  Filters
+            {showDesktopSidebar && (
+              <div className="hidden lg:block w-64 flex-shrink-0">
+                <div className="sticky top-24 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-heading font-bold text-black-900 flex items-center">
+                      <Sliders className="w-5 h-5 mr-2" />
+                      Filters
                     </h3>
+                    <button
+                      onClick={() => setShowDesktopSidebar(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Close Filters"
+                    >
+                      <X className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
                 
                 {/* Price Range */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-black-900 mb-3">Price Range</h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm text-black-600">
-                      <span>₹{filters.priceRange[0]}</span>
-                      <span>₹{filters.priceRange[1]}</span>
+                    {/* Clear Min/Max Labels */}
+                    <div className="flex justify-between text-sm font-medium text-gray-700">
+                      <span>Min: ₹{filters.priceRange[0]}</span>
+                      <span>Max: ₹{filters.priceRange[1]}</span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="2000"
-                      value={filters.priceRange[1]}
-                      onChange={(e) => setFilters(prev => ({
-                        ...prev,
-                        priceRange: [prev.priceRange[0], parseInt(e.target.value)]
-                      }))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="2000"
-                      value={filters.priceRange[0]}
-                      onChange={(e) => setFilters(prev => ({
-                        ...prev,
-                        priceRange: [parseInt(e.target.value), prev.priceRange[1]]
-                      }))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                      </div>
+                    
+                    {/* Simple Range Slider */}
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="2000"
+                        value={filters.priceRange[0]}
+                        onChange={(e) => {
+                          const value = Math.min(parseInt(e.target.value), filters.priceRange[1]);
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [value, prev.priceRange[1]]
+                          }));
+                        }}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="2000"
+                        value={filters.priceRange[1]}
+                        onChange={(e) => {
+                          const value = Math.max(parseInt(e.target.value), filters.priceRange[0]);
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [prev.priceRange[0], value]
+                          }));
+                        }}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      />
                     </div>
+                    
+                    {/* Range Labels */}
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>₹0</span>
+                      <span>₹2000</span>
+                    </div>
+                  </div>
+                </div>
                     
                 {/* Availability */}
                 <div className="mb-6">
@@ -340,17 +337,18 @@ const Products = () => {
                   </select>
                 </div>
               </div>
-          </div>
+              </div>
+            )}
 
             {/* Products Grid */}
-            <div className="flex-1">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="mb-12"
-          >
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="flex-1 w-full">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="mb-8 sm:mb-12"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                   {sortedProducts.map((product, index) => (
                 <motion.div
                   key={product.id}
@@ -360,7 +358,7 @@ const Products = () => {
                   whileHover={{ y: -5 }}
                   className="group cursor-pointer"
                 >
-                  <div className="overflow-hidden rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                  <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
                         src={product.image_url}
@@ -368,11 +366,11 @@ const Products = () => {
                         className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ maxHeight: '200px' }}
                       />
-                      <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
+                      {/* <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
                         {product.category}
-                      </div>
+                      </div> */}
                                   {product.actual_price > product.price && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white-50 px-2 py-1 rounded-full text-xs font-semibold">
+              <div className="absolute top-3 left-3 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold ">
                 {Math.round(((product.actual_price - product.price) / product.actual_price) * 100)}% OFF
               </div>
             )}
@@ -406,9 +404,9 @@ const Products = () => {
                 )}
                         </div>
                         <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-semibold ${
-                          product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          product.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
-                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                          {product.stock_status}
                         </span>
                       </div>
 
@@ -565,9 +563,9 @@ const Products = () => {
       {/* Mobile Sidebar Modal */}
       {showSidebar && (
         <div className="fixed inset-0 bg-black/50 z-[9999] lg:hidden">
-          <div className="fixed inset-y-0 left-0 w-80 bg-white shadow-2xl">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
+          <div className="fixed inset-y-0 left-0 w-80 max-w-[90vw] bg-white shadow-2xl overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h3 className="text-lg font-heading font-bold text-black-900 flex items-center">
                   <Sliders className="w-5 h-5 mr-2" />
                   Filters
@@ -584,32 +582,49 @@ const Products = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-black-900 mb-3">Price Range</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-black-600">
-                    <span>₹{filters.priceRange[0]}</span>
-                    <span>₹{filters.priceRange[1]}</span>
+                  {/* Clear Min/Max Labels */}
+                  <div className="flex justify-between text-sm font-medium text-gray-700">
+                    <span>Min: ₹{filters.priceRange[0]}</span>
+                    <span>Max: ₹{filters.priceRange[1]}</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2000"
-                    value={filters.priceRange[1]}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      priceRange: [prev.priceRange[0], parseInt(e.target.value)]
-                    }))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="2000"
-                    value={filters.priceRange[0]}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      priceRange: [parseInt(e.target.value), prev.priceRange[1]]
-                    }))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
+                  
+                  {/* Simple Range Slider */}
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="2000"
+                      value={filters.priceRange[0]}
+                      onChange={(e) => {
+                        const value = Math.min(parseInt(e.target.value), filters.priceRange[1]);
+                        setFilters(prev => ({
+                          ...prev,
+                          priceRange: [value, prev.priceRange[1]]
+                        }));
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="2000"
+                      value={filters.priceRange[1]}
+                      onChange={(e) => {
+                        const value = Math.max(parseInt(e.target.value), filters.priceRange[0]);
+                        setFilters(prev => ({
+                          ...prev,
+                          priceRange: [prev.priceRange[0], value]
+                        }));
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  
+                  {/* Range Labels */}
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>₹0</span>
+                    <span>₹2000</span>
+                  </div>
                 </div>
               </div>
 
