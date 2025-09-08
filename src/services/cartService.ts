@@ -22,6 +22,10 @@ export class CartService {
       console.log(`Adding item to cart: ${productId}, quantity: ${quantity}`);
       const response = await cartApi.addItem(productId, quantity);
       console.log('Add item response:', response);
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       return response.data;
     } catch (error) {
       console.error('Failed to add item to cart:', error);
@@ -82,6 +86,10 @@ export class CartService {
       console.log(`Updating cart item quantity: ${productId}, quantity: ${quantity}`);
       const response = await cartApi.updateItemQuantity(productId, quantity);
       console.log('Update item response:', response);
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {
@@ -100,6 +108,10 @@ export class CartService {
       console.log(`Removing item from cart: ${productId}`);
       const response = await cartApi.removeItem(productId);
       console.log('Remove item response:', response);
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {
@@ -118,6 +130,10 @@ export class CartService {
       console.log(`Incrementing item quantity: ${productId}`);
       const response = await cartApi.incrementItem(productId);
       console.log('Increment item response:', response);
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {
@@ -136,6 +152,10 @@ export class CartService {
       console.log(`Decrementing item quantity: ${productId}`);
       const response = await cartApi.decrementItem(productId);
       console.log('Decrement item response:', response);
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       // Re-fetch the enriched cart to ensure product details are included
       return await this.getCart();
     } catch (error) {

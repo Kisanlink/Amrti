@@ -53,6 +53,10 @@ export class WishlistService {
   static async addToWishlist(productId: string): Promise<WishlistItem[]> {
     try {
       await favoritesApi.addToFavorites(productId);
+      
+      // Dispatch wishlist updated event
+      window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+      
       // Refresh wishlist after adding
       return await this.getWishlist();
     } catch (error) {
@@ -69,6 +73,10 @@ export class WishlistService {
   static async removeFromWishlist(productId: string): Promise<WishlistItem[]> {
     try {
       await favoritesApi.removeFromFavorites(productId);
+      
+      // Dispatch wishlist updated event
+      window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+      
       // Refresh wishlist after removing
       return await this.getWishlist();
     } catch (error) {

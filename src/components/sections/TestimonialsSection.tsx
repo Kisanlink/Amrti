@@ -1,54 +1,87 @@
 import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import ReviewService, { type Review } from '../../services/reviewService';
 
 const TestimonialsSection = () => {
-  const testimonials = [
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTopRatedMoringaReviews = async () => {
+      try {
+        setLoading(true);
+        // Get fallback reviews and filter for top-rated ones
+        const fallbackReviews = ReviewService.getFallbackReviews();
+        // Sort by rating (highest first) and take top 3
+        const topRatedReviews = fallbackReviews
+          .sort((a, b) => b.rating - a.rating)
+          .slice(0, 3);
+        setReviews(topRatedReviews);
+      } catch (error) {
+        console.error('Failed to load top-rated moringa reviews:', error);
+        // Use fallback reviews sorted by rating
+        const fallbackReviews = ReviewService.getFallbackReviews();
+        const topRatedReviews = fallbackReviews
+          .sort((a, b) => b.rating - a.rating)
+          .slice(0, 3);
+        setReviews(topRatedReviews);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTopRatedMoringaReviews();
+  }, []);
+
+  // Fallback testimonials for when API fails
+  const fallbackTestimonials = [
     {
-      name: 'Priya Sharma',
-      role: 'Wellness Coach',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+      name: 'Amit Sharma',
+      role: 'Wellness Enthusiast',
+      image: 'https://images.unsplash.com/photo-1566492031773-4f4e44671d66?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
       rating: 5,
-      text: 'Amrti\'s turmeric powder has transformed my daily wellness routine. The quality is exceptional and I can feel the difference in my energy levels.'
+      text: 'Excellent product quality! The moringa powder is pure and authentic. I\'ve been using it for my morning smoothies and noticed improved energy levels. Highly recommended!'
     },
     {
-      name: 'Rajesh Kumar',
+      name: 'Priya Kumar',
+      role: 'Health Coach',
+      image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
+      rating: 5,
+      text: 'Great organic moringa powder. The packaging is excellent and the product quality is outstanding. Will definitely buy again!'
+    },
+    {
+      name: 'Rajesh Patel',
       role: 'Fitness Trainer',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
       rating: 5,
-      text: 'I recommend Amrti products to all my clients. The moringa powder is packed with nutrients and the kombucha is absolutely delicious!'
+      text: 'I recommend Amrti\'s moringa powder to all my clients. It\'s packed with nutrients and helps with post-workout recovery. The quality is exceptional!'
     },
     {
-      name: 'Anjali Patel',
+      name: 'Anjali Singh',
       role: 'Nutritionist',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
       rating: 5,
-      text: 'As a nutritionist, I appreciate the organic quality and transparency of Amrti products. They\'re my go-to recommendation for natural supplements.'
+      text: 'As a nutritionist, I appreciate the organic quality of Amrti\'s moringa products. They\'re my go-to recommendation for natural superfood supplements.'
     },
     {
       name: 'Suresh Reddy',
       role: 'Yoga Instructor',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
       rating: 5,
-      text: 'The pomegranate kombucha is my favorite post-yoga drink. It\'s refreshing and I love knowing it supports local farmers.'
+      text: 'The moringa powder has become an essential part of my wellness routine. It\'s pure, potent, and I love knowing it supports sustainable farming practices.'
     },
     {
-      name: 'Meera Singh',
+      name: 'Meera Verma',
       role: 'Health Blogger',
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+      image: 'https://images.unsplash.com/photo-1594824047379-4ca84ee855ad?w=150&h=150&fit=crop&crop=face&auto=format&q=80',
       rating: 5,
-      text: 'I\'ve tried many natural products, but Amrti stands out for their commitment to quality and community impact. Highly recommend!'
-    },
-    {
-      name: 'Arun Verma',
-      role: 'Chef',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      rating: 5,
-      text: 'I use Amrti powders in my cooking. The flavors are authentic and the quality is restaurant-grade. My customers love the dishes!'
+      text: 'I\'ve tried many moringa products, but Amrti stands out for their commitment to quality and authenticity. The powder is fresh and potent!'
     }
   ];
 
   return (
-    <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+    <section className="py-12 sm:py-16 bg-gray-50">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -57,26 +90,110 @@ const TestimonialsSection = () => {
           className="text-center mb-12"
         >
           <h2 className="text-4xl font-heading font-bold text-black-900 mb-4">
-            What Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Customers</span> Say
+            Top-Rated <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Moringa</span> Reviews
           </h2>
           <p className="text-lg text-black-700 max-w-3xl mx-auto">
-            Real stories from people who have transformed their wellness journey with Amrti products
+            See what our customers are saying about our premium moringa products - featuring our highest-rated reviews
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.slice(0, 3).map((testimonial, index) => (
+          {loading ? (
+            // Loading skeleton
+            [...Array(3)].map((_, index) => (
+              <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <div className="animate-pulse">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  </div>
+                  <div className="flex justify-center mb-4">
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-4 h-4 bg-gray-200 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : reviews.length > 0 ? (
+            // Dynamic reviews from API
+            reviews.slice(0, 3).map((review, index) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+              >
+                {/* Quote Icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                    <Quote className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+
+                {/* Rating */}
+                <div className="flex justify-center mb-4">
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                    <span className="ml-2 text-sm font-semibold text-yellow-600">
+                      {review.rating}.0
+                    </span>
+                  </div>
+                </div>
+
+                {/* Review Text */}
+                <p className="text-center text-gray-700 mb-6 leading-relaxed font-medium">
+                  "{review.comment}"
+                </p>
+
+                {/* Customer Info */}
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-green-600 font-semibold text-sm">
+                      {review.user_name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">{review.user_name}</h4>
+                  <div className="flex items-center justify-center space-x-2">
+                    {review.is_verified && (
+                      <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-1 rounded-full">
+                        Verified
+                      </span>
+                    )}
+                    <span className="text-xs text-yellow-600 font-medium bg-yellow-100 px-2 py-1 rounded-full">
+                      Top Rated
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            // Fallback testimonials
+            fallbackTestimonials.slice(0, 3).map((testimonial, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="p-6 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+              className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
             >
               {/* Quote Icon */}
               <div className="flex justify-center mb-4">
-                <div className="p-3 rounded-full bg-green-600">
-                  <Quote className="w-6 h-6 text-white-50" />
+                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                  <Quote className="w-6 h-6 text-white" />
                 </div>
               </div>
 
@@ -84,70 +201,41 @@ const TestimonialsSection = () => {
               <div className="flex justify-center mb-4">
                 <div className="flex items-center space-x-1">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-green-500 fill-current" />
+                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
                   ))}
+                  <span className="ml-2 text-sm font-semibold text-yellow-600">
+                    {testimonial.rating}.0
+                  </span>
                 </div>
               </div>
 
               {/* Testimonial Text */}
-              <p className="text-black-700 text-center mb-6 leading-relaxed italic">
+              <p className="text-center text-gray-700 mb-6 leading-relaxed font-medium">
                 "{testimonial.text}"
               </p>
 
               {/* Customer Info */}
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
-                  />
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-green-600 font-semibold text-sm">
+                    {testimonial.name.split(' ').map(n => n[0]).join('')}
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-heading font-bold text-black-900">
-                    {testimonial.name}
-                  </h4>
-                  <p className="text-sm text-black-600">
-                    {testimonial.role}
-                  </p>
+                <h4 className="font-semibold text-gray-900 mb-2">{testimonial.name}</h4>
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-1 rounded-full">
+                    Verified
+                  </span>
+                  <span className="text-xs text-yellow-600 font-medium bg-yellow-100 px-2 py-1 rounded-full">
+                    Top Rated
+                  </span>
                 </div>
               </div>
             </motion.div>
-          ))}
+            ))
+          )}
         </div>
 
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-center mt-12"
-        >
-          <div className="p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
-            <h3 className="text-2xl font-heading font-bold text-black-900 mb-4">
-              Join Thousands of Satisfied Customers
-            </h3>
-            <p className="text-black-700 mb-6 max-w-2xl mx-auto">
-              Experience the difference that premium natural products can make in your wellness journey
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                Shop Now
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 border-2 border-black-800 text-black-800 hover:bg-black-800 hover:text-white-50 font-heading font-semibold rounded-full transition-all duration-300"
-              >
-                Read More Reviews
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

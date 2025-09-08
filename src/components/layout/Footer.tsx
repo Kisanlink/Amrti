@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { productsApi } from '../../services/api';
+import RecipeService from '../../services/recipeService';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [products, setProducts] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const footerLinks = {
@@ -27,23 +29,31 @@ const Footer = () => {
     { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/amrti.foods/' },
   ];
 
-  // Fetch products for footer
+  // Fetch products and recipes for footer
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await productsApi.getProducts(1, 20); // Get first 20 products
-        if (response.data && Array.isArray(response.data)) {
-          setProducts(response.data);
+        
+        // Fetch products
+        const productsResponse = await productsApi.getProducts(1, 20);
+        if (productsResponse.data && Array.isArray(productsResponse.data)) {
+          setProducts(productsResponse.data);
+        }
+        
+        // Fetch recipes
+        const recipesResponse = await RecipeService.getAllRecipes(1, 10);
+        if (recipesResponse.recipes && Array.isArray(recipesResponse.recipes)) {
+          setRecipes(recipesResponse.recipes);
         }
       } catch (error) {
-        console.error('Failed to fetch products for footer:', error);
+        console.error('Failed to fetch data for footer:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   return (
@@ -153,17 +163,37 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
             >
-              <h4 className="text-lg font-heading font-bold mb-4">Recipes</h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    to="/recipes"
-                    className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-                  >
-                    All Recipes
-                  </Link>
-                </li>
-              </ul>
+              <h4 className="text-base sm:text-lg font-heading font-bold mb-3 sm:mb-4">Recipes</h4>
+              {loading ? (
+                <div className="space-y-2">
+                  {[...Array(4)].map((_, index) => (
+                    <div key={index} className="h-4 bg-gray-700 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {recipes.slice(0, 6).map((recipe) => (
+                    <li key={recipe.id}>
+                      <Link
+                        to={`/recipes/${recipe.id}`}
+                        className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+                      >
+                        {recipe.name}
+                      </Link>
+                    </li>
+                  ))}
+                  {recipes.length > 6 && (
+                    <li>
+                      <Link
+                        to="/recipes"
+                        className="text-green-400 hover:text-green-300 transition-colors duration-200 text-sm font-medium"
+                      >
+                        View All Recipes →
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              )}
             </motion.div>
 
             {/* Support Links */}

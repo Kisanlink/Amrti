@@ -37,21 +37,9 @@ const ProductsSection = () => {
         }
         setWishlistItems(wishlistSet);
         
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to get cart count:', error);
-          setCartCount(0);
-        }
-        
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to get wishlist count:', error);
-          setWishlistCount(0);
-        }
+        // Initialize counts - will be updated via events
+        setCartCount(0);
+        setWishlistCount(0);
       } catch (error) {
         console.error('Failed to load products:', error);
         setProducts([]);
@@ -59,6 +47,36 @@ const ProductsSection = () => {
     };
     
     loadProducts();
+  }, []);
+
+  // Listen for cart and wishlist updates
+  useEffect(() => {
+    const handleCartUpdate = async () => {
+      try {
+        const cartCount = await CartService.getItemCount();
+        setCartCount(cartCount);
+      } catch (error) {
+        console.error('Failed to update cart count:', error);
+      }
+    };
+
+    const handleWishlistUpdate = async () => {
+      try {
+        const wishlistCount = await WishlistService.getWishlistCount();
+        setWishlistCount(wishlistCount);
+      } catch (error) {
+        console.error('Failed to update wishlist count:', error);
+      }
+    };
+
+    // Listen for custom events
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+    };
   }, []);
 
   // Helper function to check if product is in wishlist
@@ -143,8 +161,7 @@ const ProductsSection = () => {
                   setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
                   try {
                     await CartService.addItem(product.id, 1);
-                    const cartCount = await CartService.getItemCount();
-                    setCartCount(cartCount);
+                    // Cart count will be updated via event listener
                     showNotification({
                       type: 'success',
                       message: `${product.name} added to cart successfully!`
@@ -194,8 +211,7 @@ const ProductsSection = () => {
                         message: `${product.name} added to wishlist successfully!`
                       });
                     }
-                    const wishlistCount = await WishlistService.getWishlistCount();
-                    setWishlistCount(wishlistCount);
+                    // Wishlist count will be updated via event listener
                   } catch (err) {
                     console.error('Failed to update wishlist:', err);
                     showNotification({

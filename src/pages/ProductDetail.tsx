@@ -6,6 +6,9 @@ import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
 import CartService from '../services/cartService';
 import WishlistService from '../services/wishlistService';
+import ReviewService, { type Review } from '../services/reviewService';
+import ReviewCard from '../components/ui/ReviewCard';
+import ReviewForm from '../components/ui/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
 
 const ProductDetail = () => {
@@ -24,15 +27,40 @@ const ProductDetail = () => {
     storage: false
   });
 
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    title: '',
-    comment: '',
-    name: ''
-  });
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [suggestedProducts, setSuggestedProducts] = useState<any[]>([]);
   const { showNotification } = useNotification();
+
+  // Load reviews for the product
+  const loadReviews = async () => {
+    if (!id) return;
+    
+    setReviewsLoading(true);
+    try {
+      const response = await ReviewService.getProductReviews(id, 1, 10);
+      // For moringa products, always show static reviews first, then add API reviews
+      if (product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))) {
+        const staticReviews = ReviewService.getFallbackReviews();
+        setReviews([...staticReviews, ...response.reviews]);
+      } else {
+        // For non-moringa products, show only API reviews (will be empty for new products)
+        setReviews(response.reviews);
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+      // Use fallback reviews for moringa products only
+      if (product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))) {
+        setReviews(ReviewService.getFallbackReviews());
+      } else {
+        // For non-moringa products, show empty reviews (new product)
+        setReviews([]);
+      }
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   // Load product and suggested products on mount
   useEffect(() => {
@@ -73,6 +101,42 @@ const ProductDetail = () => {
     
     loadProduct();
   }, [id]);
+
+  // Load reviews after product is loaded
+  useEffect(() => {
+    if (product) {
+      loadReviews();
+    }
+  }, [product]);
+
+  // Handle review like update
+  const handleReviewLikeUpdate = (reviewId: string, likesCount: number, hasUserLiked: boolean) => {
+    console.log('handleReviewLikeUpdate called:', { reviewId, likesCount, hasUserLiked });
+    setReviews(prevReviews => {
+      const updatedReviews = prevReviews.map(review => 
+        review.id === reviewId 
+          ? { ...review, likes_count: likesCount, is_user_liked: hasUserLiked }
+          : review
+      );
+      console.log('Updated reviews:', updatedReviews);
+      return updatedReviews;
+    });
+  };
+
+  const handleReviewDelete = (reviewId: string) => {
+    console.log('handleReviewDelete called:', { reviewId });
+    setReviews(prevReviews => {
+      const updatedReviews = prevReviews.filter(review => review.id !== reviewId);
+      console.log('Updated reviews after delete:', updatedReviews);
+      return updatedReviews;
+    });
+  };
+
+  // Handle new review submission
+  const handleReviewSubmitted = (newReview: Review) => {
+    setReviews(prevReviews => [newReview, ...prevReviews]);
+    setShowReviewForm(false);
+  };
 
   if (loading) {
     return (
@@ -371,138 +435,131 @@ const ProductDetail = () => {
         </div>
       </section> */}
 
-       {/* Customer Reviews Section */}
-        <section className="py-8 sm:py-12 lg:py-16 bg-white">
-        <div className="container-custom px-4 sm:px-6">
-            <div className="max-w-4xl mx-auto">
-              {/* Reviews Header */}
-              <div className="text-center mb-6 sm:mb-8 lg:mb-12">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-3 lg:mb-4">Customer Reviews</h2>
-                <p className="text-black-600 text-sm sm:text-base lg:text-lg">See what our customers are saying about this product</p>
-              </div>
-
-              {/* Reviews Summary Card */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-                <div className="flex flex-col lg:flex-row items-center justify-between">
-                  {/* Overall Rating */}
-                  <div className="text-center lg:text-left mb-4 sm:mb-6 lg:mb-0">
-                    <div className="flex items-center justify-center lg:justify-start mb-2 sm:mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-yellow-400 fill-current"
-                        />
-                      ))}
-                    </div>
-                    <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black-900 mb-1 sm:mb-2">4.88 out of 5</div>
-                    <div className="text-black-600 text-xs sm:text-sm lg:text-base">Based on 285 reviews</div>
-                  </div>
-
-                  {/* Rating Distribution */}
-                  <div className="flex-1 max-w-md mx-auto lg:mx-0 lg:ml-8">
-                    <div className="space-y-3">
-                      {[5, 4, 3, 2, 1].map((stars) => {
-                        const count = stars === 5 ? 254 : stars === 4 ? 30 : stars === 1 ? 1 : 0;
-                        const percentage = (count / 285) * 100;
-                        return (
-                          <div key={stars} className="flex items-center space-x-3">
-                            <span className="text-sm font-medium text-black-700 w-8">{stars}★</span>
-                            <div className="flex-1 bg-white/50 rounded-full h-3">
-                              <div 
-                                className={`h-3 rounded-full bg-green-600 transition-all duration-500`}
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-black-700 w-12">{count}</span>
+       {/* Customer Reviews Section - Show only when there are reviews */}
+        {product && reviews.length > 0 && !reviewsLoading && (
+          <section className="py-8 sm:py-12 lg:py-16 bg-white">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="max-w-4xl mx-auto">
+                {/* Reviews Header */}
+                <div className="text-center mb-6 sm:mb-8 lg:mb-12">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-3 lg:mb-4">Customer Reviews</h2>
+                  <p className="text-black-600 text-sm sm:text-base lg:text-lg">See what our customers are saying about this product</p>
                 </div>
-                        );
-                      })}
+
+                {/* Reviews Summary Card */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+                  <div className="flex flex-col lg:flex-row items-center justify-between">
+                    {/* Overall Rating */}
+                    <div className="text-center lg:text-left mb-4 sm:mb-6 lg:mb-0">
+                      <div className="flex items-center justify-center lg:justify-start mb-2 sm:mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-yellow-400 fill-current"
+                          />
+                        ))}
+                      </div>
+                      <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black-900 mb-1 sm:mb-2">
+                        {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} out of 5
+                      </div>
+                      <div className="text-black-600 text-xs sm:text-sm lg:text-base">Based on {reviews.length} reviews</div>
+                    </div>
+
+                    {/* Write Review Button */}
+                    <div className="mt-6 lg:mt-0">
+                      <button 
+                        onClick={() => setShowReviewForm(!showReviewForm)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
+                      >
+                        Write a Review
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review Form */}
+                {showReviewForm && (
+                  <div className="mb-8">
+                    <ReviewForm
+                      productId={id!}
+                      onReviewSubmitted={handleReviewSubmitted}
+                      onCancel={() => setShowReviewForm(false)}
+                    />
+                  </div>
+                )}
+
+                {/* Individual Reviews */}
+                <div className="space-y-4">
+                  {reviews.map((review, index) => (
+                    <ReviewCard
+                      key={review.id}
+                      review={review}
+                      productId={id}
+                      onLikeUpdate={handleReviewLikeUpdate}
+                      onDelete={handleReviewDelete}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Be the First to Review Section - Show when no reviews */}
+        {product && reviews.length === 0 && !reviewsLoading && (
+          <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-green-50 to-green-100">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="max-w-2xl mx-auto text-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="bg-white rounded-2xl p-8 sm:p-12 shadow-xl border border-green-200"
+                >
+                  {/* Icon */}
+                  <div className="mb-6">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                      <Star className="w-8 h-8 text-green-600" />
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900 mb-4">
+                    Be the First to Review!
+                  </h2>
+
+                  {/* Description */}
+                  <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                    {product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))
+                      ? "Share your experience with this moringa product and help others make informed decisions."
+                      : "This is a new product. Share your experience and help others discover its benefits."
+                    }
+                  </p>
 
                   {/* Write Review Button */}
-                  <div className="mt-6 lg:mt-0">
-                    <button 
-                      onClick={() => setShowReviewModal(true)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
-                    >
-                      Write a Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Individual Reviews */}
-              <div className="space-y-3 sm:space-y-4">
-                {/* Review 1 */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">AS</span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-black-900">Amit Sharma</div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                          ))}
-                          <span className="text-sm text-black-600 ml-2">2 days ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-black-700 leading-relaxed">Excellent product quality! The moringa powder is pure and authentic. I've been using it for my morning smoothies and noticed improved energy levels. Highly recommended!</p>
-                </motion.div>
-
-                {/* Review 2 */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">PK</span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-black-900">Priya Kumar</div>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                          ))}
-                          <span className="text-sm text-black-600 ml-2">1 week ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-black-700 leading-relaxed">Great organic moringa powder. The packaging is excellent and the product quality is outstanding. Will definitely buy again!</p>
-                </motion.div>
-
-
-                {/* Load More Reviews Button */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="text-center pt-6"
-                >
-                  <button className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors">
-                    <span>View More Reviews</span>
-                    <ChevronDown className="w-5 h-5" />
+                  <button 
+                    onClick={() => setShowReviewForm(!showReviewForm)}
+                    className="inline-flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  >
+                    <Star className="w-5 h-5" />
+                    <span>Write the First Review</span>
                   </button>
                 </motion.div>
+
+                {/* Review Form */}
+                {showReviewForm && (
+                  <div className="mt-8">
+                    <ReviewForm
+                      productId={id!}
+                      onReviewSubmitted={handleReviewSubmitted}
+                      onCancel={() => setShowReviewForm(false)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Product Information Sections */}
         <section className="py-16 bg-white">
@@ -725,118 +782,6 @@ const ProductDetail = () => {
         )}
       </div>
 
-      {/* Review Modal */}
-      {showReviewModal && (
-        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Write a Review</h3>
-              <button
-                onClick={() => setShowReviewModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              // Handle review submission here
-              showNotification({
-                type: 'success',
-                message: 'Review submitted successfully!'
-              });
-              setShowReviewModal(false);
-              setReviewForm({ rating: 5, title: '', comment: '', name: '' });
-            }}>
-              <div className="space-y-6">
-                {/* Rating */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rating *
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
-                        className="p-1"
-                      >
-                        <Star
-                          className={`w-6 h-6 ${
-                            star <= reviewForm.rating
-                              ? 'text-yellow-400 fill-current'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={reviewForm.name}
-                    onChange={(e) => setReviewForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Enter your name"
-                  />
-                </div>
-
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Review Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={reviewForm.title}
-                    onChange={(e) => setReviewForm(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Summarize your experience"
-                  />
-                </div>
-
-                {/* Comment */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Review Comment *
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={reviewForm.comment}
-                    onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                    placeholder="Share your experience with this product..."
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                  Submit Review
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
     </>
   );
 };
