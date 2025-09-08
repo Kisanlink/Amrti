@@ -191,18 +191,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
               </div>
               
               {/* Milestones */}
-              <div className="flex justify-between text-xs text-gray-600">
+              <div className="flex justify-center text-xs text-gray-600">
                 <div className="flex items-center space-x-1">
                   <Truck size={12} />
                   <span>Free Shipping</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Gift size={12} />
-                  <span>FREE Mango Pulp</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Gift size={12} />
-                  <span>FREE 2-Mango Pulp</span>
                 </div>
               </div>
             </div>

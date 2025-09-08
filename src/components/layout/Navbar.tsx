@@ -83,16 +83,18 @@ const Navbar = () => {
     };
   }, []);
 
-  // Update cart and wishlist counts periodically
+  // Listen for cart and wishlist updates
   useEffect(() => {
-    const updateCounts = async () => {
+    const handleCartUpdate = async () => {
       try {
         const cartCount = await CartService.getItemCount();
         setCartCount(cartCount);
       } catch (error) {
         console.error('Failed to update cart count:', error);
       }
-      
+    };
+
+    const handleWishlistUpdate = async () => {
       try {
         const wishlistCount = await WishlistService.getWishlistCount();
         setWishlistCount(wishlistCount);
@@ -101,14 +103,13 @@ const Navbar = () => {
       }
     };
 
-    // Update counts immediately
-    updateCounts();
-
-    // Set up interval to refresh counts every 30 seconds
-    const interval = setInterval(updateCounts, 30000);
+    // Listen for custom events
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
 
     return () => {
-      clearInterval(interval);
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
     };
   }, []);
 
@@ -247,6 +248,14 @@ const Navbar = () => {
                 src="/navbar_logo.svg" 
                 alt="Amrti Nature's Elixir" 
                 className="h-24 w-auto sm:h-22 lg:h-24 object-contain"
+                style={{
+                  imageRendering: 'high-quality' as any,
+                  WebkitImageRendering: 'high-quality' as any,
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden' as any,
+                  transform: 'translateZ(0)',
+                  WebkitTransform: 'translateZ(0)' as any
+                }}
               />
             </motion.div>
           </Link>

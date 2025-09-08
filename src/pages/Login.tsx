@@ -76,21 +76,29 @@ const Login = () => {
         >
           <Link 
             to="/"
-            className="inline-flex items-center space-x-2 text-black-700 hover:text-green-600 transition-colors duration-300 mb-6"
+            className="inline-flex items-center space-x-2 text-black-700 hover:text-green-600 transition-colors duration-300 mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-heading font-semibold">Back to Home</span>
           </Link>
           
-          <div className="w-20 h-20 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+          <div className="mb-6">
             <img 
-                              src="/logo2.png" 
-                              alt="Amrti Nature's Elixir" 
-              className="w-10 h-10 object-contain"
+              src="/navbar_logo.svg" 
+              alt="Amrti Nature's Elixir" 
+              className="h-20 w-auto mx-auto object-contain"
+              style={{
+                imageRendering: 'high-quality' as any,
+                WebkitImageRendering: 'high-quality' as any,
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden' as any,
+                transform: 'translateZ(0)',
+                WebkitTransform: 'translateZ(0)' as any
+              }}
             />
           </div>
           
-          <h2 className="text-3xl font-heading font-bold text-black-900 mb-2">
+          <h2 className="text-3xl font-heading font-bold text-black-900 mb-3">
             Welcome Back
           </h2>
           <p className="text-lg text-black-700">
@@ -103,19 +111,26 @@ const Login = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 rounded-2xl shadow-xl p-8"
+          className="bg-white/95 backdrop-blur-md border border-white/20 rounded-3xl shadow-2xl p-8 relative overflow-hidden"
         >
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-beige-50/50"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-200/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-beige-200/20 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
+          
+          {/* Content */}
+          <div className="relative z-10">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm backdrop-blur-sm"
+              >
+                {error}
+              </motion.div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
@@ -132,7 +147,7 @@ const Login = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
                   placeholder="Enter your email"
                 />
               </div>
@@ -154,7 +169,7 @@ const Login = () => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-black-300 rounded-lg bg-white text-black-900 placeholder-black-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                  className="block w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
                   placeholder="Enter your password"
                 />
                 <button
@@ -196,7 +211,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || !formData.email || !formData.password}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {loading ? (
                 <>
@@ -226,7 +241,7 @@ const Login = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-heading font-semibold py-3 px-4 rounded-lg border border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-heading font-semibold py-4 px-6 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
               <>
@@ -245,8 +260,7 @@ const Login = () => {
               </>
             )}
           </button>
-
-
+          </div>
         </motion.div>
 
         {/* Sign Up Link */}

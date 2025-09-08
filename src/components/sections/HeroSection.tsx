@@ -56,14 +56,6 @@ const HeroSection = () => {
             transition={{ duration: 0.8 }}
             className="text-center lg:text-left"
           >
-                         <div className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-full text-sm font-medium mb-8 shadow-elegant">
-              <img 
-                src="/logo2.png" 
-                alt="Amrti Nature's Elixir" 
-                className="w-4 h-4 object-contain"
-              />
-              <span>Premium Natural Products</span>
-            </div>
             
                          <h1 className="text-5xl lg:text-6xl xl:text-7xl font-heading font-bold text-russet-900 mb-8 leading-tight">
                Transform Your <span className="text-green-600">Wellness</span> Journey
@@ -76,14 +68,18 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                            <motion.button
-                 whileHover={{ scale: 1.02, y: -2 }}
-                 whileTap={{ scale: 0.98 }}
-                 className="px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 flex items-center justify-center space-x-3"
-               >
-                 <span>Explore Products</span>
-                 <ArrowRight className="w-5 h-5" />
-               </motion.button>
+              <motion.div
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Link
+                  to="/products"
+                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
+                >
+                  <span>Explore Products</span>
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </motion.div>
                
                <motion.button
                  whileHover={{ scale: 1.02, y: -2 }}
