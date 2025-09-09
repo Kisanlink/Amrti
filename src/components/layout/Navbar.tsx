@@ -247,14 +247,22 @@ const Navbar = () => {
               <img 
                 src="/navbar_logo.svg" 
                 alt="Amrti Nature's Elixir" 
-                className="h-24 w-auto sm:h-22 lg:h-24 object-contain"
+                className="h-24 w-auto sm:h-22 lg:h-24 object-contain select-none pointer-events-none"
                 style={{
-                  imageRendering: 'high-quality' as any,
-                  WebkitImageRendering: 'high-quality' as any,
+                  imageRendering: 'crisp-edges' as any,
+                  WebkitImageRendering: 'crisp-edges' as any,
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden' as any,
                   transform: 'translateZ(0)',
-                  WebkitTransform: 'translateZ(0)' as any
+                  WebkitTransform: 'translateZ(0)' as any,
+                  willChange: 'transform',
+                  WebkitWillChange: 'transform' as any,
+                  filter: 'none',
+                  WebkitFilter: 'none' as any,
+                  opacity: 1,
+                  WebkitOpacity: 1 as any,
+                  imageOrientation: 'from-image' as any,
+                  WebkitImageOrientation: 'from-image' as any
                 }}
               />
             </motion.div>
@@ -472,13 +480,29 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
-          >
-            {isOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {/* Mobile Menu Buttons */}
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Cart Icon */}
+            <button
+              onClick={() => setShowCartPopup(!showCartPopup)}
+              className="relative p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </button>
+            
+            {/* Burger Menu Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
+            >
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}

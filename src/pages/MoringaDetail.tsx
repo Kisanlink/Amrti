@@ -12,6 +12,7 @@ const MoringaDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   const product = {
@@ -35,7 +36,7 @@ const MoringaDetail = () => {
   const handleAddToCart = () => {
     setIsAddingToCart(true);
     try {
-      CartService.addToCart(product.id, quantity, product);
+      CartService.addItem(product.id, quantity);
       showNotification({
         type: 'success',
         message: `${product.name} added to cart successfully!`
@@ -50,17 +51,19 @@ const MoringaDetail = () => {
     }
   };
 
-  const handleWishlistToggle = () => {
+  const handleWishlistToggle = async () => {
     setIsUpdatingWishlist(true);
     try {
-      if (isInWishlist(product.id)) {
-        removeFromWishlist(product.id);
+      if (isWishlisted) {
+        await WishlistService.removeFromWishlist(product.id);
+        setIsWishlisted(false);
         showNotification({
           type: 'success',
           message: `${product.name} removed from wishlist`
         });
       } else {
-        addToWishlist(product);
+        await WishlistService.addToWishlist(product.id);
+        setIsWishlisted(true);
         showNotification({
           type: 'success',
           message: `${product.name} added to wishlist`
@@ -75,8 +78,6 @@ const MoringaDetail = () => {
       setIsUpdatingWishlist(false);
     }
   };
-
-  const isWishlisted = isInWishlist(product.id);
 
   return (
     <>

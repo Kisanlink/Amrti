@@ -101,7 +101,7 @@ export const apiRequest = async <T>(
             localStorage.setItem('lastLoginModal', now.toString());
             window.dispatchEvent(new CustomEvent('loginRequired', { 
               detail: { 
-                message: errorData.message || 'Please login to continue',
+                message: 'Please login to continue',
                 redirectUrl: window.location.pathname 
               } 
             }));

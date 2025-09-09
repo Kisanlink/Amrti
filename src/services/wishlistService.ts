@@ -91,17 +91,13 @@ export class WishlistService {
    * @returns Promise with boolean indicating if product is in wishlist
    */
   static async isInWishlist(productId: string): Promise<boolean> {
-    // Temporarily disabled to stop API calls
-    return false;
-    
-    // Original implementation (commented out):
-    // try {
-    //   const response = await favoritesApi.checkFavorite(productId);
-    //   return response.is_favorite;
-    // } catch (error) {
-    //   console.error('Failed to check wishlist status:', error);
-    //   return false;
-    // }
+    try {
+      const response = await favoritesApi.checkFavorite(productId);
+      return response.is_favorite;
+    } catch (error) {
+      console.error('Failed to check wishlist status:', error);
+      return false;
+    }
   }
 
   /**

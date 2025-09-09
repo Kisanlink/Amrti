@@ -11,6 +11,7 @@ import {
   UserCredential
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { profileApi } from './api';
 
 export interface AuthUser {
   uid: string;
@@ -24,6 +25,31 @@ export interface AuthUser {
 
 export class AuthService {
   private static currentUser: FirebaseUser | null = null;
+  private static readonly AUTO_FILL_PROFILE_KEY = 'autoFillProfileCalled';
+
+  /**
+   * Call auto-fill profile API only once per user
+   */
+  private static async callAutoFillProfile(): Promise<void> {
+    try {
+      // Check if we've already called this API for this user
+      const hasCalledAutoFill = localStorage.getItem(this.AUTO_FILL_PROFILE_KEY);
+      if (hasCalledAutoFill) {
+        return; // Already called, skip
+      }
+
+      // Call the auto-fill profile API
+      await profileApi.autoFillProfile();
+      
+      // Mark as called to prevent future calls
+      localStorage.setItem(this.AUTO_FILL_PROFILE_KEY, 'true');
+      
+      console.log('Auto-fill profile API called successfully');
+    } catch (error) {
+      console.error('Failed to call auto-fill profile API:', error);
+      // Don't throw error to avoid breaking the login flow
+    }
+  }
 
   /**
    * Initialize Firebase authentication
@@ -102,14 +128,8 @@ export class AuthService {
         console.warn('Failed to store auth token:', error);
       }
       
-      // Create backend profile (this will happen automatically when they first access profile)
-      try {
-        const { default: ProfileService } = await import('./profileService');
-        await ProfileService.autoFillProfile();
-      } catch (profileError) {
-        console.warn('Failed to create backend profile:', profileError);
-        // Don't fail signup if profile creation fails
-      }
+      // Call auto-fill profile API (only once)
+      this.callAutoFillProfile();
       
       return authUser;
     } catch (error) {
@@ -156,6 +176,9 @@ export class AuthService {
         console.warn('Failed to store auth token:', error);
       }
       
+      // Call auto-fill profile API (only once)
+      this.callAutoFillProfile();
+      
       return authUser;
     } catch (error) {
       console.error('Login failed:', error);
@@ -185,6 +208,9 @@ export class AuthService {
       } catch (error) {
         console.warn('Failed to store auth token:', error);
       }
+      
+      // Call auto-fill profile API (only once)
+      this.callAutoFillProfile();
       
       return authUser;
     } catch (error) {
@@ -216,6 +242,7 @@ export class AuthService {
       localStorage.removeItem('authToken');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
+      localStorage.removeItem(this.AUTO_FILL_PROFILE_KEY); // Clear auto-fill flag
       
       // Dispatch logout event
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
@@ -226,6 +253,7 @@ export class AuthService {
       localStorage.removeItem('authToken');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
+      localStorage.removeItem(this.AUTO_FILL_PROFILE_KEY); // Clear auto-fill flag
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
       throw error;
     }
@@ -237,7 +265,7 @@ export class AuthService {
   static getCurrentUser(): AuthUser | null {
     try {
       // First try to get from Firebase
-      if (this.currentUser) {
+    if (this.currentUser) {
         return this.firebaseUserToAuthUser(this.currentUser);
       }
       

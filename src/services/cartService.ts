@@ -27,9 +27,17 @@ export class CartService {
       window.dispatchEvent(new CustomEvent('cartUpdated'));
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add item to cart:', error);
-      throw new Error('Failed to add item to cart. Please try again later.');
+      
+      // Check if it's a stock-related error
+      if (error.message && error.message.includes('stock')) {
+        throw new Error('Product is currently out of stock');
+      } else if (error.message && error.message.includes('coming soon')) {
+        throw new Error('Product is coming soon');
+      } else {
+        throw new Error('Failed to add item to cart. Please try again later.');
+      }
     }
   }
 
@@ -45,8 +53,11 @@ export class CartService {
       // Fetch product details for each cart item
       const { default: ProductService } = await import('./productService');
       
+      // Handle case where cart has no items
+      const items = cart.items || [];
+      
       const enrichedItems = await Promise.all(
-        cart.items.map(async (item) => {
+        items.map(async (item) => {
           try {
             console.log(`Fetching product details for ${item.product_id}...`);
             const product = await ProductService.getProductById(item.product_id);
