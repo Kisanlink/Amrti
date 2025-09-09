@@ -71,24 +71,27 @@ const HeroSection = () => {
               <motion.div
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
+                className="w-full sm:w-auto"
               >
                 <Link
                   to="/products"
-                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300"
+                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto"
                 >
                   <span>Explore Products</span>
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </motion.div>
                
-               <motion.button
-                 whileHover={{ scale: 1.02, y: -2 }}
-                 whileTap={{ scale: 0.98 }}
-                 className="px-10 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 flex items-center justify-center space-x-3"
-               >
-                 <Play className="w-5 h-5" />
-                 <span>Our Story</span>
-               </motion.button>
+              <motion.div
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full sm:w-auto"
+              >
+                <button className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto">
+                  <Play className="w-5 h-5" />
+                  <span>Our Story</span>
+                </button>
+              </motion.div>
             </div>
           </motion.div>
 

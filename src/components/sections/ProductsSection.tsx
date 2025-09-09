@@ -16,12 +16,24 @@ const ProductsSection = () => {
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const { showNotification } = useNotification();
 
-  // Load products on mount - show only 4 products for homepage
+  // Load products on mount - show 8 products for homepage to ensure we have moringa products
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await ProductService.getAllProducts(1, 4);
-        setProducts(response.data);
+        const response = await ProductService.getAllProducts(1, 8);
+        
+        // Sort products to show moringa first
+        const sortedProducts = response.data.sort((a, b) => {
+          const aIsMoringa = a.name.toLowerCase().includes('moringa') || a.category.toLowerCase().includes('moringa');
+          const bIsMoringa = b.name.toLowerCase().includes('moringa') || b.category.toLowerCase().includes('moringa');
+          
+          if (aIsMoringa && !bIsMoringa) return -1;
+          if (!aIsMoringa && bIsMoringa) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        // Take only first 4 products for display
+        setProducts(sortedProducts.slice(0, 4));
         
         // Load wishlist items for each product
         const wishlistSet = new Set<string>();
@@ -104,8 +116,26 @@ const ProductsSection = () => {
               style={{ maxHeight: '200px' }}
             />
 
+            {/* Stock Status Label */}
+            <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-semibold ${
+              product.stock === 0 || product.stock_status === "Comming Soon" 
+                ? 'bg-orange-500 text-white' 
+                : 'bg-green-600 text-white'
+            }`}>
+              {product.stock === 0 || product.stock_status === "Comming Soon" 
+                ? product.stock_status || "Out of Stock" 
+                : "In Stock"}
+            </div>
+            
+            {/* Featured Label for Moringa Products */}
+            {(product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa')) && (
+              <div className="absolute top-3 right-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                Featured
+              </div>
+            )}
+            
             {discount > 0 && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+              <div className="absolute bottom-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
                 {discount}% OFF
               </div>
             )}
@@ -156,36 +186,46 @@ const ProductsSection = () => {
               </Link>
               
               {/* Add to Cart Button */}
-              <button
-                onClick={async () => {
-                  setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
-                  try {
-                    await CartService.addItem(product.id, 1);
-                    // Cart count will be updated via event listener
-                    showNotification({
-                      type: 'success',
-                      message: `${product.name} added to cart successfully!`
-                    });
-                  } catch (err) {
-                    console.error('Failed to add to cart:', err);
-                    showNotification({
-                      type: 'error',
-                      message: 'Failed to add item to cart'
-                    });
-                  } finally {
-                    setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
-                  }
-                }}
-                disabled={loadingStates[`cart-${product.id}`]}
-                                 className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Add to Cart"
-              >
-                {loadingStates[`cart-${product.id}`] ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <ShoppingCart className="w-4 h-4" />
-                )}
-              </button>
+              {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                <button
+                  disabled
+                  className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
+                  title="Coming Soon"
+                >
+                  <span className="text-xs font-semibold">COMING SOON</span>
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
+                    try {
+                      await CartService.addItem(product.id, 1);
+                      // Cart count will be updated via event listener
+                      showNotification({
+                        type: 'success',
+                        message: `${product.name} added to cart successfully!`
+                      });
+                    } catch (err) {
+                      console.error('Failed to add to cart:', err);
+                      showNotification({
+                        type: 'error',
+                        message: 'Failed to add item to cart'
+                      });
+                    } finally {
+                      setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
+                    }
+                  }}
+                  disabled={loadingStates[`cart-${product.id}`]}
+                                   className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Add to Cart"
+                >
+                  {loadingStates[`cart-${product.id}`] ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <ShoppingCart className="w-4 h-4" />
+                  )}
+                </button>
+              )}
               
               {/* Add to Wishlist Button */}
               <button

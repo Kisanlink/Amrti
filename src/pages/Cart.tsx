@@ -4,11 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
-import type { Cart as CartType } from '../services/cartService';
+import type { Cart } from '../services/api';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const [cart, setCart] = useState<CartType>({ 
+  const [cart, setCart] = useState<Cart>({ 
     id: '', 
     created_at: '', 
     updated_at: '', 
@@ -32,7 +32,14 @@ const Cart = () => {
         const cartData = await CartService.getCart();
         console.log('Cart data received in component:', cartData);
         console.log('Cart items with products:', cartData.items);
-        setCart(cartData);
+        
+        // Ensure items array exists and handle empty cart
+        const cartWithItems = {
+          ...cartData,
+          items: cartData.items || []
+        };
+        
+        setCart(cartWithItems);
       } catch (err) {
         console.error('Failed to load cart:', err);
         setError('Failed to load cart');
@@ -81,8 +88,8 @@ const Cart = () => {
     }
   };
 
-  // Calculate shipping cost
-  const shippingCost = cart.total_price > 500 ? 0 : 50;
+  // Calculate shipping cost - Free shipping by default
+  const shippingCost = 0;
   
   // Calculate total
   const total = cart.total_price + shippingCost - cart.discount_amount;
@@ -107,18 +114,47 @@ const Cart = () => {
     return (
       <>
         <ScrollToTop />
-        <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen">
+        <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen">
           <div className="container-custom py-12 sm:py-16">
-            <div className="text-center">
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
+            <div className="text-center max-w-md mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-white rounded-2xl p-8 sm:p-12 shadow-lg border border-gray-100"
               >
-                Try Again
-              </button>
+                {/* Error Icon */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-red-500" />
+                </div>
+                
+                {/* Error Message */}
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900 mb-3">
+                  Oops! Something went wrong
+                </h1>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  We're having trouble loading your cart. Don't worry, your items are safe!
+                </p>
+                
+                {/* Try Again Button */}
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="inline-flex items-center space-x-2 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-heading font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-base mb-4"
+                >
+                  <span>Try Again</span>
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+                
+                {/* Alternative Action */}
+                <div className="pt-4 border-t border-gray-100">
+                  <Link
+                    to="/products"
+                    className="text-green-600 hover:text-green-700 font-medium text-sm"
+                  >
+                    Continue Shopping →
+                  </Link>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -126,40 +162,62 @@ const Cart = () => {
     );
   }
 
-  if (cart.items.length === 0) {
+  if (!cart.items || cart.items.length === 0 || cart.total_items === 0) {
     return (
       <>
         <ScrollToTop />
-        <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen">
-        <div className="container-custom py-12 sm:py-16">
-          <div className="text-center">
-            <div className="mb-6 sm:mb-8">
-              <ShoppingBag className="w-16 h-16 sm:w-24 sm:h-24 text-green-600 mx-auto mb-4 sm:mb-6" />
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-black-900 mb-3 sm:mb-4">
-                Your Cart is Empty
-              </h1>
-              <p className="text-base sm:text-lg lg:text-xl text-black-700 mb-6 sm:mb-8 px-4 sm:px-0">
-                Looks like you haven't added any products to your cart yet.
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <Link
-                to="/products"
-                className="inline-flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+        <div className="pt-16 sm:pt-20 bg-gray-50 min-h-screen">
+          <div className="container-custom py-12 sm:py-16">
+            <div className="text-center max-w-md mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-white rounded-2xl p-8 sm:p-12 shadow-lg border border-gray-100"
               >
-                <span>Start Shopping</span>
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 rotate-180" />
-              </Link>
-              
-              <div className="text-xs sm:text-sm text-black-600 px-4 sm:px-0">
-                <p>Free shipping on orders over ₹500</p>
-                <p>10% discount on orders over ₹1000</p>
-              </div>
+                {/* Cart Icon */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
+                </div>
+                
+                {/* Title and Description */}
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900 mb-3">
+                  Your Cart is Empty
+                </h1>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Looks like you haven't added any products to your cart yet. Start exploring our amazing collection of natural products!
+                </p>
+                
+                {/* View Products Button */}
+                <Link
+                  to="/products"
+                  className="inline-flex items-center space-x-2 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-heading font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+                >
+                  <span>View Products</span>
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </Link>
+                
+                {/* Benefits */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <div className="grid grid-cols-1 gap-3 text-sm text-gray-600">
+                    <div className="flex items-center justify-center space-x-2">
+                      <Truck className="w-4 h-4 text-green-600" />
+                      <span>Free shipping on all orders</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Award className="w-4 h-4 text-green-600" />
+                      <span>Premium quality natural products</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Shield className="w-4 h-4 text-green-600" />
+                      <span>Secure and trusted shopping</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
       </>
     );
   }
@@ -190,14 +248,6 @@ const Cart = () => {
           </div>
         )}
 
-        {/* Free Shipping Banner */}
-        {cart.total_price < 500 && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <p className="text-green-800 font-medium">
-              Just ₹{500 - cart.total_price} away from FREE Shipping!
-            </p>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Cart Items */}
@@ -311,12 +361,6 @@ const Cart = () => {
                   <span className="font-semibold text-sm sm:text-base">₹{cart.total_price}</span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="text-black-700 text-sm sm:text-base">Shipping</span>
-                  <span className="font-semibold text-sm sm:text-base">
-                    {shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}
-                  </span>
-                </div>
 
                 {cart.discount_amount > 0 && (
                   <div className="flex justify-between text-green-600">

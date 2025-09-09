@@ -3,7 +3,7 @@ import { X, Trash2, Plus, Minus, Truck, Gift, CreditCard, ThumbsUp, User } from 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import CartService from '../../services/cartService';
-import type { Cart } from '../../services/cartService';
+import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 
 interface CartPopupProps {
@@ -124,11 +124,8 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     }
   };
 
-  // Calculate progress for free shipping
-  const freeShippingThreshold = 500;
-  const currentTotal = cart.total_price;
-  const progressPercentage = Math.min((currentTotal / freeShippingThreshold) * 100, 100);
-  const remainingForFreeShipping = Math.max(freeShippingThreshold - currentTotal, 0);
+  // Shipping is always free now
+  const shippingCost = 0;
 
     return createPortal(
     <AnimatePresence>
@@ -171,33 +168,6 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                </button>
              </div>
 
-                         {/* Progress Bar */}
-             <div className="p-4 bg-gray-50 border-b">
-               <div className="text-center mb-3">
-                 <p className="text-sm text-gray-700">
-                   {cart.items.length === 0 
-                     ? 'Add items to your cart to unlock free shipping!'
-                     : `Just ₹${remainingForFreeShipping} away from FREE Shipping`
-                   }
-                 </p>
-               </div>
-              
-              {/* Progress Bar */}
-              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
-                <div 
-                  className="absolute top-0 left-0 h-full bg-green-600 transition-all duration-500"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
-              
-              {/* Milestones */}
-              <div className="flex justify-center text-xs text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <Truck size={12} />
-                  <span>Free Shipping</span>
-                </div>
-              </div>
-            </div>
 
                                       {/* Cart Items */}
              <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -301,12 +271,6 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                      <span className="text-gray-600">Subtotal ({cart.items.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                      <span className="font-semibold">₹{cart.total_price}</span>
                    </div>
-                   <div className="flex justify-between text-sm">
-                     <span className="text-gray-600">Shipping</span>
-                     <span className={cart.total_price > 500 ? 'text-green-600 font-semibold' : 'font-semibold'}>
-                       {cart.total_price > 500 ? 'FREE' : '₹50'}
-                     </span>
-                   </div>
                    {cart.discount_amount > 0 && (
                      <div className="flex justify-between text-sm">
                        <span className="text-gray-600">Discount</span>
@@ -315,7 +279,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                    )}
                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
                      <span>Total</span>
-                     <span>₹{cart.total_price + (cart.total_price > 500 ? 0 : 50) - cart.discount_amount}</span>
+                     <span>₹{cart.total_price - cart.discount_amount}</span>
                    </div>
                  </div>
                )}

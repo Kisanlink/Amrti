@@ -82,6 +82,11 @@ const Checkout: React.FC = () => {
     initializeCheckout();
   }, [navigate]);
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   const initializeCheckout = async () => {
     try {
       setLoading(true);
@@ -142,7 +147,7 @@ const Checkout: React.FC = () => {
       // Auto-select first shipping option
       setSelectedShipping(shippingData.shipping_options[0]);
       setStep('shipping');
-    localStorage.setItem('checkout-step', 'shipping');
+      localStorage.setItem('checkout-step', 'shipping');
       
     } catch (err) {
       setError('Failed to estimate shipping. Please try again later.');
@@ -167,7 +172,7 @@ const Checkout: React.FC = () => {
       const order = await CheckoutService.createOrder(address, addressId);
       setOrderData(order);
       setStep('payment');
-        localStorage.setItem('checkout-step', 'payment');
+      localStorage.setItem('checkout-step', 'payment');
       
     } catch (err) {
       setError('Failed to create order. Please try again later.');
@@ -241,7 +246,7 @@ const Checkout: React.FC = () => {
 
   if (loading && step === 'address') {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 sm:pt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-green-600 mx-auto mb-4" />
           <p className="text-gray-600">Preparing checkout...</p>
@@ -252,7 +257,7 @@ const Checkout: React.FC = () => {
 
   if (error && step === 'address') {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 sm:pt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error}</p>
@@ -268,7 +273,7 @@ const Checkout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16 sm:pt-20 pb-6 sm:pb-8">
+    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 pb-6 sm:pb-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">

@@ -19,6 +19,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     ingredients: true,
@@ -32,6 +33,48 @@ const ProductDetail = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [suggestedProducts, setSuggestedProducts] = useState<any[]>([]);
   const { showNotification } = useNotification();
+
+  // Check if product is in wishlist
+  const checkWishlistStatus = async () => {
+    if (!id) return;
+    try {
+      const inWishlist = await WishlistService.isInWishlist(id);
+      setIsInWishlist(inWishlist);
+    } catch (error) {
+      console.error('Failed to check wishlist status:', error);
+    }
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async () => {
+    if (!id || !product) return;
+    
+    setIsUpdatingWishlist(true);
+    try {
+      if (isInWishlist) {
+        await WishlistService.removeFromWishlist(id);
+        setIsInWishlist(false);
+        showNotification({
+          type: 'success',
+          message: `${product.name} removed from wishlist`
+        });
+      } else {
+        await WishlistService.addToWishlist(id);
+        setIsInWishlist(true);
+        showNotification({
+          type: 'success',
+          message: `${product.name} added to wishlist successfully!`
+        });
+      }
+    } catch (error) {
+      showNotification({
+        type: 'error',
+        message: 'Failed to update wishlist'
+      });
+    } finally {
+      setIsUpdatingWishlist(false);
+    }
+  };
 
   // Load reviews for the product
   const loadReviews = async () => {
@@ -71,6 +114,9 @@ const ProductDetail = () => {
           const productData = await ProductService.getProductById(id);
           setProduct(productData);
           setSelectedImageIndex(0); // Reset to first image when loading new product
+          
+          // Check wishlist status
+          checkWishlistStatus();
           
           // Get suggested products (same category, excluding current product)
           const allProductsResponse = await ProductService.getAllProducts(1, 100);
@@ -273,8 +319,19 @@ const ProductDetail = () => {
                 )}
                    {/* Wishlist Icon */}
                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
-                     <button className="p-1.5 sm:p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors">
-                       <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+                     <button 
+                       onClick={handleWishlistToggle}
+                       disabled={isUpdatingWishlist}
+                       className={`p-1.5 sm:p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
+                         isInWishlist ? 'text-red-500' : 'text-gray-600'
+                       }`}
+                       title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                     >
+                       {isUpdatingWishlist ? (
+                         <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                       ) : (
+                         <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                       )}
                      </button>
                    </div>
                  </div>
@@ -351,6 +408,14 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-1 sm:space-y-2">
+                {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                  <button 
+                    disabled
+                    className="w-full bg-gray-400 text-white font-heading font-semibold py-2.5 sm:py-3 lg:py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 cursor-not-allowed text-sm sm:text-base"
+                  >
+                    <span>COMING SOON</span>
+                  </button>
+                ) : (
                 <button 
                   onClick={async () => {
                     setIsAddingToCart(true);
@@ -385,6 +450,7 @@ const ProductDetail = () => {
                     </>
                   )}
                 </button>
+                )}
               </div>
             </div>
           </div>
@@ -437,45 +503,45 @@ const ProductDetail = () => {
 
        {/* Customer Reviews Section - Show only when there are reviews */}
         {product && reviews.length > 0 && !reviewsLoading && (
-          <section className="py-8 sm:py-12 lg:py-16 bg-white">
-            <div className="container-custom px-4 sm:px-6">
-              <div className="max-w-4xl mx-auto">
-                {/* Reviews Header */}
-                <div className="text-center mb-6 sm:mb-8 lg:mb-12">
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-3 lg:mb-4">Customer Reviews</h2>
-                  <p className="text-black-600 text-sm sm:text-base lg:text-lg">See what our customers are saying about this product</p>
-                </div>
+        <section className="py-8 sm:py-12 lg:py-16 bg-white">
+        <div className="container-custom px-4 sm:px-6">
+            <div className="max-w-4xl mx-auto">
+              {/* Reviews Header */}
+              <div className="text-center mb-6 sm:mb-8 lg:mb-12">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-3 lg:mb-4">Customer Reviews</h2>
+                <p className="text-black-600 text-sm sm:text-base lg:text-lg">See what our customers are saying about this product</p>
+              </div>
 
-                {/* Reviews Summary Card */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-                  <div className="flex flex-col lg:flex-row items-center justify-between">
-                    {/* Overall Rating */}
-                    <div className="text-center lg:text-left mb-4 sm:mb-6 lg:mb-0">
-                      <div className="flex items-center justify-center lg:justify-start mb-2 sm:mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-yellow-400 fill-current"
-                          />
-                        ))}
-                      </div>
+              {/* Reviews Summary Card */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+                <div className="flex flex-col lg:flex-row items-center justify-between">
+                  {/* Overall Rating */}
+                  <div className="text-center lg:text-left mb-4 sm:mb-6 lg:mb-0">
+                    <div className="flex items-center justify-center lg:justify-start mb-2 sm:mb-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-yellow-400 fill-current"
+                        />
+                      ))}
+                    </div>
                       <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black-900 mb-1 sm:mb-2">
                         {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} out of 5
-                      </div>
+                  </div>
                       <div className="text-black-600 text-xs sm:text-sm lg:text-base">Based on {reviews.length} reviews</div>
-                    </div>
+            </div>
 
-                    {/* Write Review Button */}
-                    <div className="mt-6 lg:mt-0">
-                      <button 
+                  {/* Write Review Button */}
+                  <div className="mt-6 lg:mt-0">
+                    <button 
                         onClick={() => setShowReviewForm(!showReviewForm)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
-                      >
-                        Write a Review
-                      </button>
-                    </div>
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
+                    >
+                      Write a Review
+                    </button>
                   </div>
                 </div>
+              </div>
 
                 {/* Review Form */}
                 {showReviewForm && (
@@ -488,7 +554,7 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {/* Individual Reviews */}
+              {/* Individual Reviews */}
                 <div className="space-y-4">
                   {reviews.map((review, index) => (
                     <ReviewCard
@@ -499,9 +565,9 @@ const ProductDetail = () => {
                       onDelete={handleReviewDelete}
                     />
                   ))}
-                </div>
-              </div>
-            </div>
+                        </div>
+                      </div>
+                    </div>
           </section>
         )}
 
@@ -510,7 +576,7 @@ const ProductDetail = () => {
           <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-green-50 to-green-100">
             <div className="container-custom px-4 sm:px-6">
               <div className="max-w-2xl mx-auto text-center">
-                <motion.div
+                <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
@@ -556,9 +622,9 @@ const ProductDetail = () => {
                     />
                   </div>
                 )}
-              </div>
             </div>
-          </section>
+          </div>
+        </section>
         )}
 
         {/* Product Information Sections */}

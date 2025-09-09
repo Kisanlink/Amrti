@@ -34,7 +34,7 @@ const MoringaProduct = () => {
   const handleAddToCart = () => {
     setIsAddingToCart(true);
     try {
-      CartService.addToCart(product.id, quantity, product);
+      CartService.addItem(product.id, quantity);
       showNotification({
         type: 'success',
         message: `${product.name} added to cart successfully!`
@@ -59,7 +59,7 @@ const MoringaProduct = () => {
           message: `${product.name} removed from wishlist`
         });
       } else {
-        WishlistService.addToWishlist(product.id, product);
+        WishlistService.addToWishlist(product.id);
         showNotification({
           type: 'success',
           message: `${product.name} added to wishlist successfully!`
@@ -316,18 +316,26 @@ const BenefitsContent = () => {
         </div>
       </div>
 
-      {/* YouTube Video Section */}
+      {/* Moringa Benefits Video Section */}
       <div className="mt-12 text-center">
         <h3 className="text-2xl font-heading font-bold text-black-900 mb-6">
           Learn More About Moringa Benefits
         </h3>
-        <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-6 shadow-xl max-w-2xl mx-auto">
-          <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Youtube className="w-16 h-16 text-red-600 mx-auto mb-4" />
-              <p className="text-black-700">Video content coming soon</p>
-            </div>
+        <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-6 shadow-xl max-w-sm mx-auto">
+          <div className="aspect-[9/16] bg-black rounded-lg overflow-hidden">
+            <video 
+              className="w-full h-full object-cover"
+              controls
+              preload="metadata"
+              poster="/products/pouch front mockup.jpg"
+            >
+              <source src="/moringa powder benefit.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
+          <p className="text-black-700 mt-4 text-sm">
+            Watch this informative video to learn more about the incredible benefits of Moringa powder
+          </p>
         </div>
       </div>
     </motion.div>
@@ -340,6 +348,7 @@ const RecipesContent = () => {
     {
       category: 'Easy to use',
       title: 'Moringa Lemon Water',
+      image: '/Recipes/tea moringa.jpg',
       ingredients: [
         '1 glass of hot water',
         'juice of half a lemon',
@@ -354,6 +363,7 @@ const RecipesContent = () => {
     {
       category: 'Beverages',
       title: 'Moringa Iced Tea',
+      image: '/Recipes/tea moringa.jpg',
       ingredients: [
         'Amrit\'s Moringa powder',
         'Warm water',
@@ -372,6 +382,7 @@ const RecipesContent = () => {
     {
       category: 'Beverages',
       title: 'Moringa Tea',
+      image: '/Recipes/tea moringa.jpg',
       ingredients: [
         'Amrit\'s Moringa Powder',
         'Lemon',
@@ -386,6 +397,7 @@ const RecipesContent = () => {
     {
       category: 'Blends and smoothies',
       title: 'Moringa leaf Almond Smoothie',
+      image: '/Recipes/moringa smoothie.jpg',
       ingredients: [
         '50 grams dry moringa leaves or Amrti\'s moringa powder',
         '250 ml soya milk',
@@ -401,6 +413,7 @@ const RecipesContent = () => {
     {
       category: 'Blends and smoothies',
       title: 'Moringa Leaf Banana Smoothie',
+      image: '/Recipes/moringa smoothie.jpg',
       ingredients: [
         '50g dry Amrti\'s moringa powder',
         '1 banana, peeled and chopped',
@@ -415,6 +428,7 @@ const RecipesContent = () => {
     {
       category: 'Food recipes',
       title: 'Moringa Avocado Toast',
+      image: '/Recipes/dosa moringa.jpg',
       ingredients: [
         '2 slices of bread (your choice), toasted',
         '1/2 avocado',
@@ -435,6 +449,7 @@ const RecipesContent = () => {
     {
       category: 'Food recipes',
       title: 'Moringa Uttapam',
+      image: '/Recipes/dosa moringa.jpg',
       ingredients: [
         'Batter: 1/2 cup semolina (sooji), 1/4 cup oats powder, 1/4 cup rice flour, 1/2 cup curd, Salt, 1/2 tbsp lemon juice, 2 tsp Amrti\'s moringa powder, 1 tbsp coconut crush',
         'Topping: 2 tbsp each finely chopped onion, tomato, capsicum, 1 chopped green chilli, 2 tbsp chopped green coriander, 1 tbsp grated cheese, 1 tsp oil for frying'
@@ -449,6 +464,7 @@ const RecipesContent = () => {
     {
       category: 'Food recipes',
       title: 'Moringa Leaf Chutney Rice',
+      image: '/Recipes/moringa dessert.jpg',
       ingredients: [
         '100g Amrti\'s moringa powder',
         '50ml coconut oil',
@@ -506,6 +522,15 @@ const RecipesContent = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-6 shadow-xl"
                 >
+                  {/* Recipe Image */}
+                  <div className="mb-4">
+                    <img 
+                      src={recipe.image} 
+                      alt={recipe.title}
+                      className="w-full h-48 object-cover rounded-lg shadow-md"
+                    />
+                  </div>
+                  
                   <h4 className="text-lg font-heading font-bold text-black-900 mb-4">
                     {recipe.title}
                   </h4>

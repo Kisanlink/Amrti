@@ -124,8 +124,17 @@ const Products = () => {
     return wishlistItems.has(productId);
   };
 
-  // Sort products
+  // Sort products - Moringa products first, then by selected criteria
   const sortedProducts = [...filteredProducts].sort((a, b) => {
+    // Check if products are moringa products
+    const aIsMoringa = a.name.toLowerCase().includes('moringa') || a.category.toLowerCase().includes('moringa');
+    const bIsMoringa = b.name.toLowerCase().includes('moringa') || b.category.toLowerCase().includes('moringa');
+    
+    // If one is moringa and the other isn't, prioritize moringa
+    if (aIsMoringa && !bIsMoringa) return -1;
+    if (!aIsMoringa && bIsMoringa) return 1;
+    
+    // If both are moringa or both are not moringa, sort by selected criteria
     switch (filters.sortBy) {
       case 'price-low':
         return a.price - b.price;
@@ -445,28 +454,38 @@ const Products = () => {
                         </Link>
                         
                         {/* Add to Cart Button */}
-                        <button
-                          onClick={async () => {
-                            setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
-                            try {
-                              await CartService.addItem(product.id, 1);
-                              // Cart count will be updated via event listener
-                            } catch (err) {
-                              console.error('Failed to add to cart:', err);
-                            } finally {
-                              setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
-                            }
-                          }}
-                          disabled={loadingStates[`cart-${product.id}`]}
-                          className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Add to Cart"
-                        >
-                          {loadingStates[`cart-${product.id}`] ? (
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <ShoppingCart className="w-4 h-4" />
-                          )}
-                        </button>
+                        {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                          <button
+                            disabled
+                            className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
+                            title="Coming Soon"
+                          >
+                            <span className="text-xs font-semibold">COMING SOON</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
+                              try {
+                                await CartService.addItem(product.id, 1);
+                                // Cart count will be updated via event listener
+                              } catch (err) {
+                                console.error('Failed to add to cart:', err);
+                              } finally {
+                                setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
+                              }
+                            }}
+                            disabled={loadingStates[`cart-${product.id}`]}
+                            className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Add to Cart"
+                          >
+                            {loadingStates[`cart-${product.id}`] ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <ShoppingCart className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         
                         {/* Add to Wishlist Button */}
                         <button
