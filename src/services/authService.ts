@@ -265,7 +265,7 @@ export class AuthService {
   static getCurrentUser(): AuthUser | null {
     try {
       // First try to get from Firebase
-      if (this.currentUser) {
+    if (this.currentUser) {
         return this.firebaseUserToAuthUser(this.currentUser);
       }
       

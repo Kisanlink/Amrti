@@ -82,10 +82,20 @@ const Checkout: React.FC = () => {
     initializeCheckout();
   }, [navigate]);
 
-  // Scroll to top when step changes
+  // Scroll to top when step changes or loading state changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [step]);
+    // Multiple methods to ensure scroll to top works
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
+    // Also try smooth scroll after a brief delay
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [step, loading]);
 
   const initializeCheckout = async () => {
     try {
@@ -149,6 +159,11 @@ const Checkout: React.FC = () => {
       setStep('shipping');
       localStorage.setItem('checkout-step', 'shipping');
       
+      // Force scroll to top immediately
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      
     } catch (err) {
       setError('Failed to estimate shipping. Please try again later.');
     } finally {
@@ -173,6 +188,11 @@ const Checkout: React.FC = () => {
       setOrderData(order);
       setStep('payment');
       localStorage.setItem('checkout-step', 'payment');
+      
+      // Force scroll to top immediately
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       
     } catch (err) {
       setError('Failed to create order. Please try again later.');
@@ -245,6 +265,11 @@ const Checkout: React.FC = () => {
   };
 
   if (loading && step === 'address') {
+    // Force scroll to top when showing loading state
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     return (
       <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
         <div className="text-center">
@@ -256,6 +281,11 @@ const Checkout: React.FC = () => {
   }
 
   if (error && step === 'address') {
+    // Force scroll to top when showing error state
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     return (
       <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
         <div className="text-center">

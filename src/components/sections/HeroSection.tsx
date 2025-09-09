@@ -87,10 +87,13 @@ const HeroSection = () => {
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto"
               >
-                <button className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto">
+                <Link
+                  to="/about"
+                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto"
+                >
                   <Play className="w-5 h-5" />
                   <span>Our Story</span>
-                </button>
+                </Link>
               </motion.div>
             </div>
           </motion.div>
