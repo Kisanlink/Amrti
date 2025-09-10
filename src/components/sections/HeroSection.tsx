@@ -61,38 +61,23 @@ const HeroSection = () => {
                Transform Your <span className="text-green-600">Wellness</span> Journey
              </h1>
             
-                         <p className="text-xl text-russet-800 mb-10 leading-relaxed max-w-2xl lg:max-w-none font-medium">
-               Discover our premium collection of organic powders and probiotic kombucha drinks, 
-               carefully crafted to enhance your daily wellness routine with nature's finest ingredients.
-             </p>
+            <p className="text-xl text-russet-800 mb-6 leading-relaxed max-w-2xl lg:max-w-none font-medium">
+              Discover our premium collection of organic powders and probiotic kombucha drinks, 
+              carefully crafted to enhance your daily wellness routine with nature's finest ingredients.
+            </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            {/* CTA Button */}
+            <div className="flex justify-center lg:justify-start">
               <motion.div
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto"
-              >
-                <Link
-                  to="/products"
-                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto"
-                >
-                  <span>Explore Products</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </motion.div>
-               
-              <motion.div
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto"
               >
                 <Link
                   to="/about"
-                  className="inline-flex items-center justify-center space-x-3 px-10 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-full sm:w-auto"
+                  className="inline-flex items-center justify-center space-x-1 px-8 py-4 bg-russet-600 hover:bg-russet-700 text-white font-medium rounded-full shadow-elegant hover:shadow-premium transition-all duration-300 w-auto"
                 >
-                  <Play className="w-5 h-5" />
-                  <span>Our Story</span>
+                  <Play className="w-6 h-6" />
+                  <span className="text-lg">Our Story</span>
                 </Link>
               </motion.div>
             </div>
@@ -103,10 +88,10 @@ const HeroSection = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6"
           >
             {[
-              { icon: Users, value: '10K+', label: 'Happy Customers' },
+              // { icon: Users, value: '10K+', label: 'Happy Customers' },
               { icon: Award, value: '4.9★', label: 'Average Rating' },
               { icon: Star, value: '100%', label: 'Organic Products' }
             ].map((stat, index) => (
@@ -115,17 +100,17 @@ const HeroSection = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
-                                 className="p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-beige-200/50 shadow-elegant text-center"
+                                 className="p-4 sm:p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-beige-200/50 shadow-elegant text-center"
               >
-                <div className="flex justify-center mb-3">
-                                     <div className="p-4 rounded-full bg-green-600 shadow-soft">
-                     <stat.icon className="w-6 h-6 text-white" />
+                <div className="flex justify-center mb-2 sm:mb-3">
+                                     <div className="p-2 sm:p-4 rounded-full bg-green-600 shadow-soft">
+                     <stat.icon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                    </div>
                 </div>
-                                 <div className="text-3xl font-heading font-bold text-russet-900 mb-2">
+                                 <div className="text-xl sm:text-3xl font-heading font-bold text-russet-900 mb-1 sm:mb-2">
                    {stat.value}
                  </div>
-                 <div className="text-sm text-russet-700 font-medium">
+                 <div className="text-xs sm:text-sm text-russet-700 font-medium">
                    {stat.label}
                  </div>
               </motion.div>

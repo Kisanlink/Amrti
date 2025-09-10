@@ -431,7 +431,11 @@ const Products = () => {
                 )}
                         </div>
                         <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-semibold ${
-                          product.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          product.stock_status === 'In Stock' 
+                            ? 'bg-green-100 text-green-800' 
+                            : product.stock_status === 'Comming Soon' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-gray-100 text-gray-800'
                         }`}>
                           {product.stock_status}
                         </span>
@@ -460,7 +464,7 @@ const Products = () => {
                             className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
                             title="Coming Soon"
                           >
-                            <span className="text-xs font-semibold">COMING SOON</span>
+                            <ShoppingCart className="w-4 h-4" />
                           </button>
                         ) : (
                           <button

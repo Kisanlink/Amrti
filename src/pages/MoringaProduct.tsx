@@ -792,12 +792,12 @@ const QualityContent = () => {
           <p className="text-black-700">
             Full laboratory test report from {latestReport.lab} with official stamp and certification
           </p>
-      </div>
+        </div>
 
                {/* Report Display */}
                <h3 className="text-2xl font-heading font-bold text-black-900 mb-6 text-center">
                  Quality Test Report
-            </h3>
+                </h3>
                
                {/* Report Image Display */}
                <div className="mb-6 border border-gray-300 rounded-lg overflow-hidden">
@@ -807,7 +807,7 @@ const QualityContent = () => {
                    className="w-full h-auto"
                    style={{ minHeight: '500px', objectFit: 'contain' }}
                  />
-               </div>
+              </div>
 
                {/* Action Buttons */}
                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

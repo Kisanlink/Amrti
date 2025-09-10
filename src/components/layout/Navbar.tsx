@@ -249,21 +249,14 @@ const Navbar = () => {
                 alt="Amrti Nature's Elixir" 
                 className="h-24 w-auto sm:h-22 lg:h-24 object-contain select-none pointer-events-none"
                 style={{
-                  imageRendering: 'crisp-edges' as any,
-                  WebkitImageRendering: 'crisp-edges' as any,
+                  imageRendering: 'crisp-edges',
                   backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden' as any,
                   transform: 'translateZ(0)',
-                  WebkitTransform: 'translateZ(0)' as any,
                   willChange: 'transform',
-                  WebkitWillChange: 'transform' as any,
                   filter: 'none',
-                  WebkitFilter: 'none' as any,
                   opacity: 1,
-                  WebkitOpacity: 1 as any,
-                  imageOrientation: 'from-image' as any,
-                  WebkitImageOrientation: 'from-image' as any
-                }}
+                  imageOrientation: 'from-image'
+                } as React.CSSProperties}
               />
             </motion.div>
           </Link>
@@ -505,196 +498,243 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Side Panel */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-beige-300 border-t border-black-200"
-            >
-              <div className="px-4 py-4 sm:py-6 space-y-2 sm:space-y-3">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    onClick={() => setIsOpen(false)}
-                    className={`block py-3 px-2 font-medium transition-colors duration-200 rounded-lg ${
-                      isActive(item.path)
-                        ? 'text-green-600 bg-green-50'
-                        : 'text-gray-700 hover:text-green-600 hover:bg-beige-200'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-                <div className="pt-4 border-t border-black-200 space-y-2">
-                  {/* Mobile Search */}
-                  <div className="px-2">
-                    {showSearch ? (
-                      <div className="space-y-2">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                          <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={handleSearchInputChange}
-                            placeholder="Search products..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                            autoFocus
-                          />
-                          {isSearching && (
-                            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-spin text-gray-400" size={16} />
-                          )}
-                        </div>
-                        <button
-                          onClick={() => {
-                            setShowSearch(false);
-                            setShowSearchResults(false);
-                            setSearchQuery('');
-                            setSearchResults([]);
-                          }}
-                          className="w-full py-2 px-4 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowSearch(true)}
-                        className="flex items-center space-x-2 w-full py-3 px-2 text-gray-600 hover:text-green-600 hover:bg-beige-200 transition-colors rounded-lg"
-                      >
-                    <Search size={20} />
-                    <span>Search</span>
-                  </button>
-                    )}
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="fixed inset-0 bg-black/50 z-40"
+                style={{ zIndex: 40 }}
+              />
+              
+              {/* Side Panel */}
+              <motion.div
+                initial={{ x: '100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-white shadow-2xl z-50 flex flex-col"
+                style={{ zIndex: 50 }}
+              >
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
+                    <div className="flex items-center space-x-2">
+                      <img 
+                        src="/navbar_logo.svg" 
+                        alt="Amrti" 
+                        className="h-8 w-auto"
+                      />
+                      <span className="text-lg font-heading font-semibold text-green-700">Menu</span>
+                    </div>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto min-h-0">
+                    {/* Debug: Test content visibility */}
+                    {/* <div className="text-sm text-gray-500 mb-2">Navigation Menu</div> */}
                     
-                    {/* Mobile Search Results */}
-                    {showSearchResults && (
-                      <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
-                        {searchResults.length > 0 ? (
-                          searchResults.map((product) => (
-                            <div
-                              key={product.id}
-                              onClick={() => {
-                                handleSearchResultClick(product.id);
-                                setIsOpen(false);
-                              }}
-                              className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                            >
-                              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                                {product.image_url ? (
-                                  <img
-                                    src={product.image_url}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover rounded-lg"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 bg-gray-300 rounded"></div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                                <p className="text-xs text-gray-500 truncate">{product.category}</p>
-                                <p className="text-sm font-semibold text-green-600">₹{product.price}</p>
-                              </div>
+                    {/* Main Navigation */}
+                    <div className="space-y-1">
+                      {navItems.map((item) => (
+                        <Link
+                          key={item.name}
+                          to={item.path}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center py-3 px-3 font-medium transition-colors duration-200 rounded-lg ${
+                            isActive(item.path)
+                              ? 'text-green-600 bg-green-50 border-l-4 border-green-600'
+                              : 'text-gray-700 hover:text-green-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-base">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                    
+                    {/* Utility Section */}
+                    <div className="pt-4 border-t border-gray-200 space-y-2">
+                      {/* Search */}
+                      <div>
+                        {showSearch ? (
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={handleSearchInputChange}
+                                placeholder="Search products..."
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                                autoFocus
+                              />
+                              {isSearching && (
+                                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-spin text-gray-400" size={18} />
+                              )}
                             </div>
-                          ))
+                            <button
+                              onClick={() => {
+                                setShowSearch(false);
+                                setShowSearchResults(false);
+                                setSearchQuery('');
+                                setSearchResults([]);
+                              }}
+                              className="w-full py-2 px-4 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         ) : (
-                          <div className="p-4 text-center text-gray-500">
-                            <Search className="w-6 h-6 mx-auto mb-2 text-gray-300" />
-                            <p className="text-sm">No products found</p>
-                            <p className="text-xs">Try a different search term</p>
+                          <button
+                            onClick={() => setShowSearch(true)}
+                            className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
+                          >
+                            <Search size={20} />
+                            <span className="text-base">Search</span>
+                          </button>
+                        )}
+                    
+                        {/* Search Results */}
+                        {showSearchResults && (
+                          <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
+                            {searchResults.length > 0 ? (
+                              searchResults.map((product) => (
+                                <div
+                                  key={product.id}
+                                  onClick={() => {
+                                    handleSearchResultClick(product.id);
+                                    setIsOpen(false);
+                                  }}
+                                  className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                                >
+                                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    {product.image_url ? (
+                                      <img
+                                        src={product.image_url}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover rounded-lg"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{product.category}</p>
+                                    <p className="text-sm font-semibold text-green-600">₹{product.price}</p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-4 text-center text-gray-500">
+                                <Search className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                                <p className="text-sm">No products found</p>
+                                <p className="text-xs">Try a different search term</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
                   
-                  {/* Wishlist */}
-                  <Link 
-                    to="/wishlist" 
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center space-x-2 w-full py-3 px-2 text-gray-600 hover:text-green-600 hover:bg-beige-200 transition-colors rounded-lg"
-                  >
-                    <Heart size={20} />
-                    <span>Wishlist ({wishlistCount})</span>
-                  </Link>
-                  
-                  {/* Cart */}
-                  <button 
-                    onClick={() => {
-                      setIsOpen(false);
-                      setShowCartPopup(true);
-                    }}
-                    className="flex items-center space-x-2 w-full py-3 px-2 text-gray-600 hover:text-green-600 hover:bg-beige-200 transition-colors rounded-lg"
-                  >
-                    <ShoppingCart size={20} />
-                    <span>Cart ({cartCount})</span>
-                  </button>
-                  
-                  {/* User Account */}
-                  {authenticated ? (
-                    <>
-                      <div className="px-2 py-2 border-t border-black-200">
-                        <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
-                        <p className="text-xs text-black-600">{user?.email}</p>
-                      </div>
+                      {/* Wishlist */}
                       <Link 
-                        to="/profile" 
+                        to="/wishlist" 
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-2 w-full py-2 text-gray-600 hover:text-green-600 transition-colors"
+                        className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
                       >
-                        <User size={20} />
-                        <span>My Profile</span>
+                        <Heart size={20} />
+                        <span className="text-base">Wishlist ({wishlistCount})</span>
                       </Link>
-
-                      <Link 
-                        to="/orders" 
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-2 w-full py-2 text-gray-600 hover:text-green-600 transition-colors"
-                      >
-                        <Package size={20} />
-                        <span>My Orders</span>
-                      </Link>
-
+                      
+                      {/* Cart */}
                       <button 
                         onClick={() => {
-                            AuthService.logout();
-                          setUser(null);
-                          setAuthenticated(false);
                           setIsOpen(false);
+                          setShowCartPopup(true);
                         }}
-                        className="flex items-center space-x-2 w-full py-2 text-red-600 hover:text-red-700 transition-colors"
+                        className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
                       >
-                        <LogOut size={20} />
-                        <span>Logout</span>
+                        <ShoppingCart size={20} />
+                        <span className="text-base">Cart ({cartCount})</span>
                       </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link 
-                        to="/login" 
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-2 w-full py-2 text-gray-600 hover:text-green-600 transition-colors"
-                      >
-                        <User size={20} />
-                        <span>Sign In</span>
-                      </Link>
-                      <Link 
-                        to="/signup" 
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-2 w-full py-2 text-gray-600 hover:text-green-600 transition-colors"
-                      >
-                        <User size={20} />
-                        <span>Sign Up</span>
-                      </Link>
-                    </>
-                  )}
+                  
+                      {/* User Account */}
+                      {authenticated ? (
+                        <>
+                          <div className="pt-4 border-t border-gray-200">
+                            <div className="px-3 py-3 bg-gray-50 rounded-lg mb-2">
+                              <p className="text-sm font-semibold text-gray-900">{user?.displayName || 'User'}</p>
+                              <p className="text-xs text-gray-600">{user?.email}</p>
+                            </div>
+                            
+                            <Link 
+                              to="/profile" 
+                              onClick={() => setIsOpen(false)}
+                              className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
+                            >
+                              <User size={20} />
+                              <span className="text-base">My Profile</span>
+                            </Link>
+
+                            <Link 
+                              to="/orders" 
+                              onClick={() => setIsOpen(false)}
+                              className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
+                            >
+                              <Package size={20} />
+                              <span className="text-base">My Orders</span>
+                            </Link>
+
+                            <button 
+                              onClick={() => {
+                                  AuthService.logout();
+                                setUser(null);
+                                setAuthenticated(false);
+                                setIsOpen(false);
+                              }}
+                              className="flex items-center space-x-3 w-full py-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors rounded-lg"
+                            >
+                              <LogOut size={20} />
+                              <span className="text-base">Logout</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="pt-4 border-t border-gray-200 space-y-1">
+                          <Link 
+                            to="/login" 
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
+                          >
+                            <User size={20} />
+                            <span className="text-base">Sign In</span>
+                          </Link>
+                          <Link 
+                            to="/signup" 
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
+                          >
+                            <User size={20} />
+                            <span className="text-base">Sign Up</span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

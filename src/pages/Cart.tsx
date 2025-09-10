@@ -5,9 +5,128 @@ import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
 import type { Cart } from '../services/api';
+import { useNotification } from '../context/NotificationContext';
+
+// Coupon Section Component
+const CouponSection = ({ cart, onCouponApplied }: { cart: Cart; onCouponApplied: () => void }) => {
+  const [couponCode, setCouponCode] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const { showNotification } = useNotification();
+
+  // Available coupons
+  const availableCoupons = [
+    { code: 'DEAL5', discount: '5%', description: 'Get 5% off on your order' },
+    { code: 'SAVE10', discount: '10%', description: 'Get 10% off on your order' }
+  ];
+
+  const handleApplyCoupon = async (code?: string) => {
+    const couponToApply = code || couponCode.trim();
+    
+    if (!couponToApply) {
+      showNotification({
+        type: 'error',
+        message: 'Please enter a coupon code'
+      });
+      return;
+    }
+
+    try {
+      setIsApplying(true);
+      await CartService.applyCoupon(couponToApply);
+      setAppliedCoupon(couponToApply);
+      setCouponCode('');
+      onCouponApplied();
+      showNotification({
+        type: 'success',
+        message: 'Coupon applied successfully!'
+      });
+    } catch (error: any) {
+      showNotification({
+        type: 'error',
+        message: error.message || 'Failed to apply coupon'
+      });
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 sm:mb-6">
+      <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
+        <h3 className="text-sm sm:text-base font-semibold text-black-900 mb-2 sm:mb-3">
+          Have a coupon code?
+        </h3>
+        
+        {appliedCoupon || cart.discount_amount > 0 ? (
+          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm sm:text-base text-green-700 font-medium">
+                Coupon "{appliedCoupon || 'Applied'}" applied
+              </span>
+            </div>
+            <span className="text-sm sm:text-base font-semibold text-green-600">
+              -₹{cart.discount_amount}
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Available Coupons */}
+            <div className="mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">Available coupons:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {availableCoupons.map((coupon) => (
+                  <button
+                    key={coupon.code}
+                    onClick={() => handleApplyCoupon(coupon.code)}
+                    disabled={isApplying}
+                    className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 hover:bg-green-50 border border-gray-200 hover:border-green-300 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div>
+                      <div className="text-sm sm:text-base font-semibold text-gray-900">
+                        {coupon.code}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-600">
+                        {coupon.description}
+                      </div>
+                    </div>
+                    <div className="text-sm sm:text-base font-bold text-green-600">
+                      {coupon.discount}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Manual Coupon Input */}
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="Enter coupon code"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
+                disabled={isApplying}
+              />
+              <button
+                onClick={() => handleApplyCoupon()}
+                disabled={isApplying || !couponCode.trim()}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors text-sm sm:text-base"
+              >
+                {isApplying ? 'Applying...' : 'Apply'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
   const [cart, setCart] = useState<Cart>({ 
     id: '', 
     created_at: '', 
@@ -24,30 +143,31 @@ const Cart = () => {
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
+  // Load cart function
+  const loadCart = async () => {
+    try {
+      setLoading(true);
+      const cartData = await CartService.getCart();
+      console.log('Cart data received in component:', cartData);
+      console.log('Cart items with products:', cartData.items);
+      
+      // Ensure items array exists and handle empty cart
+      const cartWithItems = {
+        ...cartData,
+        items: cartData.items || []
+      };
+      
+      setCart(cartWithItems);
+    } catch (err) {
+      console.error('Failed to load cart:', err);
+      setError('Failed to load cart');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load cart on mount
   useEffect(() => {
-    const loadCart = async () => {
-      try {
-        setLoading(true);
-        const cartData = await CartService.getCart();
-        console.log('Cart data received in component:', cartData);
-        console.log('Cart items with products:', cartData.items);
-        
-        // Ensure items array exists and handle empty cart
-        const cartWithItems = {
-          ...cartData,
-          items: cartData.items || []
-        };
-        
-        setCart(cartWithItems);
-      } catch (err) {
-        console.error('Failed to load cart:', err);
-        setError('Failed to load cart');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadCart();
   }, []);
 
@@ -91,8 +211,8 @@ const Cart = () => {
   // Calculate shipping cost - Free shipping by default
   const shippingCost = 0;
   
-  // Calculate total
-  const total = cart.total_price + shippingCost - cart.discount_amount;
+  // Calculate total - use discounted_total if available, otherwise calculate manually
+  const total = cart.discounted_total || (cart.total_price + shippingCost - cart.discount_amount);
 
   if (loading) {
     return (
@@ -376,6 +496,9 @@ const Cart = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Coupon Section */}
+              <CouponSection cart={cart} onCouponApplied={loadCart} />
 
               {/* Checkout Button */}
               <button 

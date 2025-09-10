@@ -501,7 +501,228 @@ const ProductDetail = () => {
         </div>
       </section> */}
 
-       {/* Customer Reviews Section - Show only when there are reviews */}
+        {/* Product Information Sections */}
+        <section className="py-16 bg-white">
+          <div className="container-custom">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                {/* INGREDIENTS */}
+                <div className="border-b border-gray-200">
+                  <button 
+                    onClick={() => toggleSection('ingredients')}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-heading font-bold text-green-700">INGREDIENTS</h3>
+                    {expandedSections.ingredients ? (
+                      <ChevronDown className="w-5 h-5 text-green-700" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-green-700" />
+                    )}
+                  </button>
+                  {expandedSections.ingredients && (
+                    <div className="px-6 pb-4">
+                      <p className="text-black-700 leading-relaxed">Dried moringa leaves</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* USAGE INFO */}
+                <div className="border-b border-gray-200">
+                  <button 
+                    onClick={() => toggleSection('usage')}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-heading font-bold text-green-700">USAGE INFO</h3>
+                    {expandedSections.usage ? (
+                      <ChevronDown className="w-5 h-5 text-green-700" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-green-700" />
+                    )}
+                  </button>
+                  {expandedSections.usage && (
+                    <div className="px-6 pb-4">
+                      <p className="text-black-700 leading-relaxed">
+                        Mix 1-2 teaspoons of moringa powder with water, juice, or smoothies. 
+                        Can be added to tea, coffee, or used in cooking. Best consumed in the morning 
+                        for maximum benefits. Start with a small amount and gradually increase as needed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* BENEFITS */}
+                <div className="border-b border-gray-200">
+                  <button 
+                    onClick={() => toggleSection('benefits')}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-heading font-bold text-green-700">BENEFITS</h3>
+                    {expandedSections.benefits ? (
+                      <ChevronDown className="w-5 h-5 text-green-700" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-green-700" />
+                    )}
+                  </button>
+                  {expandedSections.benefits && (
+                    <div className="px-6 pb-4">
+                      <ul className="text-black-700 leading-relaxed space-y-2">
+                        <li>• Rich in vitamins A, C, and E</li>
+                        <li>• High in antioxidants and minerals</li>
+                        <li>• Supports immune system health</li>
+                        <li>• Promotes healthy skin and hair</li>
+                        <li>• Natural energy booster</li>
+                        <li>• Helps maintain healthy blood sugar levels</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* STORAGE INFO */}
+                <div>
+                  <button 
+                    onClick={() => toggleSection('storage')}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-heading font-bold text-green-700">STORAGE INFO</h3>
+                    {expandedSections.storage ? (
+                      <ChevronDown className="w-5 h-5 text-green-700" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-green-700" />
+                    )}
+                  </button>
+                  {expandedSections.storage && (
+                    <div className="px-6 pb-4">
+                      <p className="text-black-700 leading-relaxed">
+                        Store in a cool, dry place away from direct sunlight. Keep the container tightly 
+                        sealed after each use. Best used within 12 months of opening. Refrigeration is 
+                        not required but can help maintain freshness.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        {/* Suggested Products Section */}
+        {suggestedProducts.length > 0 && (
+          <section className="py-8 sm:py-12 lg:py-16 bg-beige-100">
+            <div className="container-custom px-4 sm:px-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center mb-8 sm:mb-10 lg:mb-12"
+              >
+                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-4">
+                  You Might Also Like
+                </h2>
+                <p className="text-base sm:text-lg text-black-600 max-w-2xl mx-auto">
+                  Discover more amazing products that complement your selection
+                </p>
+              </motion.div>
+
+              <div className="overflow-x-auto pb-4">
+                <div className="flex space-x-4 min-w-max">
+                  {suggestedProducts.map((suggestedProduct, index) => (
+                    <motion.div
+                      key={suggestedProduct.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      whileHover={{ y: -5 }}
+                      className="group cursor-pointer flex-shrink-0"
+                    >
+                      <Link to={`/product/${suggestedProduct.id}`}>
+                        <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-64 h-72 flex flex-col">
+                          <div className="relative overflow-hidden flex-shrink-0">
+                            <img
+                              src={suggestedProduct.image_url}
+                              alt={suggestedProduct.name}
+                              className="w-full h-28 object-contain group-hover:scale-105 transition-transform duration-300 p-2"
+                              onError={(e) => {
+                                console.error('Failed to load suggested product image:', suggestedProduct.image_url);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            {suggestedProduct.originalPrice > suggestedProduct.price && (
+                              <div className="absolute top-2 left-2 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                                {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
+                              </div>
+                            )}
+                            <div className="absolute top-2 right-2 bg-beige-300/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-semibold text-black-700">
+                              {suggestedProduct.category}
+                            </div>
+                          </div>
+                          
+                          <div className="p-3 flex flex-col flex-grow">
+                            <h3 className="text-sm font-heading font-semibold text-black-900 mb-1 group-hover:text-green-700 transition-colors duration-300 line-clamp-2">
+                              {suggestedProduct.name}
+                            </h3>
+                            
+                            <div className="flex items-center space-x-1 mb-1">
+                              <div className="flex items-center">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-3 h-3 ${i < Math.floor(suggestedProduct.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs text-black-600">({suggestedProduct.reviews})</span>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-1">
+                                <span className="font-bold text-green-600 text-sm">₹{suggestedProduct.price}</span>
+                                {suggestedProduct.originalPrice > suggestedProduct.price && (
+                                  <span className="text-xs text-black-500 line-through">₹{suggestedProduct.originalPrice}</span>
+                                )}
+                              </div>
+                              <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                                suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {suggestedProduct.stock_status}
+                              </span>
+                            </div>
+
+                            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-3 rounded-lg transition-colors duration-300 text-xs mt-auto">
+                              View Product
+                            </button>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="text-center mt-12"
+              >
+                <Link
+                  to="/products"
+                  className="inline-flex items-center space-x-2 bg-white hover:bg-gray-50 text-green-600 hover:text-green-700 font-semibold py-3 px-6 rounded-lg border border-green-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <span>View All Products</span>
+                  <motion.span
+                    animate={{ x: [0, 3, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.span>
+                </Link>
+              </motion.div>
+            </div>
+          </section>
+        )}
+
+        {/* Customer Reviews Section - Show only when there are reviews */}
         {product && reviews.length > 0 && !reviewsLoading && (
         <section className="py-8 sm:py-12 lg:py-16 bg-white">
         <div className="container-custom px-4 sm:px-6">
@@ -625,226 +846,6 @@ const ProductDetail = () => {
             </div>
           </div>
         </section>
-        )}
-
-        {/* Product Information Sections */}
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                {/* INGREDIENTS */}
-                <div className="border-b border-gray-200">
-                  <button 
-                    onClick={() => toggleSection('ingredients')}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="text-lg font-heading font-bold text-green-700">INGREDIENTS</h3>
-                    {expandedSections.ingredients ? (
-                      <ChevronDown className="w-5 h-5 text-green-700" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-green-700" />
-                    )}
-                  </button>
-                  {expandedSections.ingredients && (
-                    <div className="px-6 pb-4">
-                      <p className="text-black-700 leading-relaxed">Dried moringa leaves</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* USAGE INFO */}
-                <div className="border-b border-gray-200">
-                  <button 
-                    onClick={() => toggleSection('usage')}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="text-lg font-heading font-bold text-green-700">USAGE INFO</h3>
-                    {expandedSections.usage ? (
-                      <ChevronDown className="w-5 h-5 text-green-700" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-green-700" />
-                    )}
-                  </button>
-                  {expandedSections.usage && (
-                    <div className="px-6 pb-4">
-                      <p className="text-black-700 leading-relaxed">
-                        Mix 1-2 teaspoons of moringa powder with water, juice, or smoothies. 
-                        Can be added to tea, coffee, or used in cooking. Best consumed in the morning 
-                        for maximum benefits. Start with a small amount and gradually increase as needed.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* BENEFITS */}
-                <div className="border-b border-gray-200">
-                  <button 
-                    onClick={() => toggleSection('benefits')}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="text-lg font-heading font-bold text-green-700">BENEFITS</h3>
-                    {expandedSections.benefits ? (
-                      <ChevronDown className="w-5 h-5 text-green-700" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-green-700" />
-                    )}
-                  </button>
-                  {expandedSections.benefits && (
-                    <div className="px-6 pb-4">
-                      <ul className="text-black-700 leading-relaxed space-y-2">
-                        <li>• Rich in vitamins A, C, and E</li>
-                        <li>• High in antioxidants and minerals</li>
-                        <li>• Supports immune system health</li>
-                        <li>• Promotes healthy skin and hair</li>
-                        <li>• Natural energy booster</li>
-                        <li>• Helps maintain healthy blood sugar levels</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* STORAGE INFO */}
-                <div>
-                  <button 
-                    onClick={() => toggleSection('storage')}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="text-lg font-heading font-bold text-green-700">STORAGE INFO</h3>
-                    {expandedSections.storage ? (
-                      <ChevronDown className="w-5 h-5 text-green-700" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-green-700" />
-                    )}
-                  </button>
-                  {expandedSections.storage && (
-                    <div className="px-6 pb-4">
-                      <p className="text-black-700 leading-relaxed">
-                        Store in a cool, dry place away from direct sunlight. Keep the container tightly 
-                        sealed after each use. Best used within 12 months of opening. Refrigeration is 
-                        not required but can help maintain freshness.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Suggested Products Section */}
-        {suggestedProducts.length > 0 && (
-          <section className="py-8 sm:py-12 lg:py-16 bg-beige-100">
-            <div className="container-custom px-4 sm:px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="text-center mb-8 sm:mb-10 lg:mb-12"
-              >
-                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-4">
-                  You Might Also Like
-                </h2>
-                <p className="text-base sm:text-lg text-black-600 max-w-2xl mx-auto">
-                  Discover more amazing products that complement your selection
-                </p>
-              </motion.div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                {suggestedProducts.map((suggestedProduct, index) => (
-                  <motion.div
-                    key={suggestedProduct.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    whileHover={{ y: -5 }}
-                    className="group cursor-pointer"
-                  >
-                    <Link to={`/product/${suggestedProduct.id}`}>
-                      <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
-                        <div className="relative overflow-hidden flex-shrink-0">
-                          <img
-                            src={suggestedProduct.image_url}
-                            alt={suggestedProduct.name}
-                            className="w-full h-48 object-contain group-hover:scale-105 transition-transform duration-300 p-4"
-                            onError={(e) => {
-                              console.error('Failed to load suggested product image:', suggestedProduct.image_url);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                          {suggestedProduct.originalPrice > suggestedProduct.price && (
-                            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                              {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
-                            </div>
-                          )}
-                          <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
-                            {suggestedProduct.category}
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 flex flex-col flex-grow">
-                          <h3 className="text-lg font-heading font-semibold text-black-900 mb-2 group-hover:text-green-700 transition-colors duration-300 line-clamp-2">
-                            {suggestedProduct.name}
-                          </h3>
-                          
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${i < Math.floor(suggestedProduct.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-sm text-black-600">({suggestedProduct.reviews})</span>
-                          </div>
-
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-bold text-green-600 text-lg">₹{suggestedProduct.price}</span>
-                              {suggestedProduct.originalPrice > suggestedProduct.price && (
-                                <span className="text-sm text-black-500 line-through">₹{suggestedProduct.originalPrice}</span>
-                              )}
-                            </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {suggestedProduct.stock_status}
-                            </span>
-                          </div>
-
-                          <div className="mt-auto">
-                            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 text-sm">
-                              View Product
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-center mt-12"
-              >
-                <Link
-                  to="/products"
-                  className="inline-flex items-center space-x-2 bg-white hover:bg-gray-50 text-green-600 hover:text-green-700 font-semibold py-3 px-6 rounded-lg border border-green-600 transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  <span>View All Products</span>
-                  <motion.span
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    →
-                  </motion.span>
-                </Link>
-              </motion.div>
-            </div>
-          </section>
         )}
       </div>
 
