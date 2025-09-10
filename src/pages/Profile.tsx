@@ -220,40 +220,42 @@ const Profile: React.FC = () => {
   const completionPercentage = ProfileService.getProfileCompletionPercentage(profile);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-              <p className="text-gray-600">Manage your account information</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage your account information</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
                 >
                   <Edit3 className="w-4 h-4" />
-                  Edit Profile
+                  <span className="hidden sm:inline">Edit Profile</span>
+                  <span className="sm:hidden">Edit</span>
                 </button>
               )}
               {isEditing && (
                 <>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Save className="w-4 h-4" />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                    <span className="sm:hidden">{isSaving ? 'Saving...' : 'Save'}</span>
                   </button>
                 </>
               )}
@@ -261,23 +263,23 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Profile Completion */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Profile Completion</span>
-              <span className="text-sm text-gray-500">{completionPercentage}%</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700">Profile Completion</span>
+              <span className="text-xs sm:text-sm text-gray-500">{completionPercentage}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
               <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                className="bg-green-600 h-1.5 sm:h-2 rounded-full transition-all duration-300"
                 style={{ width: `${completionPercentage}%` }}
               ></div>
             </div>
           </div>
 
           {/* Profile Picture Section */}
-          <div className="flex items-center gap-6 mb-6">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+            <div className="relative mx-auto sm:mx-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 {profile.profile_picture_url ? (
                   <img
                     src={profile.profile_picture_url}
@@ -285,11 +287,11 @@ const Profile: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-12 h-12 text-gray-400" />
+                  <User className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer hover:bg-green-700 transition-colors">
-                <Camera className="w-4 h-4" />
+              <label className="absolute bottom-0 right-0 bg-green-600 text-white p-1.5 sm:p-2 rounded-full cursor-pointer hover:bg-green-700 transition-colors">
+                <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                 <input
                   type="file"
                   accept="image/*"
@@ -299,26 +301,26 @@ const Profile: React.FC = () => {
                 />
               </label>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+            <div className="text-center sm:text-left">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {ProfileService.getFullName(profile)}
               </h2>
-              <p className="text-gray-600">{profile.email}</p>
+              <p className="text-sm sm:text-base text-gray-600 break-all">{profile.email}</p>
               {isUploading && (
-                <p className="text-sm text-green-600 mt-1">Uploading...</p>
+                <p className="text-xs sm:text-sm text-green-600 mt-1">Uploading...</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Profile Form */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Personal Information</h3>
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Personal Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* First Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 First Name *
               </label>
               <input
@@ -327,14 +329,14 @@ const Profile: React.FC = () => {
                 value={formData.first_name || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                 placeholder="Enter first name"
               />
             </div>
 
             {/* Last Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Last Name
               </label>
               <input
@@ -343,25 +345,25 @@ const Profile: React.FC = () => {
                 value={formData.last_name || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                 placeholder="Enter last name"
               />
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Phone Number *
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter phone number"
                 />
               </div>
@@ -369,25 +371,25 @@ const Profile: React.FC = () => {
 
             {/* Date of Birth */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Date of Birth
               </label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <input
                   type="date"
                   name="date_of_birth"
                   value={formData.date_of_birth || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                 />
               </div>
             </div>
 
             {/* Gender */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Gender
               </label>
               <select
@@ -395,7 +397,7 @@ const Profile: React.FC = () => {
                 value={formData.gender || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
               >
                 <option value="">Select gender</option>
                 <option value="Male">Male</option>
@@ -407,7 +409,7 @@ const Profile: React.FC = () => {
 
             {/* Preferred Language */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Preferred Language
               </label>
               <select
@@ -415,7 +417,7 @@ const Profile: React.FC = () => {
                 value={formData.preferred_language || 'en'}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
               >
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -428,24 +430,24 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Address Section */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Address Information</h3>
+          <div className="mt-6 sm:mt-8">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Address Information</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Address Line 1 */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Address Line 1 *
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                   <input
                     type="text"
                     name="address_line_1"
                     value={formData.address_line_1 || ''}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                    className="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                     placeholder="Enter address line 1"
                   />
                 </div>
@@ -453,7 +455,7 @@ const Profile: React.FC = () => {
 
               {/* Address Line 2 */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Address Line 2
                 </label>
                 <input
@@ -462,14 +464,14 @@ const Profile: React.FC = () => {
                   value={formData.address_line_2 || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter address line 2 (optional)"
                 />
               </div>
 
               {/* City */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   City *
                 </label>
                 <input
@@ -478,14 +480,14 @@ const Profile: React.FC = () => {
                   value={formData.city || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter city"
                 />
               </div>
 
               {/* State */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   State
                 </label>
                 <input
@@ -494,14 +496,14 @@ const Profile: React.FC = () => {
                   value={formData.state || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter state"
                 />
               </div>
 
               {/* Country */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Country
                 </label>
                 <input
@@ -510,14 +512,14 @@ const Profile: React.FC = () => {
                   value={formData.country || 'India'}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter country"
                 />
               </div>
 
               {/* Pincode */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Pincode *
                 </label>
                 <input
@@ -526,7 +528,7 @@ const Profile: React.FC = () => {
                   value={formData.pincode || ''}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                  className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base"
                   placeholder="Enter pincode"
                 />
               </div>
@@ -534,12 +536,12 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Additional Information */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Additional Information</h3>
+          <div className="mt-6 sm:mt-8">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Additional Information</h3>
             
             {/* Bio */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Bio
               </label>
               <textarea
@@ -548,22 +550,22 @@ const Profile: React.FC = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+                className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 text-sm sm:text-base resize-none"
                 placeholder="Tell us about yourself..."
               />
             </div>
 
             {/* Newsletter Subscription */}
-            <div className="flex items-center">
+            <div className="flex items-start">
               <input
                 type="checkbox"
                 name="newsletter_subscribed"
                 checked={formData.newsletter_subscribed || false}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:opacity-50"
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:opacity-50 mt-0.5"
               />
-              <label className="ml-2 block text-sm text-gray-700">
+              <label className="ml-2 block text-xs sm:text-sm text-gray-700 leading-relaxed">
                 Subscribe to newsletter for updates and offers
               </label>
             </div>

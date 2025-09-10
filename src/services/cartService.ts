@@ -415,6 +415,34 @@ export class CartService {
   static getItemSubtotal(price: number, quantity: number): number {
     return price * quantity;
   }
+
+  /**
+   * Apply coupon to cart
+   * @param couponCode - Coupon code to apply
+   * @returns Promise with updated cart including discount
+   */
+  static async applyCoupon(couponCode: string): Promise<Cart> {
+    try {
+      console.log(`Applying coupon: ${couponCode}`);
+      const response = await cartApi.applyCoupon(couponCode);
+      console.log('Apply coupon response:', response);
+      
+      // Update cart with discount information
+      const updatedCart = {
+        ...response.data.cart,
+        discount_amount: response.data.discount_amount,
+        discounted_total: response.data.discounted_total
+      };
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
+      return updatedCart;
+    } catch (error: any) {
+      console.error('Failed to apply coupon:', error);
+      throw new Error(error.message || 'Failed to apply coupon. Please try again later.');
+    }
+  }
 }
 
 export default CartService; 

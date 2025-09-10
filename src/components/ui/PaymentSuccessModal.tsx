@@ -41,9 +41,10 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   };
 
   const handleDownloadInvoice = () => {
-    if (order?.invoice_url) {
-      window.open(order.invoice_url, '_blank');
-    }
+    if (!order) return;
+    
+    // Direct redirect to S3 invoice file
+    window.open(`https://amrti-ecommerce.s3.eu-north-1.amazonaws.com/invoices/${order.id}.json`, '_blank');
   };
 
   const handleViewOrder = () => {

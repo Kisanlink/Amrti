@@ -25,25 +25,67 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     items: [] 
   });
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const { showNotification } = useNotification();
+
+  // Available coupons
+  const availableCoupons = [
+    { code: 'DEAL5', discount: '5%' },
+    { code: 'SAVE10', discount: '10%' }
+  ];
+
+  // Load cart function
+  const loadCart = async () => {
+    try {
+      const currentCart = await CartService.getCart();
+      console.log('Cart popup opened, cart data:', currentCart);
+      setCart(currentCart);
+    } catch (err) {
+      console.error('Failed to load cart:', err);
+      showNotification({
+        type: 'error',
+        message: 'Failed to load cart'
+      });
+    }
+  };
+
+  // Apply coupon function
+  const handleApplyCoupon = async (code?: string) => {
+    const couponToApply = code || couponCode.trim();
+    
+    if (!couponToApply) {
+      showNotification({
+        type: 'error',
+        message: 'Please enter a coupon code'
+      });
+      return;
+    }
+
+    try {
+      setIsApplyingCoupon(true);
+      await CartService.applyCoupon(couponToApply);
+      setAppliedCoupon(couponToApply);
+      setCouponCode('');
+      await loadCart();
+      showNotification({
+        type: 'success',
+        message: 'Coupon applied successfully!'
+      });
+    } catch (error: any) {
+      showNotification({
+        type: 'error',
+        message: error.message || 'Failed to apply coupon'
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
 
   // Load cart on mount and when popup opens
   useEffect(() => {
     if (isOpen) {
-      const loadCart = async () => {
-        try {
-          const currentCart = await CartService.getCart();
-          console.log('Cart popup opened, cart data:', currentCart);
-          setCart(currentCart);
-        } catch (err) {
-          console.error('Failed to load cart:', err);
-          showNotification({
-            type: 'error',
-            message: 'Failed to load cart'
-          });
-        }
-      };
-      
       loadCart();
       
       // Ensure popup is properly positioned
@@ -279,8 +321,60 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                    )}
                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
                      <span>Total</span>
-                     <span>₹{cart.total_price - cart.discount_amount}</span>
+                     <span>₹{cart.discounted_total || (cart.total_price - cart.discount_amount)}</span>
                    </div>
+                 </div>
+               )}
+
+               {/* Coupon Section */}
+               {cart.items.length > 0 && (
+                 <div className="py-3 border-b border-gray-100">
+                   {appliedCoupon || cart.discount_amount > 0 ? (
+                     <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2">
+                       <div className="flex items-center space-x-2">
+                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                         <span className="text-sm text-green-700 font-medium">
+                           Coupon "{appliedCoupon || 'Applied'}" applied
+                         </span>
+                       </div>
+                       <span className="text-sm font-semibold text-green-600">
+                         -₹{cart.discount_amount}
+                       </span>
+                     </div>
+                   ) : (
+                     <div className="space-y-2">
+                       <p className="text-xs text-gray-600">Available coupons:</p>
+                       <div className="flex space-x-1">
+                         {availableCoupons.map((coupon) => (
+                           <button
+                             key={coupon.code}
+                             onClick={() => handleApplyCoupon(coupon.code)}
+                             disabled={isApplyingCoupon}
+                             className="flex-1 px-2 py-1 bg-gray-50 hover:bg-green-50 border border-gray-200 hover:border-green-300 rounded text-xs font-medium text-gray-700 hover:text-green-700 transition-colors disabled:opacity-50"
+                           >
+                             {coupon.code} {coupon.discount}
+                           </button>
+                         ))}
+                       </div>
+                       <div className="flex space-x-1">
+                         <input
+                           type="text"
+                           value={couponCode}
+                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                           placeholder="Enter code"
+                           className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-green-500 focus:border-transparent"
+                           disabled={isApplyingCoupon}
+                         />
+                         <button
+                           onClick={() => handleApplyCoupon()}
+                           disabled={isApplyingCoupon || !couponCode.trim()}
+                           className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-medium rounded transition-colors"
+                         >
+                           {isApplyingCoupon ? '...' : 'Apply'}
+                         </button>
+                       </div>
+                     </div>
+                   )}
                  </div>
                )}
                

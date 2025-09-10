@@ -29,6 +29,12 @@ const Orders: React.FC = () => {
   
   const { showNotification } = useNotification();
 
+  // Handle invoice download
+  const handleInvoiceDownload = (orderItem: Order) => {
+    // Direct redirect to S3 invoice file
+    window.open(`https://amrti-ecommerce.s3.eu-north-1.amazonaws.com/invoices/${orderItem.id}.json`, '_blank');
+  };
+
   // Sort orders based on selected criteria
   const sortedOrders = [...orders].sort((a, b) => {
     switch (sortBy) {
@@ -385,15 +391,13 @@ const Orders: React.FC = () => {
                             Track Package
                           </a>
                         )}
-                        {orderItem.invoice_url && (
-                          <button
-                            onClick={() => window.open(orderItem.invoice_url, '_blank')}
-                            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                          >
-                            <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                            Invoice
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleInvoiceDownload(orderItem)}
+                          className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                        >
+                          <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                          Invoice
+                        </button>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Link
@@ -533,7 +537,7 @@ const Orders: React.FC = () => {
                 
                 <div className="space-y-4">
                   {/* Shipping Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className=" md:grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-medium text-gray-900 mb-2">Shipping Details</h3>
                       <div className="space-y-2 text-sm">
@@ -552,7 +556,7 @@ const Orders: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 rounded-lg p-4">
+                    {/* <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-medium text-gray-900 mb-2">Delivery Timeline</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
@@ -576,7 +580,7 @@ const Orders: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Tracking Information */}

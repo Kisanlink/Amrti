@@ -349,6 +349,7 @@ export interface Cart {
   total_items: number;
   total_price: number;
   discount_amount: number;
+  discounted_total?: number;
   items: CartItem[];
 }
 
@@ -459,6 +460,14 @@ export const cartApi = {
   // Validate cart
   validate: async (): Promise<CartValidationResponse> => {
     return apiRequest<CartValidationResponse>('/cart/validate');
+  },
+
+  // Apply coupon
+  applyCoupon: async (couponCode: string): Promise<CartListResponse> => {
+    return apiRequest<CartListResponse>('/cart/checkout/apply-coupon', {
+      method: 'POST',
+      body: JSON.stringify({ coupon_code: couponCode }),
+    });
   },
 };
 

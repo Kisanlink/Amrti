@@ -192,7 +192,7 @@ const ProductsSection = () => {
                   className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
                   title="Coming Soon"
                 >
-                  <span className="text-xs font-semibold">COMING SOON</span>
+                  <ShoppingCart className="w-4 h-4" />
                 </button>
               ) : (
                 <button
@@ -290,12 +290,12 @@ const ProductsSection = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="mb-12 pl-4 md:pl-24 pr-4 md:pr-16"
         >
-                     <h2 className="text-4xl font-heading font-bold text-russet-900 mb-6">
+                     <h2 className="text-4xl font-heading font-bold text-russet-900 mb-6 text-center">
              Our <span className="text-green-600">Premium Products</span>
            </h2>
-           <p className="text-xl text-russet-800 max-w-3xl mx-auto font-medium">
+           <p className="text-xl text-russet-800 max-w-3xl mx-auto font-medium text-left">
             Discover our carefully sourced natural powders that bring the power of traditional wisdom to modern wellness
           </p>
         </motion.div>
