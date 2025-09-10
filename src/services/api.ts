@@ -394,11 +394,19 @@ export interface CartCountResponse {
   success: boolean;
 }
 
+export interface ValidationIssue {
+  action: string;
+  issue: string;
+  new_price?: number;
+  old_price?: number;
+  product_id: string;
+}
+
 export interface CartValidationResponse {
   data: {
     cart: Cart;
     cart_updated: boolean;
-    validation_issues: string[];
+    validation_issues: ValidationIssue[];
   };
   message: string;
   success: boolean;

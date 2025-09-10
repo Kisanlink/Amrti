@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import CheckoutService, { 
   type ShippingAddress, 
-  type ShippingOption 
+  type ShippingOption,
+  type ValidationIssue 
 } from '../services/checkoutService';
 import CartService from '../services/cartService';
 import { useNotification } from '../context/NotificationContext';
@@ -35,6 +36,7 @@ const Checkout: React.FC = () => {
   };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationWarnings, setValidationWarnings] = useState<ValidationIssue[]>([]);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<string>('');
   
@@ -112,10 +114,16 @@ const Checkout: React.FC = () => {
       const data = await CheckoutService.prepareCheckout();
       setCheckoutData(data);
       
-      // Check if cart has validation issues
+      // Handle validation issues as warnings, not blocking errors
       if (data.validation_issues && data.validation_issues.length > 0) {
-        setError(`Cart validation issues: ${data.validation_issues.join(', ')}`);
-        return;
+        setValidationWarnings(data.validation_issues);
+        // Show notification about validation issues but don't block checkout
+        showNotification({
+          type: 'info',
+          message: 'Some items in your cart have been updated. Please review the changes below.'
+        });
+      } else {
+        setValidationWarnings([]);
       }
       
       // Check if cart is empty
@@ -317,6 +325,47 @@ const Checkout: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Checkout</h1>
           <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Complete your purchase</p>
         </div>
+
+        {/* Validation Warnings */}
+        {validationWarnings.length > 0 && (
+          <div className="mb-6 sm:mb-8">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 sm:p-6">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="text-sm sm:text-base font-medium text-amber-800 mb-2">
+                    Cart Updated
+                  </h3>
+                  <p className="text-sm text-amber-700 mb-3">
+                    Some items in your cart have been updated. Please review the changes below:
+                  </p>
+                  <div className="space-y-2">
+                    {validationWarnings.map((warning, index) => (
+                      <div key={index} className="text-sm text-amber-700 bg-amber-100 rounded-md p-3">
+                        {warning.action === 'price_updated' ? (
+                          <div>
+                            <span className="font-medium">Price Updated:</span> Product {warning.product_id} 
+                            <span className="mx-2">•</span>
+                            <span className="line-through">₹{warning.old_price}</span>
+                            <span className="mx-1">→</span>
+                            <span className="font-semibold text-green-700">₹{warning.new_price}</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="font-medium">{warning.issue}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-600 mt-3">
+                    You can continue with checkout or go back to cart to review your items.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="mb-6 sm:mb-8">
