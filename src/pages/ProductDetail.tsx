@@ -34,16 +34,6 @@ const ProductDetail = () => {
   const [suggestedProducts, setSuggestedProducts] = useState<any[]>([]);
   const { showNotification } = useNotification();
 
-  // Check if product is in wishlist
-  const checkWishlistStatus = async () => {
-    if (!id) return;
-    try {
-      const inWishlist = await WishlistService.isInWishlist(id);
-      setIsInWishlist(inWishlist);
-    } catch (error) {
-      console.error('Failed to check wishlist status:', error);
-    }
-  };
 
   // Handle wishlist toggle
   const handleWishlistToggle = async () => {
@@ -76,47 +66,52 @@ const ProductDetail = () => {
     }
   };
 
-  // Load reviews for the product
-  const loadReviews = async () => {
-    if (!id) return;
-    
-    setReviewsLoading(true);
-    try {
-      const response = await ReviewService.getProductReviews(id, 1, 10);
-      // For moringa products, always show static reviews first, then add API reviews
-      if (product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa'))) {
-        const staticReviews = ReviewService.getFallbackReviews();
-        setReviews([...staticReviews, ...response.reviews]);
-      } else {
-        // For non-moringa products, show only API reviews (will be empty for new products)
-        setReviews(response.reviews);
-      }
-    } catch (error) {
-      console.error('Failed to load reviews:', error);
-      // Use fallback reviews for moringa products only
-      if (product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa'))) {
-        setReviews(ReviewService.getFallbackReviews());
-      } else {
-        // For non-moringa products, show empty reviews (new product)
-        setReviews([]);
-      }
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
 
-  // Load product and suggested products on mount
+  // Load product, reviews, and suggested products on mount
   useEffect(() => {
-    const loadProduct = async () => {
-      if (id) {
+    const loadProductData = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
         try {
           setLoading(true);
+        setReviewsLoading(true);
+        
+        // Load product data
           const productData = await ProductService.getProductById(id);
           setProduct(productData);
           setSelectedImageIndex(0); // Reset to first image when loading new product
-          
-          // Check wishlist status
-          checkWishlistStatus();
+        
+        // Load reviews
+        const reviewsResponse = await Promise.allSettled([
+          ReviewService.getProductReviews(id, 1, 10)
+        ]).then(results => results[0]);
+        
+        // Handle reviews
+        if (reviewsResponse.status === 'fulfilled') {
+          const response = reviewsResponse.value;
+          // For moringa products, always show static reviews first, then add API reviews
+          if (productData && (productData.name?.toLowerCase().includes('moringa') || productData.category?.toLowerCase().includes('moringa'))) {
+            const staticReviews = ReviewService.getFallbackReviews();
+            setReviews([...staticReviews, ...response.reviews]);
+          } else {
+            // For non-moringa products, show only API reviews (will be empty for new products)
+            setReviews(response.reviews);
+          }
+        } else {
+          console.error('Failed to load reviews:', reviewsResponse.reason);
+          // Use fallback reviews for moringa products only
+          if (productData && (productData.name?.toLowerCase().includes('moringa') || productData.category?.toLowerCase().includes('moringa'))) {
+            setReviews(ReviewService.getFallbackReviews());
+          } else {
+            setReviews([]);
+          }
+        }
+        
+        // Set default wishlist status (will be updated when user interacts with wishlist)
+        setIsInWishlist(false);
           
           // Get suggested products (same category, excluding current product)
           const allProductsResponse = await ProductService.getAllProducts(1, 100);
@@ -134,26 +129,18 @@ const ProductDetail = () => {
           } else {
             setSuggestedProducts(suggested);
           }
+        
         } catch (error) {
           console.error('Failed to load product:', error);
           setProduct(null);
         } finally {
           setLoading(false);
-        }
-      } else {
-        setLoading(false);
+        setReviewsLoading(false);
       }
     };
     
-    loadProduct();
+    loadProductData();
   }, [id]);
-
-  // Load reviews after product is loaded
-  useEffect(() => {
-    if (product) {
-      loadReviews();
-    }
-  }, [product]);
 
   // Handle review like update
   const handleReviewLikeUpdate = (reviewId: string, likesCount: number, hasUserLiked: boolean) => {
@@ -251,12 +238,16 @@ const ProductDetail = () => {
                      ];
                      
                      // Filter out empty URLs but ensure we always have at least the main image
-                     const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '');
+                     const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '').map(url => {
+                       // Fix URL encoding issues - replace + with %20 for proper space encoding
+                       return url.replace(/\+/g, '%20');
+                     });
                      
                      // If we only have one image, show it multiple times for better UX
+                     const fallbackUrl = product.image_url ? product.image_url.replace(/\+/g, '%20') : '';
                      const imageUrls = validImageUrls.length > 1 
                        ? validImageUrls 
-                       : [product.image_url, product.image_url, product.image_url, product.image_url, product.image_url];
+                       : [fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl];
                      
                      return imageUrls.slice(0, 5).map((imageUrl, index) => (
                        <div 
@@ -293,12 +284,16 @@ const ProductDetail = () => {
                     product.image_url_4
                   ];
                   
-                  const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '');
+                  const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '').map(url => {
+                    // Fix URL encoding issues - replace + with %20 for proper space encoding
+                    return url.replace(/\+/g, '%20');
+                  });
+                  const fallbackUrl = product.image_url ? product.image_url.replace(/\+/g, '%20') : '';
                   const imageUrls = validImageUrls.length > 1 
                     ? validImageUrls 
-                    : [product.image_url, product.image_url, product.image_url, product.image_url, product.image_url];
+                    : [fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl];
                   
-                  const currentImage = imageUrls[selectedImageIndex] || product.image_url;
+                  const currentImage = imageUrls[selectedImageIndex] || fallbackUrl;
                   
                   return (
                     <img 
@@ -626,76 +621,76 @@ const ProductDetail = () => {
 
               <div className="overflow-x-auto pb-4">
                 <div className="flex space-x-4 min-w-max">
-                  {suggestedProducts.map((suggestedProduct, index) => (
-                    <motion.div
-                      key={suggestedProduct.id}
+                {suggestedProducts.map((suggestedProduct, index) => (
+                  <motion.div
+                    key={suggestedProduct.id}
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      whileHover={{ y: -5 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    whileHover={{ y: -5 }}
                       className="group cursor-pointer flex-shrink-0"
-                    >
-                      <Link to={`/product/${suggestedProduct.id}`}>
+                  >
+                    <Link to={`/product/${suggestedProduct.id}`}>
                         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-64 h-72 flex flex-col">
-                          <div className="relative overflow-hidden flex-shrink-0">
-                            <img
-                              src={suggestedProduct.image_url}
-                              alt={suggestedProduct.name}
+                        <div className="relative overflow-hidden flex-shrink-0">
+                          <img
+                            src={suggestedProduct.image_url}
+                            alt={suggestedProduct.name}
                               className="w-full h-28 object-contain group-hover:scale-105 transition-transform duration-300 p-2"
-                              onError={(e) => {
-                                console.error('Failed to load suggested product image:', suggestedProduct.image_url);
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                            {suggestedProduct.originalPrice > suggestedProduct.price && (
+                            onError={(e) => {
+                              console.error('Failed to load suggested product image:', suggestedProduct.image_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          {suggestedProduct.originalPrice > suggestedProduct.price && (
                               <div className="absolute top-2 left-2 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                                {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
-                              </div>
-                            )}
-                            <div className="absolute top-2 right-2 bg-beige-300/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-semibold text-black-700">
-                              {suggestedProduct.category}
+                              {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
                             </div>
+                          )}
+                            <div className="absolute top-2 right-2 bg-beige-300/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-semibold text-black-700">
+                            {suggestedProduct.category}
                           </div>
-                          
+                        </div>
+                        
                           <div className="p-3 flex flex-col flex-grow">
                             <h3 className="text-sm font-heading font-semibold text-black-900 mb-1 group-hover:text-green-700 transition-colors duration-300 line-clamp-2">
-                              {suggestedProduct.name}
-                            </h3>
-                            
+                            {suggestedProduct.name}
+                          </h3>
+                          
                             <div className="flex items-center space-x-1 mb-1">
-                              <div className="flex items-center">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
                                     className={`w-3 h-3 ${i < Math.floor(suggestedProduct.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                  />
-                                ))}
+                                />
+                              ))}
                               </div>
                               <span className="text-xs text-black-600">({suggestedProduct.reviews})</span>
-                            </div>
+                          </div>
 
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-1">
                                 <span className="font-bold text-green-600 text-sm">₹{suggestedProduct.price}</span>
-                                {suggestedProduct.originalPrice > suggestedProduct.price && (
+                              {suggestedProduct.originalPrice > suggestedProduct.price && (
                                   <span className="text-xs text-black-500 line-through">₹{suggestedProduct.originalPrice}</span>
-                                )}
-                              </div>
-                              <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
-                                suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {suggestedProduct.stock_status}
-                              </span>
+                              )}
                             </div>
+                              <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                              suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {suggestedProduct.stock_status}
+                            </span>
+                          </div>
 
                             <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-3 rounded-lg transition-colors duration-300 text-xs mt-auto">
                               View Product
                             </button>
-                          </div>
                         </div>
-                      </Link>
-                    </motion.div>
-                  ))}
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
                 </div>
               </div>
 
@@ -731,7 +726,7 @@ const ProductDetail = () => {
               <div className="text-center mb-6 sm:mb-8 lg:mb-12">
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-black-900 mb-2 sm:mb-3 lg:mb-4">Customer Reviews</h2>
                 <p className="text-black-600 text-sm sm:text-base lg:text-lg">See what our customers are saying about this product</p>
-              </div>
+            </div>
 
               {/* Reviews Summary Card */}
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
@@ -750,7 +745,7 @@ const ProductDetail = () => {
                         {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} out of 5
                   </div>
                       <div className="text-black-600 text-xs sm:text-sm lg:text-base">Based on {reviews.length} reviews</div>
-            </div>
+                </div>
 
                   {/* Write Review Button */}
                   <div className="mt-6 lg:mt-0">
@@ -762,7 +757,7 @@ const ProductDetail = () => {
                     </button>
                   </div>
                 </div>
-              </div>
+                </div>
 
                 {/* Review Form */}
                 {showReviewForm && (
@@ -771,8 +766,8 @@ const ProductDetail = () => {
                       productId={id!}
                       onReviewSubmitted={handleReviewSubmitted}
                       onCancel={() => setShowReviewForm(false)}
-                    />
-                  </div>
+                  />
+                </div>
                 )}
 
               {/* Individual Reviews */}
@@ -788,7 +783,7 @@ const ProductDetail = () => {
                   ))}
                         </div>
                       </div>
-                    </div>
+                </div>
           </section>
         )}
 
@@ -830,8 +825,8 @@ const ProductDetail = () => {
                   >
                     <Star className="w-5 h-5" />
                     <span>Write the First Review</span>
-                  </button>
-                </motion.div>
+                </button>
+          </motion.div>
 
                 {/* Review Form */}
                 {showReviewForm && (
@@ -841,8 +836,8 @@ const ProductDetail = () => {
                       onReviewSubmitted={handleReviewSubmitted}
                       onCancel={() => setShowReviewForm(false)}
                     />
-                  </div>
-                )}
+        </div>
+      )}
             </div>
           </div>
         </section>

@@ -78,9 +78,14 @@ export class ProductService {
       console.log('Product Detail API Response:', response);
       
       // Handle different response structures
-      if (response.data) {
+      if (response.data && response.data.product) {
+        // Handle nested structure: { data: { product: {...} } }
+        return response.data.product;
+      } else if (response.data) {
+        // Handle direct data structure: { data: {...} }
         return response.data;
       } else if (response.product) {
+        // Handle product property: { product: {...} }
         return response.product;
       } else if (response) {
         // If the response is directly the product object
