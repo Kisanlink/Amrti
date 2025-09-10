@@ -84,7 +84,7 @@ const ProductDetail = () => {
     try {
       const response = await ReviewService.getProductReviews(id, 1, 10);
       // For moringa products, always show static reviews first, then add API reviews
-      if (product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))) {
+      if (product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa'))) {
         const staticReviews = ReviewService.getFallbackReviews();
         setReviews([...staticReviews, ...response.reviews]);
       } else {
@@ -94,7 +94,7 @@ const ProductDetail = () => {
     } catch (error) {
       console.error('Failed to load reviews:', error);
       // Use fallback reviews for moringa products only
-      if (product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))) {
+      if (product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa'))) {
         setReviews(ReviewService.getFallbackReviews());
       } else {
         // For non-moringa products, show empty reviews (new product)
@@ -817,7 +817,7 @@ const ProductDetail = () => {
 
                   {/* Description */}
                   <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                    {product && (product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa'))
+                    {product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa'))
                       ? "Share your experience with this moringa product and help others make informed decisions."
                       : "This is a new product. Share your experience and help others discover its benefits."
                     }

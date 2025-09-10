@@ -15,7 +15,7 @@ const CouponSection = ({ cart, onCouponApplied }: { cart: Cart; onCouponApplied:
   const { showNotification } = useNotification();
 
   // Available coupons
-  const availableCoupons = [
+const availableCoupons = [
     { code: 'DEAL5', discount: '5%', description: 'Get 5% off on your order' },
     { code: 'SAVE10', discount: '10%', description: 'Get 10% off on your order' }
   ];
