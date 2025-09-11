@@ -5,8 +5,9 @@ import { ArrowLeft, Package, Truck, Calendar, MapPin, CreditCard, Download, Star
 import { OrderService, type Order, type OrderItem } from '../services/orderService';
 import { useNotification } from '../context/NotificationContext';
 import ScrollToTop from '../components/ui/ScrollToTop';
+import InvoiceViewer from '../components/ui/InvoiceViewer';
 import AuthService from '../services/authService';
-import { productsApi } from '../services/api';
+import ProductService from '../services/productService';
 
 const Orders: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -27,12 +28,19 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Invoice viewer state
+  const [showInvoiceViewer, setShowInvoiceViewer] = useState(false);
+  const [selectedInvoiceUrl, setSelectedInvoiceUrl] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  
   const { showNotification } = useNotification();
 
-  // Handle invoice download
+  // Handle invoice download/view
   const handleInvoiceDownload = (orderItem: Order) => {
-    // Direct redirect to S3 invoice file
-    window.open(`https://amrti-ecommerce.s3.eu-north-1.amazonaws.com/invoices/${orderItem.id}.json`, '_blank');
+    const invoiceUrl = `https://amrti.s3.ap-south-1.amazonaws.com/invoices/${orderItem.id}.pdf`;
+    setSelectedInvoiceUrl(invoiceUrl);
+    setSelectedOrderId(orderItem.id);
+    setShowInvoiceViewer(true);
   };
 
   // Sort orders based on selected criteria
@@ -149,10 +157,13 @@ const Orders: React.FC = () => {
   // Fetch product details for order items
   const fetchProductDetails = async (productId: string) => {
     try {
-      const product = await productsApi.getProductById(productId);
+      console.log(`Fetching product details for: ${productId}`);
+      const product = await ProductService.getProductById(productId);
+      console.log(`Product details received for ${productId}:`, product);
+      
       setProductDetails(prev => ({
         ...prev,
-        [productId]: product.data
+        [productId]: product
       }));
     } catch (error) {
       console.error(`Failed to fetch product ${productId}:`, error);
@@ -689,7 +700,7 @@ const Orders: React.FC = () => {
                                 <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
                               ) : hasError ? (
                                 <div className="flex items-center space-x-2">
-                                  <span>Product {item.product_id}</span>
+                                  <span className="text-gray-600">Product {item.product_id}</span>
                                   <button
                                     onClick={() => fetchProductDetails(item.product_id)}
                                     className="text-xs text-blue-600 hover:text-blue-700 underline"
@@ -697,8 +708,18 @@ const Orders: React.FC = () => {
                                     Retry
                                   </button>
                                 </div>
+                              ) : product?.name ? (
+                                product.name
                               ) : (
-                                product?.name || `Product ${item.product_id}`
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-gray-600">Loading product details...</span>
+                                  <button
+                                    onClick={() => fetchProductDetails(item.product_id)}
+                                    className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                  >
+                                    Load
+                                  </button>
+                                </div>
                               )}
                             </h3>
                             
@@ -711,7 +732,7 @@ const Orders: React.FC = () => {
                             {!isLoading && !hasError && product?.rating && (
                               <div className="flex items-center mt-1">
                                 <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                                <span className="text-xs text-gray-600 ml-1">{product.rating}</span>
+                                <span className="text-xs text-gray-600 ml-1">{parseFloat(product.rating).toString()}</span>
                                 {product.review_count && (
                                   <span className="text-xs text-gray-500 ml-2">({product.review_count} reviews)</span>
                                 )}
@@ -722,13 +743,6 @@ const Orders: React.FC = () => {
                           <div className="text-right">
                             <p className="font-semibold text-green-600">₹{item.total_price.toFixed(2)}</p>
                             <p className="text-sm text-gray-600">₹{item.unit_price.toFixed(2)} each</p>
-                            
-                            {!isLoading && !hasError && product?.discount_percent && product.discount_percent > 0 && (
-                              <div className="mt-1">
-                                <span className="text-xs text-gray-500 line-through">₹{product.actual_price}</span>
-                                <span className="text-xs text-green-600 ml-2">-{product.discount_percent}%</span>
-                              </div>
-                            )}
                           </div>
                         </div>
                       );
@@ -840,6 +854,14 @@ const Orders: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Invoice Viewer */}
+      <InvoiceViewer
+        isOpen={showInvoiceViewer}
+        onClose={() => setShowInvoiceViewer(false)}
+        invoiceUrl={selectedInvoiceUrl}
+        orderId={selectedOrderId}
+      />
     </>
   );
 };

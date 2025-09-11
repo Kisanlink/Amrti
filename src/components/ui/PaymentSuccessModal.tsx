@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Package, Truck, Download, ExternalLink } from 'lucide-react';
 import { OrderService, type Order } from '../../services/orderService';
+import InvoiceViewer from './InvoiceViewer';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -17,6 +18,9 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Invoice viewer state
+  const [showInvoiceViewer, setShowInvoiceViewer] = useState(false);
 
   console.log('PaymentSuccessModal props:', { isOpen, orderId, onClose });
 
@@ -43,8 +47,8 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   const handleDownloadInvoice = () => {
     if (!order) return;
     
-    // Direct redirect to S3 invoice file
-    window.open(`https://amrti-ecommerce.s3.eu-north-1.amazonaws.com/invoices/${order.id}.json`, '_blank');
+    // Show invoice viewer
+    setShowInvoiceViewer(true);
   };
 
   const handleViewOrder = () => {
@@ -235,6 +239,16 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
           </div>
         </motion.div>
       </motion.div>
+      
+      {/* Invoice Viewer */}
+      {order && (
+        <InvoiceViewer
+          isOpen={showInvoiceViewer}
+          onClose={() => setShowInvoiceViewer(false)}
+          invoiceUrl={`https://amrti.s3.ap-south-1.amazonaws.com/invoices/${order.id}.pdf`}
+          orderId={order.id}
+        />
+      )}
     </AnimatePresence>
   );
 };

@@ -246,11 +246,11 @@ const Navbar = () => {
             >
               {/* Logo with iOS Safari compatibility */}
               <div className="h-24 w-auto sm:h-22 lg:h-24 flex items-center relative">
-                {/* Primary SVG logo with iOS optimizations */}
+                {/* Primary: Try SVG first */}
                 <img 
                   src="/navbar_logo.svg" 
                   alt="Amrti Nature's Elixir" 
-                  className="h-full w-auto object-contain select-none pointer-events-none"
+                  className="h-full w-auto object-contain select-none pointer-events-none ios-logo-primary"
                   style={{
                     imageRendering: 'crisp-edges',
                     backfaceVisibility: 'hidden',
@@ -264,21 +264,59 @@ const Navbar = () => {
                     WebkitPerspective: '1000',
                     WebkitFontSmoothing: 'antialiased',
                     WebkitImageRendering: 'crisp-edges',
-                    // iOS Safari specific fixes
                     WebkitUserSelect: 'none',
                     WebkitTouchCallout: 'none',
-                    WebkitTapHighlightColor: 'transparent'
+                    WebkitTapHighlightColor: 'transparent',
+                    WebkitMaskImage: 'none',
+                    WebkitMaskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    WebkitMaskSize: 'contain'
                   } as React.CSSProperties}
                   onError={(e) => {
-                    // Fallback to PNG if SVG fails to load
+                    // Fallback to PNG if SVG fails
                     const target = e.target as HTMLImageElement;
-                    target.src = '/logo.png';
+                    target.style.display = 'none';
+                    // Show fallback PNG
+                    const fallback = target.parentElement?.querySelector('.ios-logo-fallback') as HTMLImageElement;
+                    if (fallback) {
+                      fallback.style.display = 'block';
+                    }
                   }}
                   onLoad={(e) => {
                     // Ensure proper rendering on iOS
                     const target = e.target as HTMLImageElement;
                     target.style.opacity = '1';
+                    // Hide fallback if SVG loads successfully
+                    const fallback = target.parentElement?.querySelector('.ios-logo-fallback') as HTMLImageElement;
+                    if (fallback) {
+                      fallback.style.display = 'none';
+                    }
                   }}
+                />
+                
+                {/* Fallback: PNG for iOS Safari */}
+                <img 
+                  src="/logo.png" 
+                  alt="Amrti Nature's Elixir" 
+                  className="h-full w-auto object-contain select-none pointer-events-none ios-logo-fallback"
+                  style={{
+                    display: 'none',
+                    imageRendering: 'crisp-edges',
+                    backfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    willChange: 'transform',
+                    filter: 'none',
+                    opacity: 1,
+                    imageOrientation: 'from-image',
+                    WebkitBackfaceVisibility: 'hidden',
+                    WebkitTransform: 'translateZ(0)',
+                    WebkitPerspective: '1000',
+                    WebkitFontSmoothing: 'antialiased',
+                    WebkitImageRendering: 'crisp-edges',
+                    WebkitUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                    WebkitTapHighlightColor: 'transparent'
+                  } as React.CSSProperties}
                 />
               </div>
             </motion.div>
