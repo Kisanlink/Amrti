@@ -244,20 +244,43 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               className="flex items-center space-x-1 sm:space-x-2"
             >
-              <img 
-                src="/navbar_logo.svg" 
-                alt="Amrti Nature's Elixir" 
-                className="h-24 w-auto sm:h-22 lg:h-24 object-contain select-none pointer-events-none"
-                style={{
-                  imageRendering: 'crisp-edges',
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
-                  filter: 'none',
-                  opacity: 1,
-                  imageOrientation: 'from-image'
-                } as React.CSSProperties}
-              />
+              {/* Logo with iOS Safari compatibility */}
+              <div className="h-24 w-auto sm:h-22 lg:h-24 flex items-center relative">
+                {/* Primary SVG logo with iOS optimizations */}
+                <img 
+                  src="/navbar_logo.svg" 
+                  alt="Amrti Nature's Elixir" 
+                  className="h-full w-auto object-contain select-none pointer-events-none"
+                  style={{
+                    imageRendering: 'crisp-edges',
+                    backfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    willChange: 'transform',
+                    filter: 'none',
+                    opacity: 1,
+                    imageOrientation: 'from-image',
+                    WebkitBackfaceVisibility: 'hidden',
+                    WebkitTransform: 'translateZ(0)',
+                    WebkitPerspective: '1000',
+                    WebkitFontSmoothing: 'antialiased',
+                    WebkitImageRendering: 'crisp-edges',
+                    // iOS Safari specific fixes
+                    WebkitUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                    WebkitTapHighlightColor: 'transparent'
+                  } as React.CSSProperties}
+                  onError={(e) => {
+                    // Fallback to PNG if SVG fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/logo.png';
+                  }}
+                  onLoad={(e) => {
+                    // Ensure proper rendering on iOS
+                    const target = e.target as HTMLImageElement;
+                    target.style.opacity = '1';
+                  }}
+                />
+              </div>
             </motion.div>
           </Link>
 
