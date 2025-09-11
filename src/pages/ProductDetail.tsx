@@ -496,7 +496,8 @@ const ProductDetail = () => {
         </div>
       </section> */}
 
-        {/* Product Information Sections */}
+        {/* Product Information Sections - Only for Moringa Products */}
+        {product && (product.name?.toLowerCase().includes('moringa') || product.category?.toLowerCase().includes('moringa')) && (
         <section className="py-16 bg-white">
           <div className="container-custom">
             <div className="max-w-4xl mx-auto">
@@ -599,7 +600,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </section>
-
+        )}
 
         {/* Suggested Products Section */}
         {suggestedProducts.length > 0 && (
@@ -631,12 +632,12 @@ const ProductDetail = () => {
                       className="group cursor-pointer flex-shrink-0"
                   >
                     <Link to={`/product/${suggestedProduct.id}`}>
-                        <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-64 h-72 flex flex-col">
+                        <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-64 h-64 flex flex-col">
                         <div className="relative overflow-hidden flex-shrink-0">
                           <img
                             src={suggestedProduct.image_url}
                             alt={suggestedProduct.name}
-                              className="w-full h-28 object-contain group-hover:scale-105 transition-transform duration-300 p-2"
+                              className="w-full h-32 object-contain group-hover:scale-105 transition-transform duration-300 p-2"
                             onError={(e) => {
                               console.error('Failed to load suggested product image:', suggestedProduct.image_url);
                               e.currentTarget.style.display = 'none';
@@ -652,7 +653,7 @@ const ProductDetail = () => {
                           </div>
                         </div>
                         
-                          <div className="p-3 flex flex-col flex-grow">
+                          <div className="p-2 flex flex-col flex-grow">
                             <h3 className="text-sm font-heading font-semibold text-black-900 mb-1 group-hover:text-green-700 transition-colors duration-300 line-clamp-2">
                             {suggestedProduct.name}
                           </h3>
@@ -669,7 +670,7 @@ const ProductDetail = () => {
                               <span className="text-xs text-black-600">({suggestedProduct.reviews})</span>
                           </div>
 
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-1">
                                 <span className="font-bold text-green-600 text-sm">₹{suggestedProduct.price}</span>
                               {suggestedProduct.originalPrice > suggestedProduct.price && (

@@ -62,7 +62,7 @@ const HeroSection = () => {
              </h1>
             
             <p className="text-xl text-russet-800 mb-6 leading-relaxed max-w-2xl lg:max-w-none font-medium">
-              Discover our premium collection of organic powders and probiotic kombucha drinks, 
+              Discover our premium collection of organic powders,
               carefully crafted to enhance your daily wellness routine with nature's finest ingredients.
             </p>
 

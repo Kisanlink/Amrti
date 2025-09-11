@@ -26,6 +26,14 @@ export interface ShippingOption {
   service_level: string;
 }
 
+export interface ValidationIssue {
+  action: string;
+  issue: string;
+  new_price?: number;
+  old_price?: number;
+  product_id: string;
+}
+
 export interface CheckoutPrepareResponse {
   data: {
     cart: {
@@ -52,7 +60,7 @@ export interface CheckoutPrepareResponse {
       }>;
     };
     cart_updated: boolean;
-    validation_issues: string[];
+    validation_issues: ValidationIssue[];
   };
   message: string;
   success: boolean;

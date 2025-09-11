@@ -443,6 +443,33 @@ export class CartService {
       throw new Error(error.message || 'Failed to apply coupon. Please try again later.');
     }
   }
+
+  /**
+   * Remove coupon from cart
+   * @returns Promise with updated cart without discount
+   */
+  static async removeCoupon(): Promise<Cart> {
+    try {
+      console.log('Removing coupon from cart');
+      const response = await cartApi.removeCoupon();
+      console.log('Remove coupon response:', response);
+      
+      // Update cart without discount information
+      const updatedCart = {
+        ...response.data.cart,
+        discount_amount: 0,
+        discounted_total: undefined
+      };
+      
+      // Dispatch cart updated event
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
+      return updatedCart;
+    } catch (error: any) {
+      console.error('Failed to remove coupon:', error);
+      throw new Error(error.message || 'Failed to remove coupon. Please try again later.');
+    }
+  }
 }
 
 export default CartService; 
