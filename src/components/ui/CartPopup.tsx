@@ -83,6 +83,27 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     }
   };
 
+  // Remove coupon function
+  const handleRemoveCoupon = async () => {
+    try {
+      setIsApplyingCoupon(true);
+      await CartService.removeCoupon();
+      setAppliedCoupon(null);
+      await loadCart();
+      showNotification({
+        type: 'success',
+        message: 'Coupon removed successfully!'
+      });
+    } catch (error: any) {
+      showNotification({
+        type: 'error',
+        message: error.message || 'Failed to remove coupon'
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
   // Load cart on mount and when popup opens
   useEffect(() => {
     if (isOpen) {
@@ -330,16 +351,25 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                {cart.items.length > 0 && (
                  <div className="py-3 border-b border-gray-100">
                    {appliedCoupon || cart.discount_amount > 0 ? (
-                     <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2">
-                       <div className="flex items-center space-x-2">
-                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                         <span className="text-sm text-green-700 font-medium">
-                           Coupon "{appliedCoupon || 'Applied'}" applied
+                     <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                       <div className="flex items-center justify-between">
+                         <div className="flex items-center space-x-2">
+                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                           <span className="text-sm text-green-700 font-medium">
+                             Coupon "{appliedCoupon || 'Applied'}" applied
+                           </span>
+                         </div>
+                         <span className="text-sm font-semibold text-green-600">
+                           -₹{cart.discount_amount}
                          </span>
                        </div>
-                       <span className="text-sm font-semibold text-green-600">
-                         -₹{cart.discount_amount}
-                       </span>
+                       <button
+                         onClick={handleRemoveCoupon}
+                         disabled={isApplyingCoupon}
+                         className="mt-2 text-xs text-red-600 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
+                       >
+                         Remove coupon
+                       </button>
                      </div>
                    ) : (
                      <div className="space-y-2">

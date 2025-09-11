@@ -477,6 +477,13 @@ export const cartApi = {
       body: JSON.stringify({ coupon_code: couponCode }),
     });
   },
+
+  // Remove coupon
+  removeCoupon: async (): Promise<CartListResponse> => {
+    return apiRequest<CartListResponse>('/cart/checkout/remove-coupon', {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ==================== FAVORITES API ====================
