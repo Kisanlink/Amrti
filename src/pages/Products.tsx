@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filter, X, Sliders } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
@@ -10,6 +10,7 @@ import WishlistService from '../services/wishlistService';
 import { useNotification } from '../context/NotificationContext';
 
 const Products = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Products');
@@ -52,20 +53,32 @@ const Products = () => {
   // Listen for cart and wishlist updates
   useEffect(() => {
     const handleCartUpdate = async () => {
-      try {
-        const cartCount = await CartService.getItemCount();
-        setCartCount(cartCount);
-      } catch (error) {
-        console.error('Failed to update cart count:', error);
+      // Only update cart count if user is authenticated
+      const AuthService = (await import('../services/authService')).default;
+      if (AuthService.isAuthenticated()) {
+        try {
+          const cartCount = await CartService.getItemCount();
+          setCartCount(cartCount);
+        } catch (error) {
+          console.error('Failed to update cart count:', error);
+        }
+      } else {
+        setCartCount(0);
       }
     };
 
     const handleWishlistUpdate = async () => {
-      try {
-        const wishlistCount = await WishlistService.getWishlistCount();
-        setWishlistCount(wishlistCount);
-      } catch (error) {
-        console.error('Failed to update wishlist count:', error);
+      // Only update wishlist count if user is authenticated
+      const AuthService = (await import('../services/authService')).default;
+      if (AuthService.isAuthenticated()) {
+        try {
+          const wishlistCount = await WishlistService.getWishlistCount();
+          setWishlistCount(wishlistCount);
+        } catch (error) {
+          console.error('Failed to update wishlist count:', error);
+        }
+      } else {
+        setWishlistCount(0);
       }
     };
 
@@ -384,6 +397,7 @@ const Products = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   whileHover={{ y: -5 }}
                   className="group cursor-pointer"
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
@@ -463,12 +477,14 @@ const Products = () => {
                             disabled
                             className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
                             title="Coming Soon"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <ShoppingCart className="w-4 h-4" />
                           </button>
                         ) : (
                           <button
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation(); // Prevent card navigation
                               setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
                               try {
                                 await CartService.addItem(product.id, 1);
@@ -493,7 +509,8 @@ const Products = () => {
                         
                         {/* Add to Wishlist Button */}
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation(); // Prevent card navigation
                             setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: true }));
                             try {
                               if (isProductInWishlist(product.id)) {
