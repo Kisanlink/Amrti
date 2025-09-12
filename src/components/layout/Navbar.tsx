@@ -257,18 +257,19 @@ const Navbar = () => {
     >
       <div className="container-custom px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
-          {/* Logo */}
+          {/* Logo - Top Left */}
           <Link to="/" className="flex items-center space-x-2">
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center space-x-1 sm:space-x-2"
             >
               {/* Logo */}
-              <div className="h-24 w-auto sm:h-22 lg:h-24 flex items-center relative">
+              <div className="h-32 w-auto sm:h-28 lg:h-32 flex items-center relative">
                 <img 
                   src="/navbar_logo.png"
                   alt="Amrti Nature's Elixir" 
                   className="h-full w-auto object-contain select-none pointer-events-none"
+                  // style={{ imageRendering: 'auto' }}
                 />
               </div>
             </motion.div>
@@ -487,7 +488,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu Buttons */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden flex items-center space-x-2 flex-shrink-0">
             {/* Cart Icon */}
             <button
               onClick={() => setShowCartPopup(!showCartPopup)}
@@ -537,12 +538,7 @@ const Navbar = () => {
                 <div className="flex flex-col h-full">
                   {/* Header */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
-                    <div className="flex items-center space-x-2">
-                      <img 
-                        src="/navbar_logo.png"
-                        alt="Amrti" 
-                        className="h-8 w-auto"
-                      />
+                    <div className="flex items-center">
                       <span className="text-lg font-heading font-semibold text-green-700">Menu</span>
                     </div>
                     <button

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShoppingCart, Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import ProductService from '../../services/productService';
 import type { Product } from '../../context/AppContext';
 import CartService from '../../services/cartService';
@@ -10,11 +10,10 @@ import { useNotification } from '../../context/NotificationContext';
 
 const ProductsSection = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
 
   // Load products on mount - show 8 products for homepage to ensure we have moringa products
   useEffect(() => {
@@ -49,9 +48,7 @@ const ProductsSection = () => {
         }
         setWishlistItems(wishlistSet);
         
-        // Initialize counts - will be updated via events
-        setCartCount(0);
-        setWishlistCount(0);
+        // Wishlist items loaded above
       } catch (error) {
         console.error('Failed to load products:', error);
         setProducts([]);
@@ -61,52 +58,21 @@ const ProductsSection = () => {
     loadProducts();
   }, []);
 
-  // Listen for cart and wishlist updates
-  useEffect(() => {
-    const handleCartUpdate = async () => {
-      // Only update cart count if user is authenticated
-      const AuthService = (await import('../../services/authService')).default;
-      if (AuthService.isAuthenticated()) {
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to update cart count:', error);
-        }
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    const handleWishlistUpdate = async () => {
-      // Only update wishlist count if user is authenticated
-      const AuthService = (await import('../../services/authService')).default;
-      if (AuthService.isAuthenticated()) {
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to update wishlist count:', error);
-        }
-      } else {
-        setWishlistCount(0);
-      }
-    };
-
-    // Listen for custom events
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
-
-    return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
-    };
-  }, []);
 
   // Helper function to check if product is in wishlist
-  const isProductInWishlist = (productId: string): boolean => {
+  const isProductInWishlist = useCallback((productId: string): boolean => {
     return wishlistItems.has(productId);
-  };
+  }, [wishlistItems]);
+
+  // Stable callback for button click prevention
+  const handleButtonClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
+  // Stable callback for card click
+  const handleCardClick = useCallback((productId: string) => {
+    navigate(`/product/${productId}`);
+  }, [navigate]);
 
   const ProductCard = ({ product }: { product: any }) => {
     const discount = Math.round(((product.actual_price - product.price) / product.actual_price) * 100);
@@ -118,6 +84,7 @@ const ProductsSection = () => {
         whileHover={{ y: -10 }}
         transition={{ duration: 0.6 }}
         className="group cursor-pointer"
+        onClick={() => handleCardClick(product.id)}
       >
                  <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
           <div className="relative overflow-hidden flex-shrink-0">
@@ -183,8 +150,8 @@ const ProductsSection = () => {
             </div>
 
             <div className="flex items-center space-x-2 mt-auto">
-              <Link
-                to={`/product/${product.id}`}
+              <button
+                onClick={handleButtonClick}
                                  className="flex-1 inline-flex items-center justify-center font-heading font-semibold text-green-600 transition-colors duration-300 group-hover:translate-x-1 text-sm py-2 px-4 border border-green-600 rounded-lg hover:bg-green-600 hover:text-white"
               >
                 View Details
@@ -195,11 +162,12 @@ const ProductsSection = () => {
                 >
                   →
                 </motion.span>
-              </Link>
+              </button>
               
               {/* Add to Cart Button */}
               {product.stock === 0 || product.stock_status === "Comming Soon" ? (
                 <button
+                  onClick={handleButtonClick}
                   disabled
                   className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
                   title="Coming Soon"
@@ -208,11 +176,11 @@ const ProductsSection = () => {
                 </button>
               ) : (
                 <button
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    handleButtonClick(e);
                     setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
                     try {
                       await CartService.addItem(product.id, 1);
-                      // Cart count will be updated via event listener
                       showNotification({
                         type: 'success',
                         message: `${product.name} added to cart successfully!`
@@ -241,7 +209,8 @@ const ProductsSection = () => {
               
               {/* Add to Wishlist Button */}
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  handleButtonClick(e);
                   setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: true }));
                   try {
                     if (isProductInWishlist(product.id)) {
@@ -257,13 +226,16 @@ const ProductsSection = () => {
                       });
                     } else {
                       await WishlistService.addToWishlist(product.id);
-                      setWishlistItems(prev => new Set(prev).add(product.id));
+                      setWishlistItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.add(product.id);
+                        return newSet;
+                      });
                       showNotification({
                         type: 'success',
                         message: `${product.name} added to wishlist successfully!`
                       });
                     }
-                    // Wishlist count will be updated via event listener
                   } catch (err) {
                     console.error('Failed to update wishlist:', err);
                     showNotification({
@@ -313,9 +285,9 @@ const ProductsSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-          {products.map((product, index) => (
+          {useMemo(() => products.map((product, index) => (
             <ProductCard key={product.id} product={product} />
-          ))}
+          )), [products])}
         </div>
 
         <motion.div
