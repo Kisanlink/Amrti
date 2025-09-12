@@ -11,10 +11,18 @@
   }
 
 @layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
   html {
     scroll-behavior: smooth;
     font-feature-settings: "liga", "kern";
     text-rendering: optimizeLegibility;
+    width: 100%;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -73,8 +81,26 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #722b0e;
     background-color: #fefefd;
+    width: 100%;
+    overflow-x: hidden;
     letter-spacing: -0.01em;
     line-height: 1.6;
+  }
+  
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure all containers are full-width on mobile */
+  @media (max-width: 639px) {
+    .container-custom {
+      width: 100vw;
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -185,8 +211,23 @@
   }
   
   .container-custom {
-    max-width: 80rem;
+    width: 100%;
     margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  @media (min-width: 640px) {
+    .container-custom {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .container-custom {
+      max-width: 80rem;
+    }
   }
   
   .text-gradient {

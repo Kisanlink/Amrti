@@ -9,21 +9,6 @@ import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
 
 const Navbar = () => {
-  // Helper function to detect Safari browsers and return appropriate logo
-  const getLogoSrc = () => {
-    // Detect iOS Safari
-    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                      /Safari/.test(navigator.userAgent) && 
-                      !/CriOS|FxiOS|OPiOS|mercury/.test(navigator.userAgent);
-    
-    // Detect Android Safari
-    const isAndroidSafari = /Android/.test(navigator.userAgent) && 
-                          /Safari/.test(navigator.userAgent) && 
-                          !/Chrome|Firefox|Opera|Edge/.test(navigator.userAgent);
-    
-    // Use PNG for Safari browsers (iOS and Android), SVG for others
-    return (isIOSSafari || isAndroidSafari) ? '/navbar_logo.png' : '/navbar_logo.svg';
-  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -278,56 +263,12 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               className="flex items-center space-x-1 sm:space-x-2"
             >
-              {/* Logo with comprehensive Safari fixes for iOS and Android */}
+              {/* Logo */}
               <div className="h-24 w-auto sm:h-22 lg:h-24 flex items-center relative">
-                {/* Detect Safari browsers (iOS and Android) and show appropriate logo */}
                 <img 
-                  src={getLogoSrc()}
+                  src="/navbar_logo.png"
                   alt="Amrti Nature's Elixir" 
                   className="h-full w-auto object-contain select-none pointer-events-none"
-                  style={{
-                    // Prevent Safari color inversion
-                    filter: 'none !important',
-                    WebkitFilter: 'none !important',
-                    
-                    // Fix resolution and scaling
-                    imageRendering: 'crisp-edges',
-                    WebkitImageRendering: 'crisp-edges',
-                    
-                    // Hardware acceleration
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform: 'translateZ(0)',
-                    WebkitTransform: 'translateZ(0)',
-                    
-                    // Prevent Safari quirks
-                    WebkitAppearance: 'none',
-                    WebkitUserSelect: 'none',
-                    WebkitTouchCallout: 'none',
-                    WebkitTapHighlightColor: 'transparent',
-                    
-                    // Ensure proper rendering
-                    willChange: 'transform',
-                    opacity: 1,
-                    imageOrientation: 'from-image',
-                    WebkitPerspective: '1000',
-                    WebkitFontSmoothing: 'antialiased',
-                    
-                    // Prevent dark mode inversion
-                    colorScheme: 'light',
-                    WebkitColorScheme: 'light'
-                  } as React.CSSProperties}
-                  onError={(e) => {
-                    // Ultimate fallback to PNG
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/navbar_logo.png';
-                  }}
-                  onLoad={(e) => {
-                    // Ensure proper rendering
-                    const target = e.target as HTMLImageElement;
-                    target.style.opacity = '1';
-                    target.style.filter = 'none';
-                  }}
                 />
               </div>
             </motion.div>
@@ -598,14 +539,9 @@ const Navbar = () => {
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
                     <div className="flex items-center space-x-2">
                       <img 
-                        src={getLogoSrc()}
+                        src="/navbar_logo.png"
                         alt="Amrti" 
                         className="h-8 w-auto"
-                        onError={(e) => {
-                          // Ultimate fallback to PNG
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/navbar_logo.png';
-                        }}
                       />
                       <span className="text-lg font-heading font-semibold text-green-700">Menu</span>
                     </div>

@@ -47,17 +47,12 @@ const About = () => {
   ];
 
   return (
-    <div className="pt-20 bg-beige-200 min-h-screen">
+    <div className="pt-20 bg-beige-200 min-h-screen w-full">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-beige-400 via-beige-300 to-beige-500">
+      <section className="relative overflow-hidden bg-gradient-to-br from-beige-400 via-beige-300 to-beige-500 w-full">
         <div className="absolute inset-0 bg-pattern opacity-5"></div>
         <div className="relative z-10 container-custom py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
-          >
+          <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white-50 rounded-full text-sm font-heading font-semibold mb-6">
               <Heart className="w-5 h-5" />
               <span>Our Story</span>
@@ -68,122 +63,104 @@ const About = () => {
             <p className="text-xl text-black-700 max-w-3xl mx-auto leading-relaxed">
               Empowering farmers and communities through sustainable agriculture and premium natural products
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-20 bg-beige-100">
+      <section className="py-16 sm:py-20 bg-beige-100 w-full">
         <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
             {/* Mission */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="relative p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-beige-200/30 to-transparent rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-10">
+            <div className="h-full">
+              <div className="relative h-full p-6 sm:p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
+                <div className="relative z-10 h-full flex flex-col">
                   <div className="flex items-center space-x-3 mb-6">
                     <div className="p-3 rounded-lg bg-gradient-to-br from-green-500 to-green-600">
                       <Target className="w-6 h-6 text-white-50" />
                     </div>
-                    <h2 className="text-3xl font-heading font-bold text-black-900">Our Mission</h2>
+                    <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900">Our Mission</h2>
                   </div>
-                  <p className="text-lg text-black-700 leading-relaxed mb-6">
-                    To transform the agricultural landscape by providing farmers with sustainable solutions that enhance their livelihoods while promoting eco-friendly practices and delivering premium natural products to consumers.
-                  </p>
-                  <p className="text-lg text-black-700 leading-relaxed">
-                    We specialize in processing dried vegetables and fruits into high-quality powders, extending shelf life and adding value to raw materials sourced from our partner farmers.
-                  </p>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className="text-base sm:text-lg text-black-700 leading-relaxed mb-4">
+                      To transform the agricultural landscape by providing farmers with sustainable solutions that enhance their livelihoods while promoting eco-friendly practices and delivering premium natural products to consumers.
+                    </p>
+                    <p className="text-base sm:text-lg text-black-700 leading-relaxed">
+                      We specialize in processing dried vegetables and fruits into high-quality powders, extending shelf life and adding value to raw materials sourced from our partner farmers.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Vision */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <div className="relative p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-200/30 to-transparent rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-10">
+            <div className="h-full">
+              <div className="relative h-full p-6 sm:p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
+                <div className="relative z-10 h-full flex flex-col">
                   <div className="flex items-center space-x-3 mb-6">
                     <div className="p-3 rounded-lg bg-gradient-to-br from-beige-500 to-beige-600">
                       <Award className="w-6 h-6 text-white-50" />
                     </div>
-                    <h2 className="text-3xl font-heading font-bold text-black-900">Our Vision</h2>
+                    <h2 className="text-2xl sm:text-3xl font-heading font-bold text-black-900">Our Vision</h2>
                   </div>
-                  <p className="text-lg text-black-700 leading-relaxed mb-6">
-                    To become the leading brand in natural wellness products, recognized for our commitment to farmer empowerment, sustainable practices, and premium quality.
-                  </p>
-                  <p className="text-lg text-black-700 leading-relaxed">
-                    We envision a future where every household has access to pure, natural products while supporting the livelihoods of farming communities across India.
-                  </p>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className="text-base sm:text-lg text-black-700 leading-relaxed mb-4">
+                      To become the leading brand in natural wellness products, recognized for our commitment to farmer empowerment, sustainable practices, and premium quality.
+                    </p>
+                    <p className="text-base sm:text-lg text-black-700 leading-relaxed">
+                      We envision a future where every household has access to pure, natural products while supporting the livelihoods of farming communities across India.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-br from-green-100 to-green-200">
+      {/* <section className="py-16 sm:py-20 bg-gradient-to-br from-green-100 to-green-200 w-full">
         <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-black-900 mb-4">
               Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Impact</span>
             </h2>
             <p className="text-lg text-black-700 max-w-2xl mx-auto">
               Numbers that tell the story of our commitment to community and quality
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {stats.map((stat, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="group"
               >
-                <div className="relative p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 text-center">
-                  <div className="absolute inset-0 bg-gradient-to-br from-beige-200/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative p-4 sm:p-6 rounded-xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-lg text-center">
                   <div className="relative z-10">
-                    <div className="flex items-center justify-center mb-6">
-                      <div className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-600">
-                        <stat.icon className="w-8 h-8 text-white-50" />
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="p-3 rounded-full bg-gradient-to-br from-green-500 to-green-600">
+                        <stat.icon className="w-6 h-6 text-white-50" />
                       </div>
                     </div>
-                    <h3 className="text-3xl font-heading font-bold text-black-900 mb-2">{stat.number}</h3>
-                    <h4 className="text-lg font-heading font-semibold text-green-700 mb-2">{stat.label}</h4>
-                    <p className="text-black-700">{stat.description}</p>
+                    <h3 className="text-2xl sm:text-3xl font-heading font-bold text-black-900 mb-1">{stat.number}</h3>
+                    <h4 className="text-sm sm:text-base font-heading font-semibold text-green-700 mb-2">{stat.label}</h4>
+                    <p className="text-xs sm:text-sm text-black-700">{stat.description}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Our Story Section */}
-      <section className="py-20 bg-gradient-to-br from-beige-400 to-beige-500">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-beige-400 to-beige-500 w-full">
         <div className="container-custom">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             {/* Story Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
+            <div>
               <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 sm:mb-6">
                 Our <span className="text-green-600">Story</span>
               </h2>
@@ -198,15 +175,10 @@ const About = () => {
                 This not only extends the shelf life of these nutritious products but also adds value to the 
                 raw materials sourced from our farmers.
               </p>
-            </motion.div>
+            </div>
 
             {/* Story Benefits */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="grid grid-cols-1 gap-6"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 sm:gap-8">
               {[
                 {
                   icon: Users,
@@ -224,105 +196,92 @@ const About = () => {
                   description: 'Nutrient-rich products free from preservatives and additives',
                 },
               ].map((benefit, index) => (
-                <motion.div
+                <div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ x: 5 }}
-                  className="flex items-start space-x-4 p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 hover:border-green-300/50 transition-all duration-300 shadow-elegant"
+                  className="h-full"
                 >
-                  <div className="flex-shrink-0">
-                    <div className="w-14 h-14 rounded-xl bg-green-300 flex items-center justify-center shadow-soft">
-                      <benefit.icon className="w-7 h-7 text-russet-800" />
+                  <div className="relative h-full p-6 sm:p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-beige-200/50 shadow-xl">
+                    <div className="relative z-10 h-full flex flex-col">
+                      <div className="flex items-center space-x-4 mb-6">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-green-300 flex items-center justify-center shadow-soft">
+                            <benefit.icon className="w-6 h-6 sm:w-7 sm:h-7 text-russet-800" />
+                          </div>
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-heading font-bold text-russet-800">
+                          {benefit.title}
+                        </h3>
+                      </div>
+                      <div className="flex-1 flex items-center">
+                        <p className="text-base sm:text-lg text-russet-600 leading-relaxed font-medium">
+                          {benefit.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-heading font-bold text-russet-800 mb-3">
-                      {benefit.title}
-                    </h3>
-                    <p className="text-russet-600 leading-relaxed font-medium">
-                      {benefit.description}
-                    </p>
-                  </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Values Section */}
-      <section className="py-20 bg-gradient-to-br from-beige-300 to-beige-400">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-beige-300 to-beige-400 w-full">
         <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-black-900 mb-4">
               Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Values</span>
             </h2>
             <p className="text-lg text-black-700 max-w-2xl mx-auto">
               The principles that guide every decision we make
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {values.map((value, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group"
+                className="h-full"
               >
-                <div className="relative p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-                  <div className="absolute inset-0 bg-gradient-to-br from-beige-200/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-center space-x-4 mb-6">
+                <div className="relative h-full p-6 sm:p-8 rounded-2xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-xl">
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="flex items-center space-x-3 mb-6">
                       <div className={`p-3 rounded-lg bg-gradient-to-br ${value.color}`}>
                         <value.icon className="w-6 h-6 text-white-50" />
                       </div>
-                      <h3 className="text-2xl font-heading font-bold text-black-900">{value.title}</h3>
+                      <h3 className="text-xl sm:text-2xl font-heading font-bold text-black-900">{value.title}</h3>
                     </div>
-                    <p className="text-lg text-black-700 leading-relaxed">
-                      {value.description}
-                    </p>
+                    <div className="flex-1 flex items-center">
+                      <p className="text-base sm:text-lg text-black-700 leading-relaxed">
+                        {value.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Achievements Section */}
-      <section className="py-20 bg-gradient-to-br from-green-200 to-green-300">
+      {/* <section className="py-16 sm:py-20 bg-gradient-to-br from-green-200 to-green-300 w-full">
         <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-black-900 mb-4">
               Key <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Achievements</span>
             </h2>
             <p className="text-lg text-black-700 max-w-2xl mx-auto">
               Milestones that reflect our commitment to excellence and community impact
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {achievements.map((achievement, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="flex items-start space-x-4 p-6 rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 hover:border-green-300/50 transition-all duration-300"
+                className="flex items-start space-x-4 p-4 sm:p-6 rounded-xl bg-beige-300/80 backdrop-blur-sm border border-beige-400/50"
               >
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
@@ -330,22 +289,17 @@ const About = () => {
                   </div>
                 </div>
                 <p className="text-lg text-black-700 leading-relaxed">{achievement}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-beige-500 to-beige-600">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-beige-500 to-beige-600 w-full">
         <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <div className="relative p-12 rounded-3xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-2xl">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="relative p-8 sm:p-12 rounded-3xl bg-beige-300/90 backdrop-blur-sm border border-beige-400/50 shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-br from-beige-100/50 to-green-100/30 rounded-3xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center justify-center mb-6">
@@ -360,16 +314,12 @@ const About = () => {
                   Be part of a movement that empowers farmers, promotes sustainability, and delivers premium natural products to your doorstep
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
+                  <button className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
                     <span className="flex items-center space-x-2">
                       <span>Explore Products</span>
                       <ArrowRight className="w-5 h-5" />
                     </span>
-                  </motion.button>
+                  </button>
                   <Link
                     to="/products"
                     className="px-8 py-4 border-2 border-black-800 text-black-800 hover:bg-black-800 hover:text-white-50 font-heading font-semibold rounded-full transition-all duration-300"
@@ -382,7 +332,7 @@ const About = () => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>
