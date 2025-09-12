@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, Truck, Shield, RotateCcw } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import RecipeService from '../services/recipeService';
 import type { Recipe } from '../context/AppContext';
@@ -99,6 +99,7 @@ const fallbackMoringaRecipes: Recipe[] = [
 
 const Recipes = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All Recipes');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -336,6 +337,7 @@ const Recipes = () => {
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 whileHover={{ y: -8, scale: 1.02 }}
                 className="group cursor-pointer"
+                onClick={() => navigate(`/recipes/${recipe.id}`)}
               >
                 <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
                   <div className="relative overflow-hidden flex-shrink-0">
@@ -389,15 +391,15 @@ const Recipes = () => {
                     </div>
                     
                     <div className="flex space-x-2">
-                      <Link
-                        to={`/recipes/${recipe.id}`}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/recipes/${recipe.id}`);
+                        }}
                         className="flex-1 bg-green-600 text-white-50 font-heading font-semibold py-2 sm:py-3 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center justify-center space-x-2 text-sm sm:text-base"
                       >
                         <Leaf className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span>View Recipe</span>
-                      </Link>
-                      <button className="p-2 sm:p-3 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 rounded-lg transition-colors duration-300">
-                        <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </div>
