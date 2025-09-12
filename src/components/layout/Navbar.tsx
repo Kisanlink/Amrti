@@ -9,6 +9,22 @@ import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
 
 const Navbar = () => {
+  // Helper function to detect Safari browsers and return appropriate logo
+  const getLogoSrc = () => {
+    // Detect iOS Safari
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                      /Safari/.test(navigator.userAgent) && 
+                      !/CriOS|FxiOS|OPiOS|mercury/.test(navigator.userAgent);
+    
+    // Detect Android Safari
+    const isAndroidSafari = /Android/.test(navigator.userAgent) && 
+                          /Safari/.test(navigator.userAgent) && 
+                          !/Chrome|Firefox|Opera|Edge/.test(navigator.userAgent);
+    
+    // Use PNG for Safari browsers (iOS and Android), SVG for others
+    return (isIOSSafari || isAndroidSafari) ? '/navbar_logo.png' : '/navbar_logo.svg';
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -34,22 +50,30 @@ const Navbar = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       const currentUser = AuthService.getCurrentUser();
+      const isAuth = AuthService.isAuthenticated();
       setUser(currentUser);
-      setAuthenticated(AuthService.isAuthenticated());
+      setAuthenticated(isAuth);
       
-      try {
-        const cartCount = await CartService.getItemCount();
-        setCartCount(cartCount);
-      } catch (error) {
-        console.error('Failed to load cart count:', error);
+      // Only load cart and wishlist data if user is authenticated
+      if (isAuth) {
+        try {
+          const cartCount = await CartService.getItemCount();
+          setCartCount(cartCount);
+        } catch (error) {
+          console.error('Failed to load cart count:', error);
+          setCartCount(0);
+        }
+        
+        try {
+          const wishlistCount = await WishlistService.getWishlistCount();
+          setWishlistCount(wishlistCount);
+        } catch (error) {
+          console.error('Failed to load wishlist count:', error);
+          setWishlistCount(0);
+        }
+      } else {
+        // Set counts to 0 for unauthenticated users
         setCartCount(0);
-      }
-      
-      try {
-        const wishlistCount = await WishlistService.getWishlistCount();
-        setWishlistCount(wishlistCount);
-      } catch (error) {
-        console.error('Failed to load wishlist count:', error);
         setWishlistCount(0);
       }
     };
@@ -86,20 +110,30 @@ const Navbar = () => {
   // Listen for cart and wishlist updates
   useEffect(() => {
     const handleCartUpdate = async () => {
-      try {
-        const cartCount = await CartService.getItemCount();
-        setCartCount(cartCount);
-      } catch (error) {
-        console.error('Failed to update cart count:', error);
+      // Only update cart count if user is authenticated
+      if (AuthService.isAuthenticated()) {
+        try {
+          const cartCount = await CartService.getItemCount();
+          setCartCount(cartCount);
+        } catch (error) {
+          console.error('Failed to update cart count:', error);
+        }
+      } else {
+        setCartCount(0);
       }
     };
 
     const handleWishlistUpdate = async () => {
-      try {
-        const wishlistCount = await WishlistService.getWishlistCount();
-        setWishlistCount(wishlistCount);
-      } catch (error) {
-        console.error('Failed to update wishlist count:', error);
+      // Only update wishlist count if user is authenticated
+      if (AuthService.isAuthenticated()) {
+        try {
+          const wishlistCount = await WishlistService.getWishlistCount();
+          setWishlistCount(wishlistCount);
+        } catch (error) {
+          console.error('Failed to update wishlist count:', error);
+        }
+      } else {
+        setWishlistCount(0);
       }
     };
 
@@ -244,40 +278,55 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               className="flex items-center space-x-1 sm:space-x-2"
             >
-              {/* Logo with iOS Safari compatibility */}
+              {/* Logo with comprehensive Safari fixes for iOS and Android */}
               <div className="h-24 w-auto sm:h-22 lg:h-24 flex items-center relative">
-                {/* Primary SVG logo with iOS optimizations */}
+                {/* Detect Safari browsers (iOS and Android) and show appropriate logo */}
                 <img 
-                  src="/navbar_logo.svg" 
+                  src={getLogoSrc()}
                   alt="Amrti Nature's Elixir" 
                   className="h-full w-auto object-contain select-none pointer-events-none"
                   style={{
+                    // Prevent Safari color inversion
+                    filter: 'none !important',
+                    WebkitFilter: 'none !important',
+                    
+                    // Fix resolution and scaling
                     imageRendering: 'crisp-edges',
-                    backfaceVisibility: 'hidden',
-                    transform: 'translateZ(0)',
-                    willChange: 'transform',
-                    filter: 'none',
-                    opacity: 1,
-                    imageOrientation: 'from-image',
-                    WebkitBackfaceVisibility: 'hidden',
-                    WebkitTransform: 'translateZ(0)',
-                    WebkitPerspective: '1000',
-                    WebkitFontSmoothing: 'antialiased',
                     WebkitImageRendering: 'crisp-edges',
-                    // iOS Safari specific fixes
+                    
+                    // Hardware acceleration
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    WebkitTransform: 'translateZ(0)',
+                    
+                    // Prevent Safari quirks
+                    WebkitAppearance: 'none',
                     WebkitUserSelect: 'none',
                     WebkitTouchCallout: 'none',
-                    WebkitTapHighlightColor: 'transparent'
+                    WebkitTapHighlightColor: 'transparent',
+                    
+                    // Ensure proper rendering
+                    willChange: 'transform',
+                    opacity: 1,
+                    imageOrientation: 'from-image',
+                    WebkitPerspective: '1000',
+                    WebkitFontSmoothing: 'antialiased',
+                    
+                    // Prevent dark mode inversion
+                    colorScheme: 'light',
+                    WebkitColorScheme: 'light'
                   } as React.CSSProperties}
                   onError={(e) => {
-                    // Fallback to PNG if SVG fails to load
+                    // Ultimate fallback to PNG
                     const target = e.target as HTMLImageElement;
-                    target.src = '/logo.png';
+                    target.src = '/navbar_logo.png';
                   }}
                   onLoad={(e) => {
-                    // Ensure proper rendering on iOS
+                    // Ensure proper rendering
                     const target = e.target as HTMLImageElement;
                     target.style.opacity = '1';
+                    target.style.filter = 'none';
                   }}
                 />
               </div>
@@ -549,9 +598,14 @@ const Navbar = () => {
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
                     <div className="flex items-center space-x-2">
                       <img 
-                        src="/navbar_logo.svg" 
+                        src={getLogoSrc()}
                         alt="Amrti" 
                         className="h-8 w-auto"
+                        onError={(e) => {
+                          // Ultimate fallback to PNG
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/navbar_logo.png';
+                        }}
                       />
                       <span className="text-lg font-heading font-semibold text-green-700">Menu</span>
                     </div>

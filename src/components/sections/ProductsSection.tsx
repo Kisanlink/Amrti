@@ -64,20 +64,32 @@ const ProductsSection = () => {
   // Listen for cart and wishlist updates
   useEffect(() => {
     const handleCartUpdate = async () => {
-      try {
-        const cartCount = await CartService.getItemCount();
-        setCartCount(cartCount);
-      } catch (error) {
-        console.error('Failed to update cart count:', error);
+      // Only update cart count if user is authenticated
+      const AuthService = (await import('../../services/authService')).default;
+      if (AuthService.isAuthenticated()) {
+        try {
+          const cartCount = await CartService.getItemCount();
+          setCartCount(cartCount);
+        } catch (error) {
+          console.error('Failed to update cart count:', error);
+        }
+      } else {
+        setCartCount(0);
       }
     };
 
     const handleWishlistUpdate = async () => {
-      try {
-        const wishlistCount = await WishlistService.getWishlistCount();
-        setWishlistCount(wishlistCount);
-      } catch (error) {
-        console.error('Failed to update wishlist count:', error);
+      // Only update wishlist count if user is authenticated
+      const AuthService = (await import('../../services/authService')).default;
+      if (AuthService.isAuthenticated()) {
+        try {
+          const wishlistCount = await WishlistService.getWishlistCount();
+          setWishlistCount(wishlistCount);
+        } catch (error) {
+          console.error('Failed to update wishlist count:', error);
+        }
+      } else {
+        setWishlistCount(0);
       }
     };
 

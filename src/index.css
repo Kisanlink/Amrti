@@ -19,19 +19,54 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
-  /* iOS Safari SVG fixes */
-  img[src*=".svg"] {
-    -webkit-backface-visibility: hidden;
-    -webkit-transform: translateZ(0);
-    -webkit-perspective: 1000;
-    -webkit-font-smoothing: antialiased;
-    -webkit-image-rendering: crisp-edges;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    backface-visibility: hidden;
-    transform: translateZ(0);
-    image-rendering: crisp-edges;
+  /* Comprehensive iOS Safari logo fixes */
+  img[src*=".svg"], 
+  img[src*=".png"] {
+    /* Prevent color inversion */
+    filter: none !important;
+    -webkit-filter: none !important;
+    
+    /* Fix resolution issues */
+    image-rendering: crisp-edges !important;
+    -webkit-image-rendering: crisp-edges !important;
+    
+    /* Hardware acceleration */
+    -webkit-backface-visibility: hidden !important;
+    -webkit-transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    transform: translateZ(0) !important;
+    
+    /* Prevent iOS Safari quirks */
+    -webkit-appearance: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    
+    /* Prevent dark mode inversion */
+    color-scheme: light !important;
+    -webkit-color-scheme: light !important;
+    
+    /* Additional rendering fixes */
+    -webkit-perspective: 1000 !important;
+    -webkit-font-smoothing: antialiased !important;
+    will-change: transform !important;
+    opacity: 1 !important;
+  }
+  
+  /* iOS Safari specific media query */
+  @media screen and (-webkit-min-device-pixel-ratio: 0) {
+    img[src*=".svg"] {
+      -webkit-transform: translate3d(0, 0, 0) !important;
+      transform: translate3d(0, 0, 0) !important;
+    }
+  }
+  
+  /* Dark mode prevention */
+  @media (prefers-color-scheme: dark) {
+    img[src*=".svg"] {
+      filter: none !important;
+      -webkit-filter: none !important;
+    }
   }
   
   body {
