@@ -646,16 +646,28 @@ const Checkout: React.FC = () => {
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>₹{checkoutData?.cart.total_price || 0}</span>
+                    <span>₹{orderData?.notes?.cart_total || checkoutData?.cart.total_price || 0}</span>
                   </div>
+                  {orderData?.notes?.discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount {orderData?.notes?.coupon ? `(${orderData.notes.coupon})` : ''}:</span>
+                      <span>-₹{orderData.notes.discount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Shipping:</span>
-                    <span>₹{selectedShipping?.cost || 0}</span>
+                    <span>
+                      {orderData?.notes?.free_delivery ? (
+                        <span className="text-green-600">Free</span>
+                      ) : (
+                        `₹${orderData?.notes?.shipping || selectedShipping?.cost || 0}`
+                      )}
+                    </span>
                   </div>
                   <div className="border-t pt-2">
-                    <div className="flex justify-between font-medium">
+                    <div className="flex justify-between font-medium text-base">
                       <span>Total:</span>
-                      <span>₹{(checkoutData?.cart.total_price || 0) + (selectedShipping?.cost || 0)}</span>
+                      <span>₹{orderData?.notes?.final_amount || orderData?.amount || ((checkoutData?.cart.total_price || 0) + (selectedShipping?.cost || 0))}</span>
                     </div>
                   </div>
                 </div>

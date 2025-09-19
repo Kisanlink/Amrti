@@ -84,13 +84,17 @@ export interface CreateOrderResponse {
   key_id: string;
   description: string;
   notes: {
-    cart_items_count: number;
+    address: string;
     cart_total: number;
+    coupon?: string;
     currency: string;
-    shipping_address: string;
-    shipping_address_id: string;
-    shipping_charges: number;
-    subtotal: number;
+    customer_info: string;
+    discount: number;
+    final_amount: number;
+    free_delivery: boolean;
+    items_count: number;
+    shipping: number;
+    shipping_addr_id: string;
     user_id: string;
   };
   checkout_url: string;
