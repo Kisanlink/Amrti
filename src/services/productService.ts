@@ -15,7 +15,26 @@ export class ProductService {
       // Log the response to debug the structure
       console.log('Products API Response:', response);
       
-      // Ensure the response has the expected structure
+      // Handle the API response structure: response.data.products
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        // API response structure: { data: { products: [...], pagination: {...} } }
+        return {
+          success: response.success || true,
+          message: response.message || 'Products loaded successfully',
+          data: response.data.products,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination: response.data.pagination || response.pagination || {
+            page: 1,
+            per_page: response.data.products.length,
+            total: response.data.products.length,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false
+          }
+        };
+      }
+      
+      // Fallback: Ensure the response has the expected structure
       if (!response.data || !Array.isArray(response.data)) {
         console.warn('API response does not have expected data structure:', response);
         // If the response doesn't have the expected structure, try to adapt it

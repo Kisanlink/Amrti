@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, User, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award } from 'lucide-react';
+import { Phone, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award, CheckCircle } from 'lucide-react';
 import AuthService from '../services/authService';
 
 const Login = () => {
@@ -9,10 +9,11 @@ const Login = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<'phone' | 'verify'>('phone');
+  const [sessionInfo, setSessionInfo] = useState<string>('');
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    phoneNumber: '',
+    verificationCode: ''
   });
 
   // Get redirect URL from location state or default to home
@@ -28,10 +29,10 @@ const Login = () => {
     if (error) setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    if (!formData.phoneNumber) {
       return;
     }
 
@@ -39,11 +40,36 @@ const Login = () => {
     setError(null);
 
     try {
-      await AuthService.login({ email: formData.email, password: formData.password });
+      const response = await AuthService.loginWithPhone(formData.phoneNumber);
+      setSessionInfo(response.sessionInfo);
+      setStep('verify');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send verification code');
+      console.error('Phone login failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.verificationCode) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('Verifying phone code...');
+      const user = await AuthService.verifyPhoneCode(formData.phoneNumber, formData.verificationCode, sessionInfo);
+      console.log('Phone verification successful, user:', user);
+      console.log('Navigating to:', from);
       navigate(from); // Redirect to the page they were trying to access
     } catch (err: any) {
-      setError(err.message || 'Login failed');
-      console.error('Login failed:', err);
+      setError(err.message || 'Verification failed');
+      console.error('Verification failed:', err);
     } finally {
       setLoading(false);
     }
@@ -89,11 +115,8 @@ const Login = () => {
               className="h-20 w-auto mx-auto object-contain"
               style={{
                 imageRendering: 'high-quality' as any,
-                WebkitImageRendering: 'high-quality' as any,
                 backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden' as any,
-                transform: 'translateZ(0)',
-                WebkitTransform: 'translateZ(0)' as any
+                transform: 'translateZ(0)'
               }}
             />
           </div>
@@ -130,102 +153,109 @@ const Login = () => {
               </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-black-400" />
+            {step === 'phone' ? (
+              <form onSubmit={handlePhoneSubmit} className="space-y-6">
+                {/* Phone Number Field */}
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Phone className="h-5 w-5 text-black-400" />
+                    </div>
+                    <input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="tel"
+                      required
+                      value={formData.phoneNumber}
+                      onChange={handleInputChange}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
+                      placeholder="+91 9876543210"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter your phone number with country code
+                  </p>
                 </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-black-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  placeholder="Enter your password"
-                />
+                {/* Submit Button */}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-black-400 hover:text-black-600 transition-colors"
+                  type="submit"
+                  disabled={loading || !formData.phoneNumber}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending code...</span>
+                    </>
                   ) : (
-                    <Eye className="h-5 w-5" />
+                    <>
+                      <Phone className="w-5 h-5" />
+                      <span>Send Verification Code</span>
+                    </>
                   )}
                 </button>
-              </div>
-            </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifySubmit} className="space-y-6">
+                {/* Verification Code Field */}
+                <div>
+                  <label htmlFor="verificationCode" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                    Verification Code
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <CheckCircle className="h-5 w-5 text-black-400" />
+                    </div>
+                    <input
+                      id="verificationCode"
+                      name="verificationCode"
+                      type="text"
+                      required
+                      value={formData.verificationCode}
+                      onChange={handleInputChange}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter the 6-digit code sent to {formData.phoneNumber}
+                  </p>
+                </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-black-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-black-700">
-                  Remember me
-                </label>
-              </div>
-              <Link
-                to="/forgot-password"
-                className="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+                {/* Back to Phone Button */}
+                <button
+                  type="button"
+                  onClick={() => setStep('phone')}
+                  className="w-full text-green-600 hover:text-green-700 font-heading font-semibold py-2 px-4 transition-colors"
+                >
+                  ← Change phone number
+                </button>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || !formData.email || !formData.password}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-5 h-5" />
-                  <span>Sign In</span>
-                </>
-              )}
-            </button>
-          </form>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !formData.verificationCode}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Verify & Sign In</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
           {/* Divider */}
           <div className="relative my-6">

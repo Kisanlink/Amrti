@@ -430,7 +430,7 @@ const Navbar = () => {
                       <>
                         <div className="px-4 py-2 border-b border-black-200">
                           <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
-                          <p className="text-xs text-black-600">{user?.email}</p>
+                          <p className="text-xs text-black-600">{user?.phoneNumber}</p>
                         </div>
                         <Link
                           to="/profile"

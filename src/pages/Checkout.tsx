@@ -21,6 +21,24 @@ import { useNotification } from '../context/NotificationContext';
 import AuthService from '../services/authService';
 
 const Checkout: React.FC = () => {
+  // Make test methods available globally for debugging
+  React.useEffect(() => {
+    (window as any).testCheckoutAuth = () => {
+      console.log('=== CHECKOUT AUTH TEST ===');
+      console.log('AuthService.isAuthenticated():', AuthService.isAuthenticated());
+      console.log('AuthService.getCurrentUser():', AuthService.getCurrentUser());
+      console.log('localStorage user:', localStorage.getItem('user'));
+      console.log('localStorage token:', localStorage.getItem('authToken'));
+      console.log('AuthService.currentUser:', (AuthService as any).currentUser);
+      console.log('========================');
+    };
+    
+    (window as any).forceRefreshAuth = () => {
+      console.log('Force refreshing auth state...');
+      AuthService.refreshAuthState();
+      (window as any).testCheckoutAuth();
+    };
+  }, []);
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   
@@ -70,18 +88,61 @@ const Checkout: React.FC = () => {
 
   // Check if user is authenticated and reset checkout state
   useEffect(() => {
-    if (!AuthService.isAuthenticated()) {
-      navigate('/login', { state: { from: '/checkout' } });
-      return;
-    }
-    
-    // Reset checkout state to start fresh
-    setStep('address');
-    setPaymentSuccess(false);
-    setSuccessOrderId('');
-    localStorage.removeItem('checkout-step');
-    
-    initializeCheckout();
+    const checkAuthAndInitialize = async () => {
+      console.log('=== CHECKOUT AUTH CHECK ===');
+      console.log('Checkout page - checking authentication...');
+      
+      // Force refresh authentication state first
+      AuthService.refreshAuthState();
+      
+      // Wait a bit for the state to be updated
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const isAuth = AuthService.isAuthenticated();
+      const currentUser = AuthService.getCurrentUser();
+      const token = await AuthService.getIdToken();
+      
+      console.log('AuthService.isAuthenticated():', isAuth);
+      console.log('Current user:', currentUser);
+      console.log('Token available:', !!token);
+      console.log('LocalStorage user:', localStorage.getItem('user'));
+      console.log('LocalStorage token:', localStorage.getItem('authToken'));
+      
+      // Additional debugging
+      console.log('All localStorage keys:', Object.keys(localStorage));
+      console.log('AuthService.currentUser:', (AuthService as any).currentUser);
+      
+      if (!isAuth) {
+        console.log('User not authenticated, redirecting to login');
+        console.log('=== REDIRECTING TO LOGIN ===');
+        navigate('/login', { state: { from: '/checkout' } });
+        return;
+      }
+      
+      console.log('User authenticated, initializing checkout');
+      // Reset checkout state to start fresh
+      setStep('address');
+      setPaymentSuccess(false);
+      setSuccessOrderId('');
+      localStorage.removeItem('checkout-step');
+      
+      initializeCheckout();
+    };
+
+    // Check authentication immediately
+    checkAuthAndInitialize();
+
+    // Listen for authentication state changes
+    const handleUserLogin = () => {
+      console.log('User logged in, re-checking authentication for checkout');
+      checkAuthAndInitialize();
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLogin);
+
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLogin);
+    };
   }, [navigate]);
 
   // Scroll to top when step changes or loading state changes

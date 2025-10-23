@@ -1,26 +1,57 @@
 import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
   updateProfile,
-  sendEmailVerification,
   User as FirebaseUser,
   UserCredential
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { profileApi } from './api';
+import { auth, getRecaptchaToken } from '../config/firebase';
 
 export interface AuthUser {
   uid: string;
-  email: string | null;
+  phoneNumber: string | null;
   displayName: string | null;
-  emailVerified: boolean;
+  isVerified: boolean;
   photoURL: string | null;
   createdAt: string;
   lastLoginAt: string;
+  id: string;
+  isActive: boolean;
+  isNewUser: boolean;
+}
+
+export interface PhoneAuthResponse {
+  success: boolean;
+  message: string;
+  data: {
+    message: string;
+    session_info: string;
+  };
+  timestamp: string;
+}
+
+export interface PhoneVerifyResponse {
+  success: boolean;
+  message: string;
+  data: {
+    expires_in: string;
+    id_token: string;
+    message: string;
+    refresh_token: string;
+    user: {
+      created_at: string;
+      id: string;
+      is_active: boolean;
+      is_new_user: boolean;
+      is_verified: boolean;
+      name: string;
+      phone_number: string;
+      uid: string;
+    };
+  };
+  timestamp: string;
 }
 
 export class AuthService {
@@ -38,13 +69,12 @@ export class AuthService {
         return; // Already called, skip
       }
 
-      // Call the auto-fill profile API
-      await profileApi.autoFillProfile();
+      // TODO: Implement auto-fill profile API when available
+      console.log('Auto-fill profile API not yet implemented');
       
       // Mark as called to prevent future calls
       localStorage.setItem(this.AUTO_FILL_PROFILE_KEY, 'true');
       
-      console.log('Auto-fill profile API called successfully');
     } catch (error) {
       console.error('Failed to call auto-fill profile API:', error);
       // Don't throw error to avoid breaking the login flow
@@ -57,132 +87,201 @@ export class AuthService {
   static initialize(): void {
     // Listen to auth state changes
     onAuthStateChanged(auth, (user) => {
-      this.currentUser = user;
+      // Only handle Firebase auth state changes if we don't have phone auth
+      const hasPhoneAuth = localStorage.getItem('user') && localStorage.getItem('authToken');
       
       if (user) {
-        // User is signed in
+        // User is signed in via Firebase
+        this.currentUser = user;
         localStorage.setItem('user', JSON.stringify(this.firebaseUserToAuthUser(user)));
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
-      } else {
-        // User is signed out
+      } else if (!hasPhoneAuth) {
+        // User is signed out via Firebase AND we don't have phone auth
+        this.currentUser = null;
         localStorage.removeItem('user');
         localStorage.removeItem('authToken');
         window.dispatchEvent(new CustomEvent('userLoggedOut'));
       }
+      // If user is null but we have phone auth, don't clear localStorage
     });
+
+    // Also check for phone authentication on initialization
+    this.refreshAuthState();
   }
 
   /**
-   * User registration with Firebase
+   * Send verification code to phone number
    */
-  static async signup(userData: {
-    name: string;
-    email: string;
-    password: string;
-  }): Promise<AuthUser> {
+  static async sendPhoneCode(phoneNumber: string): Promise<PhoneAuthResponse> {
     try {
-      if (!userData.name || !userData.email || !userData.password) {
-        throw new Error('Name, email, and password are required');
+      if (!phoneNumber) {
+        throw new Error('Phone number is required');
       }
 
-      if (userData.password.length < 8) {
-        throw new Error('Password must be at least 8 characters long');
+      if (!this.isValidPhoneNumber(phoneNumber)) {
+        throw new Error('Please enter a valid phone number');
       }
 
-      if (!this.isValidEmail(userData.email)) {
-        throw new Error('Please enter a valid email address');
-      }
+      // Get reCAPTCHA token
+      const recaptchaToken = await getRecaptchaToken();
 
-      // Create user with Firebase
-      const userCredential: UserCredential = await createUserWithEmailAndPassword(
-        auth, 
-        userData.email, 
-        userData.password
-      );
+      const API_BASE_URL = 'http://localhost:8082';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/phone/send-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          recaptcha_token: recaptchaToken
+        })
+      });
 
-      // Update profile with display name
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: userData.name
-        });
-      }
-
-      // Get updated user
-      const updatedUser = auth.currentUser;
-      if (!updatedUser) {
-        throw new Error('Failed to create user');
-      }
-
-      const authUser = this.firebaseUserToAuthUser(updatedUser);
-      
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(authUser));
-      
-      // Store auth token
-      try {
-        const token = await updatedUser.getIdToken();
-        if (token) {
-          localStorage.setItem('authToken', token);
+      if (!response.ok) {
+        let errorMessage = 'Failed to send verification code';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          const responseText = await response.text();
+          console.error('Raw error response:', responseText);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
-      } catch (error) {
-        console.warn('Failed to store auth token:', error);
+        throw new Error(errorMessage);
       }
-      
-      // Call auto-fill profile API (only once)
-      this.callAutoFillProfile();
-      
-      return authUser;
+
+      let data: PhoneAuthResponse;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
+        const responseText = await response.text();
+        console.error('Raw success response:', responseText);
+        throw new Error('Invalid response format from server');
+      }
+      return data;
     } catch (error) {
-      console.error('Signup failed:', error);
-      throw this.handleFirebaseError(error);
+      console.error('Send phone code failed:', error);
+      throw error;
     }
   }
 
   /**
-   * User login with Firebase
+   * Verify phone number with code
    */
-  static async login(credentials: {
-  email: string;
-    password: string;
-  }): Promise<AuthUser> {
+  static async verifyPhoneCode(phoneNumber: string, code: string, sessionInfo: string): Promise<AuthUser> {
     try {
-      if (!credentials.email || !credentials.password) {
-        throw new Error('Email and password are required');
+      if (!phoneNumber || !code || !sessionInfo) {
+        throw new Error('Phone number, code, and session info are required');
       }
 
-      if (!this.isValidEmail(credentials.email)) {
-        throw new Error('Please enter a valid email address');
+      const API_BASE_URL = 'http://localhost:8082';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/phone/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          code: code,
+          session_info: sessionInfo
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to verify code';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          const responseText = await response.text();
+          console.error('Raw error response:', responseText);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      // Sign in with Firebase
-      const userCredential: UserCredential = await signInWithEmailAndPassword(
-        auth, 
-        credentials.email, 
-        credentials.password
-      );
-
-      const authUser = this.firebaseUserToAuthUser(userCredential.user);
+      let data: PhoneVerifyResponse;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
+        const responseText = await response.text();
+        console.error('Raw success response:', responseText);
+        throw new Error('Invalid response format from server');
+      }
+      
+      // Convert API response to AuthUser
+      const authUser: AuthUser = {
+        uid: data.data.user.uid,
+        phoneNumber: data.data.user.phone_number,
+        displayName: data.data.user.name,
+        isVerified: data.data.user.is_verified,
+        photoURL: null,
+        createdAt: data.data.user.created_at,
+        lastLoginAt: new Date().toISOString(),
+        id: data.data.user.id,
+        isActive: data.data.user.is_active,
+        isNewUser: data.data.user.is_new_user
+      };
       
       // Store user data
       localStorage.setItem('user', JSON.stringify(authUser));
       
       // Store auth token
-      try {
-        const token = await userCredential.user.getIdToken();
-        if (token) {
-          localStorage.setItem('authToken', token);
+      console.log('Storing auth token:', data.data.id_token ? 'Token present' : 'No token');
+      localStorage.setItem('authToken', data.data.id_token);
+      localStorage.setItem('refreshToken', data.data.refresh_token);
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem('authToken');
+      console.log('Token stored successfully:', !!storedToken);
+      
+      // Update current user state
+      this.currentUser = {
+        uid: authUser.uid,
+        phoneNumber: authUser.phoneNumber,
+        displayName: authUser.displayName,
+        email: null, // Phone auth doesn't use email
+        emailVerified: authUser.isVerified,
+        photoURL: authUser.photoURL,
+        metadata: {
+          creationTime: authUser.createdAt,
+          lastSignInTime: authUser.lastLoginAt
         }
-      } catch (error) {
-        console.warn('Failed to store auth token:', error);
-      }
+      } as any; // Type assertion for compatibility
+      
+      // Dispatch login event to notify other components
+      console.log('Dispatching userLoggedIn event with user:', authUser);
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
       
       // Call auto-fill profile API (only once)
       this.callAutoFillProfile();
       
+      console.log('Phone authentication successful, user stored:', authUser);
+      
+      // Debug authentication state
+      this.debugAuthState();
+      
       return authUser;
     } catch (error) {
-      console.error('Login failed:', error);
-      throw this.handleFirebaseError(error);
+      console.error('Verify phone code failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete phone authentication flow (send code + verify)
+   */
+  static async loginWithPhone(phoneNumber: string): Promise<{ sessionInfo: string }> {
+    try {
+      const response = await this.sendPhoneCode(phoneNumber);
+      return { sessionInfo: response.data.session_info };
+    } catch (error) {
+      console.error('Phone login failed:', error);
+      throw error;
     }
   }
 
@@ -225,7 +324,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       // Call the logout API endpoint
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8082';
+      const API_BASE_URL = 'http://localhost:8082';
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
         method: 'POST',
         headers: {
@@ -265,7 +364,8 @@ export class AuthService {
   static getCurrentUser(): AuthUser | null {
     try {
       // First try to get from Firebase
-    if (this.currentUser) {
+      if (this.currentUser) {
+        console.log('Getting user from Firebase currentUser:', this.currentUser);
         return this.firebaseUserToAuthUser(this.currentUser);
       }
       
@@ -273,6 +373,7 @@ export class AuthService {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
+        console.log('Getting user from localStorage:', user);
         // If we have a stored user but no Firebase user, 
         // it means the page was refreshed and Firebase needs to re-authenticate
         if (user && user.uid) {
@@ -280,6 +381,7 @@ export class AuthService {
         }
       }
       
+      console.log('No user found');
       return null;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -293,30 +395,47 @@ export class AuthService {
   static isAuthenticated(): boolean {
     // Check Firebase current user first
     if (this.currentUser !== null) {
+      console.log('User authenticated via Firebase currentUser');
       return true;
     }
     
     // Fallback to stored user data
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('authToken');
+    
+    if (storedUser && storedToken) {
       try {
         const user = JSON.parse(storedUser);
-        return user && user.uid;
+        const isAuth = !!(user && user.uid && storedToken);
+        console.log('User authentication check via localStorage:', isAuth, 'User:', user, 'Token:', !!storedToken);
+        return isAuth;
       } catch (error) {
         console.error('Error parsing stored user:', error);
         return false;
       }
     }
     
+    console.log('User not authenticated - missing user data or token');
+    console.log('Stored user:', !!storedUser);
+    console.log('Stored token:', !!storedToken);
     return false;
   }
 
   /**
-   * Get Firebase ID token for API calls
+   * Get ID token for API calls (works for both Firebase and phone auth)
    */
   static async getIdToken(): Promise<string | null> {
     try {
-      if (this.currentUser) {
+      // First, try to get the stored token (works for phone auth)
+      const storedToken = localStorage.getItem('authToken');
+      console.log('getIdToken called - stored token available:', !!storedToken);
+      if (storedToken) {
+        console.log('Using stored auth token for API calls, length:', storedToken.length);
+        return storedToken;
+      }
+      
+      // Fallback to Firebase token if available
+      if (this.currentUser && typeof this.currentUser.getIdToken === 'function') {
         const token = await this.currentUser.getIdToken();
         // Store the token in localStorage for API calls
         if (token) {
@@ -325,16 +444,109 @@ export class AuthService {
         return token;
       }
       
-      // Fallback to stored token
-      const storedToken = localStorage.getItem('authToken');
-      if (storedToken) {
-        return storedToken;
-      }
-      
+      console.log('No auth token available - checking localStorage keys:', Object.keys(localStorage));
       return null;
     } catch (error) {
       console.error('Error getting ID token:', error);
-  return null;
+      return null;
+    }
+  }
+
+  /**
+   * Debug method to check authentication state
+   */
+  static debugAuthState(): void {
+    console.log('=== AUTH DEBUG ===');
+    console.log('Current user:', this.currentUser);
+    console.log('Stored user:', localStorage.getItem('user'));
+    console.log('Auth token:', localStorage.getItem('authToken') ? 'Present' : 'Missing');
+    console.log('Refresh token:', localStorage.getItem('refreshToken') ? 'Present' : 'Missing');
+    console.log('Is authenticated:', this.isAuthenticated());
+    console.log('==================');
+  }
+
+  /**
+   * Force refresh authentication state from localStorage
+   */
+  static refreshAuthState(): void {
+    console.log('=== REFRESHING AUTH STATE ===');
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('authToken');
+    
+    console.log('Stored user exists:', !!storedUser);
+    console.log('Stored token exists:', !!storedToken);
+    
+    if (storedUser && storedToken) {
+      try {
+        const user = JSON.parse(storedUser);
+        console.log('Parsed user:', user);
+        
+        this.currentUser = {
+          uid: user.uid,
+          phoneNumber: user.phoneNumber,
+          displayName: user.displayName,
+          email: null,
+          emailVerified: user.isVerified,
+          photoURL: user.photoURL,
+          metadata: {
+            creationTime: user.createdAt,
+            lastSignInTime: user.lastLoginAt
+          }
+        } as any;
+        
+        console.log('Authentication state refreshed from localStorage');
+        console.log('Current user set to:', this.currentUser);
+        this.debugAuthState();
+      } catch (error) {
+        console.error('Error refreshing auth state:', error);
+      }
+    } else {
+      console.log('No stored user or token found, cannot refresh auth state');
+    }
+  }
+
+  /**
+   * Test method to verify authentication and token
+   */
+  static async testAuth(): Promise<void> {
+    console.log('=== AUTH TEST ===');
+    this.debugAuthState();
+    
+    const token = await this.getIdToken();
+    console.log('Token available:', !!token);
+    if (token) {
+      console.log('Token length:', token.length);
+      console.log('Token preview:', token.substring(0, 50) + '...');
+    }
+    
+    // Test API call
+    try {
+      const response = await fetch('http://localhost:8082/api/v1/favorites', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('API test response status:', response.status);
+    } catch (error) {
+      console.error('API test failed:', error);
+    }
+    console.log('================');
+  }
+
+  /**
+   * Test method to verify token is working
+   */
+  static async testToken(): Promise<void> {
+    try {
+      const token = await this.getIdToken();
+      console.log('Test token result:', token ? 'Token available' : 'No token');
+      if (token) {
+        console.log('Token length:', token.length);
+        console.log('Token preview:', token.substring(0, 50) + '...');
+      }
+    } catch (error) {
+      console.error('Token test failed:', error);
     }
   }
 
@@ -355,35 +567,27 @@ export class AuthService {
   }
 
   /**
-   * Check if user has verified email
+   * Check if user has verified phone
    */
-  static isEmailVerified(): boolean {
+  static isPhoneVerified(): boolean {
     try {
-      if (this.currentUser) {
-        return this.currentUser.emailVerified;
-      }
-      
       const storedUser = this.getStoredUser();
-      return storedUser?.emailVerified || false;
+      return storedUser?.isVerified || false;
     } catch (error) {
-      console.error('Error checking email verification:', error);
+      console.error('Error checking phone verification:', error);
       return false;
     }
   }
 
   /**
-   * Get user's email
+   * Get user's phone number
    */
-  static getUserEmail(): string {
+  static getUserPhoneNumber(): string {
     try {
-      if (this.currentUser) {
-        return this.currentUser.email || '';
-      }
-      
       const storedUser = this.getStoredUser();
-      return storedUser?.email || '';
+      return storedUser?.phoneNumber || '';
     } catch (error) {
-      console.error('Error getting user email:', error);
+      console.error('Error getting user phone number:', error);
       return '';
     }
   }
@@ -429,21 +633,6 @@ export class AuthService {
     return this.isAuthenticated();
   }
 
-  /**
-   * Send email verification
-   */
-  static async sendEmailVerification(): Promise<void> {
-    try {
-      if (this.currentUser) {
-        await sendEmailVerification(this.currentUser);
-      } else {
-        throw new Error('No authenticated user');
-      }
-    } catch (error) {
-      console.error('Error sending email verification:', error);
-      throw error;
-    }
-  }
 
   /**
    * Update user profile
@@ -469,26 +658,30 @@ export class AuthService {
   }
 
   /**
-   * Convert Firebase user to AuthUser
+   * Convert Firebase user to AuthUser (for Google OAuth)
    */
   private static firebaseUserToAuthUser(firebaseUser: FirebaseUser): AuthUser {
     return {
       uid: firebaseUser.uid,
-      email: firebaseUser.email,
+      phoneNumber: firebaseUser.phoneNumber,
       displayName: firebaseUser.displayName,
-      emailVerified: firebaseUser.emailVerified,
+      isVerified: firebaseUser.emailVerified, // For Google OAuth, email verification is used
       photoURL: firebaseUser.photoURL,
       createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-      lastLoginAt: firebaseUser.metadata.lastSignInTime || new Date().toISOString()
+      lastLoginAt: firebaseUser.metadata.lastSignInTime || new Date().toISOString(),
+      id: firebaseUser.uid, // Use UID as ID for Google OAuth users
+      isActive: true,
+      isNewUser: false
     };
   }
 
   /**
-   * Validate email format
+   * Validate phone number format
    */
-  private static isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  private static isValidPhoneNumber(phoneNumber: string): boolean {
+    // Basic phone number validation - should start with + and have 10-15 digits
+    const phoneRegex = /^\+[1-9]\d{9,14}$/;
+    return phoneRegex.test(phoneNumber);
   }
 
   /**
@@ -541,31 +734,13 @@ export class AuthService {
     });
   }
 
-  /**
-   * Refresh authentication state
-   */
-  private static async refreshAuthState(): Promise<void> {
-    try {
-      // Check if we have a stored user but no Firebase user
-      const storedUser = localStorage.getItem('user');
-      if (storedUser && !this.currentUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          if (user && user.uid) {
-            // Try to get a fresh token
-            const token = await this.getIdToken();
-            if (token) {
-              console.log('Auth token refreshed successfully');
-            }
-          }
-        } catch (error) {
-          console.error('Error refreshing auth state:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error refreshing auth state:', error);
-    }
-  }
+}
+
+// Make test method available globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).testAuth = () => AuthService.testAuth();
+  (window as any).debugAuth = () => AuthService.debugAuthState();
+  (window as any).refreshAuth = () => AuthService.refreshAuthState();
 }
 
 export default AuthService; 

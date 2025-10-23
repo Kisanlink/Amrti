@@ -10,7 +10,7 @@ interface Address {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8082';
+const API_BASE_URL = 'http://localhost:8082';
 const API_VERSION = 'v1';
 
 // Request headers
@@ -18,6 +18,11 @@ export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {
   // Import AuthService dynamically to avoid circular dependencies
   const { default: AuthService } = await import('./authService');
   const token = await AuthService.getIdToken();
+  
+  console.log('API Headers - Token available:', !!token);
+  if (token) {
+    console.log('API Headers - Token length:', token.length);
+  }
   
   const headers: HeadersInit = {
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -28,6 +33,7 @@ export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {
     headers['Content-Type'] = 'application/json';
   }
   
+  console.log('API Headers:', headers);
   return headers;
 };
 
@@ -266,15 +272,13 @@ export interface AuthTokens {
 
 export interface AuthUser {
   created_at: string | number;
-  email: string;
+  phone_number: string;
   id: string;
   is_active: boolean;
   is_verified: boolean;
   name: string;
   uid: string;
-  email_verified?: boolean;
   last_login?: number;
-  phone_number?: string;
 }
 
 export interface AuthResponse {
