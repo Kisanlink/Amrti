@@ -225,7 +225,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       // Call the logout API endpoint
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8082';
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
         method: 'POST',
         headers: {

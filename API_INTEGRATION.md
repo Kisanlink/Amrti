@@ -4,7 +4,7 @@ This document provides a comprehensive guide for integrating with the Amrti API 
 
 ## Base Configuration
 
-- **Base URL**: `http://localhost:8080` (development) or `https://api.amrti.com` (production)
+- **Base URL**: `http://localhost:8082` (development) or `https://api.amrti.com` (production)
 - **API Version**: `v1`
 - **Content-Type**: `application/json`
 - **Authentication**: Bearer token (for protected endpoints)
@@ -14,7 +14,7 @@ This document provides a comprehensive guide for integrating with the Amrti API 
 Set the following environment variable in your `.env` file:
 
 ```env
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8082
 ```
 
 ## Recipe APIs
