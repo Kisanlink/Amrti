@@ -1,13 +1,9 @@
 import { 
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-  onAuthStateChanged,
   updateProfile,
   User as FirebaseUser,
   UserCredential
 } from 'firebase/auth';
-import { auth, getRecaptchaToken } from '../config/firebase';
+import { getAuth, getFirebase, getRecaptchaToken, initializeRecaptcha, clearRecaptcha, initializeFirebase } from '../config/firebase';
 
 export interface AuthUser {
   uid: string;
@@ -84,9 +80,14 @@ export class AuthService {
   /**
    * Initialize Firebase authentication
    */
-  static initialize(): void {
-    // Listen to auth state changes
-    onAuthStateChanged(auth, (user) => {
+  static async initialize(): Promise<void> {
+    try {
+      // Initialize Firebase first
+      await initializeFirebase();
+      
+      // Listen to auth state changes
+      const auth = await getAuth();
+      auth.onAuthStateChanged((user: any) => {
       // Only handle Firebase auth state changes if we don't have phone auth
       const hasPhoneAuth = localStorage.getItem('user') && localStorage.getItem('authToken');
       
@@ -107,6 +108,9 @@ export class AuthService {
 
     // Also check for phone authentication on initialization
     this.refreshAuthState();
+    } catch (error) {
+      console.error('AuthService initialization failed:', error);
+    }
   }
 
   /**
@@ -122,19 +126,26 @@ export class AuthService {
         throw new Error('Please enter a valid phone number');
       }
 
-      // Get reCAPTCHA token
+      // Get reCAPTCHA token (exact same as working HTML)
+      console.log('Getting reCAPTCHA token...');
+      
+      // Get reCAPTCHA token (reCAPTCHA should already be initialized)
       const recaptchaToken = await getRecaptchaToken();
 
       const API_BASE_URL = 'http://localhost:8082';
+      const requestBody = {
+        phone_number: phoneNumber,
+        recaptcha_token: recaptchaToken
+      };
+      
+      console.log('Sending phone code request:', requestBody);
+      
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/phone/send-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          phone_number: phoneNumber,
-          recaptcha_token: recaptchaToken
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -260,6 +271,15 @@ export class AuthService {
       // Call auto-fill profile API (only once)
       this.callAutoFillProfile();
       
+      // Migrate guest cart to user account
+      try {
+        const { CartService } = await import('./cartService');
+        await CartService.migrateGuestCart();
+      } catch (error) {
+        console.error('Failed to migrate guest cart:', error);
+        // Don't throw error as this shouldn't block the login process
+      }
+      
       console.log('Phone authentication successful, user stored:', authUser);
       
       // Debug authentication state
@@ -290,17 +310,19 @@ export class AuthService {
    */
   static async googleSignIn(): Promise<AuthUser> {
     try {
-      const provider = new GoogleAuthProvider();
-      const userCredential: UserCredential = await signInWithPopup(auth, provider);
+      const auth = await getAuth();
+      const firebase = await getFirebase();
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await auth.signInWithPopup(provider);
       
-      const authUser = this.firebaseUserToAuthUser(userCredential.user);
+      const authUser = this.firebaseUserToAuthUser(result.user);
       
       // Store user data
       localStorage.setItem('user', JSON.stringify(authUser));
       
       // Store auth token
       try {
-        const token = await userCredential.user.getIdToken();
+        const token = await result.user.getIdToken();
         if (token) {
           localStorage.setItem('authToken', token);
         }
@@ -310,6 +332,15 @@ export class AuthService {
       
       // Call auto-fill profile API (only once)
       this.callAutoFillProfile();
+      
+      // Migrate guest cart to user account
+      try {
+        const { CartService } = await import('./cartService');
+        await CartService.migrateGuestCart();
+      } catch (error) {
+        console.error('Failed to migrate guest cart:', error);
+        // Don't throw error as this shouldn't block the login process
+      }
       
       return authUser;
     } catch (error) {
@@ -334,7 +365,8 @@ export class AuthService {
       });
 
       // Firebase signout
-      await signOut(auth);
+      const auth = await getAuth();
+      await auth.signOut();
       
       // Clear all stored data
       localStorage.removeItem('user');
@@ -643,7 +675,8 @@ export class AuthService {
   }): Promise<void> {
     try {
       if (this.currentUser) {
-        await updateProfile(this.currentUser, updates);
+        const auth = await getAuth();
+        await auth.currentUser.updateProfile(updates);
         
         // Update stored user data
         const updatedUser = this.firebaseUserToAuthUser(this.currentUser);

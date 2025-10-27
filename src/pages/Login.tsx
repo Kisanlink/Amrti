@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Phone, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award, CheckCircle } from 'lucide-react';
 import AuthService from '../services/authService';
+import { initializeRecaptcha, getRecaptchaToken, clearRecaptcha } from '../config/firebase';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,6 +20,13 @@ const Login = () => {
   // Get redirect URL from location state or default to home
   const from = (location.state as any)?.from || '/';
 
+  // Cleanup reCAPTCHA on component unmount (like HTML)
+  useEffect(() => {
+    return () => {
+      clearRecaptcha();
+    };
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -33,6 +41,14 @@ const Login = () => {
     e.preventDefault();
     
     if (!formData.phoneNumber) {
+      setError('Please enter a phone number');
+      return;
+    }
+
+    // Validate phone number format (exact same as HTML)
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      setError('Please enter a valid phone number with country code (e.g., +1234567890)');
       return;
     }
 
@@ -40,12 +56,98 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await AuthService.loginWithPhone(formData.phoneNumber);
-      setSessionInfo(response.sessionInfo);
-      setStep('verify');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code');
-      console.error('Phone login failed:', err);
+      console.log('Initializing reCAPTCHA...');
+      
+      // Initialize reCAPTCHA first (exact same as HTML)
+      await initializeRecaptcha();
+      
+      // Wait a moment for reCAPTCHA to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Getting reCAPTCHA token...');
+      
+      // Get reCAPTCHA token
+      const recaptchaToken = await getRecaptchaToken();
+      
+      console.log('Sending verification code...');
+      
+      // Call backend API instead of AuthService (exact same as HTML)
+      console.log('Sending request to:', 'http://localhost:8082/api/v1/auth/phone/send-code');
+      console.log('Request payload:', {
+        phone_number: formData.phoneNumber,
+        recaptcha_token: recaptchaToken
+      });
+      
+      const response = await fetch('http://localhost:8082/api/v1/auth/phone/send-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: formData.phoneNumber,
+          recaptcha_token: recaptchaToken
+        })
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Check if response is ok and has content
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response text:', errorText);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {
+          // If not JSON, use the text as is
+          errorMessage = errorText || errorMessage;
+        }
+        
+        setError(`Failed to send verification code: ${errorMessage}`);
+        return;
+      }
+      
+      // Try to parse JSON response
+      let result;
+      try {
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        if (!responseText) {
+          setError('Empty response from server');
+          return;
+        }
+        result = JSON.parse(responseText);
+        console.log('Parsed result:', result);
+      } catch (e) {
+        setError('Invalid response format from server');
+        console.error('JSON parse error:', e);
+        return;
+      }
+      
+      // Handle the response based on the backend's API format
+      if (result.success && result.data) {
+        setError(null);
+        setSessionInfo(result.data.session_info);
+        setStep('verify');
+        console.log('Verification code sent! Check your phone for SMS.');
+      } else {
+        setError(`Failed to send verification code: ${result.message || 'Unknown error'}`);
+      }
+      
+    } catch (error: any) {
+      console.error('Phone auth error:', error);
+      
+      // Handle specific error cases
+      if (error.message && error.message.includes('reCAPTCHA')) {
+        setError('reCAPTCHA verification failed. Please try again.');
+        clearRecaptcha(); // Reset verifier
+      } else {
+        setError(`Failed to send verification code: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -55,6 +157,14 @@ const Login = () => {
     e.preventDefault();
     
     if (!formData.verificationCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    // Validate OTP format (6 digits) - exact same as HTML
+    const otpRegex = /^\d{6}$/;
+    if (!otpRegex.test(formData.verificationCode)) {
+      setError('Please enter a valid 6-digit verification code');
       return;
     }
 
@@ -62,14 +172,96 @@ const Login = () => {
     setError(null);
 
     try {
-      console.log('Verifying phone code...');
-      const user = await AuthService.verifyPhoneCode(formData.phoneNumber, formData.verificationCode, sessionInfo);
-      console.log('Phone verification successful, user:', user);
-      console.log('Navigating to:', from);
-      navigate(from); // Redirect to the page they were trying to access
-    } catch (err: any) {
-      setError(err.message || 'Verification failed');
-      console.error('Verification failed:', err);
+      console.log('Verifying code...');
+      
+      // Call backend API to verify the code (exact same as HTML)
+      const response = await fetch('http://localhost:8082/api/v1/auth/phone/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: formData.phoneNumber,
+          code: formData.verificationCode,
+          session_info: sessionInfo
+        })
+      });
+      
+      // Check if response is ok and has content
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        
+        // Handle specific error cases
+        if (errorMessage.includes('session expired') || errorMessage.includes('SESSION_EXPIRED')) {
+          setError('❌ Verification session expired. Please request a new code.');
+          clearRecaptcha();
+        } else {
+          setError(`Verification failed: ${errorMessage}`);
+        }
+        return;
+      }
+      
+      // Try to parse JSON response
+      let result;
+      try {
+        const responseText = await response.text();
+        if (!responseText) {
+          setError('Empty response from server');
+          return;
+        }
+        result = JSON.parse(responseText);
+      } catch (e) {
+        setError('Invalid response format from server');
+        console.error('JSON parse error:', e);
+        return;
+      }
+      
+      // Handle the response based on the backend's API format
+      if (result.success && result.data) {
+        setError(null);
+        console.log('Phone authentication successful! Welcome!');
+        
+        // Store the authentication tokens (exact same as HTML)
+        if (result.data.id_token) {
+          localStorage.setItem('firebase_id_token', result.data.id_token);
+        }
+        if (result.data.refresh_token) {
+          localStorage.setItem('firebase_refresh_token', result.data.refresh_token);
+        }
+        
+        // Create a mock user object for display (exact same as HTML)
+        const mockUser = {
+          uid: result.data.local_id || 'phone_user',
+          phoneNumber: result.data.phone_number || formData.phoneNumber,
+          email: null,
+          displayName: null,
+          emailVerified: false
+        };
+        
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('authToken', result.data.id_token);
+        
+        // Clear the verification code input
+        setFormData(prev => ({ ...prev, verificationCode: '' }));
+        
+        // Navigate to the intended page
+        navigate(from);
+      } else {
+        setError(`Verification failed: ${result.message || 'Unknown error'}`);
+      }
+      
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      setError(`Verification failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -85,6 +277,110 @@ const Login = () => {
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
       console.error('Google sign-in failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend Verification Code (exact same as HTML)
+  const handleResendVerificationCode = async () => {
+    const phoneNumber = formData.phoneNumber;
+    
+    if (!phoneNumber) {
+      setError('Please enter a phone number first');
+      return;
+    }
+    
+    // Clear existing session data
+    clearRecaptcha();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('Resending verification code...');
+      
+      // Reset reCAPTCHA verifier
+      clearRecaptcha();
+      
+      // Initialize new reCAPTCHA
+      await initializeRecaptcha();
+      
+      // Wait for reCAPTCHA to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get new reCAPTCHA token
+      const recaptchaToken = await getRecaptchaToken();
+      
+      // Call backend API to resend verification code (exact same as HTML)
+      console.log('Sending request to:', 'http://localhost:8082/api/v1/auth/phone/send-code');
+      console.log('Request payload:', {
+        phone_number: phoneNumber,
+        recaptcha_token: recaptchaToken
+      });
+      
+      const response = await fetch('http://localhost:8082/api/v1/auth/phone/send-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          recaptcha_token: recaptchaToken
+        })
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Check if response is ok and has content
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response text:', errorText);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {
+          // If not JSON, use the text as is
+          errorMessage = errorText || errorMessage;
+        }
+        
+        setError(`Failed to resend verification code: ${errorMessage}`);
+        return;
+      }
+      
+      // Try to parse JSON response
+      let result;
+      try {
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        if (!responseText) {
+          setError('Empty response from server');
+          return;
+        }
+        result = JSON.parse(responseText);
+        console.log('Parsed result:', result);
+      } catch (e) {
+        setError('Invalid response format from server');
+        console.error('JSON parse error:', e);
+        return;
+      }
+      
+      // Handle the response based on the backend's API format
+      if (result.success && result.data) {
+        setError(null);
+        setSessionInfo(result.data.session_info);
+        console.log('New verification code sent! Check your phone.');
+      } else {
+        setError(`Failed to resend verification code: ${result.message || 'Unknown error'}`);
+      }
+      
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+      setError(`Failed to resend verification code: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -180,6 +476,9 @@ const Login = () => {
                   </p>
                 </div>
 
+                {/* reCAPTCHA Container (exact same as HTML) */}
+                <div id="recaptcha-container" className="flex justify-center my-4"></div>
+
                 {/* Submit Button */}
                 <button
                   type="submit"
@@ -230,7 +529,10 @@ const Login = () => {
                 {/* Back to Phone Button */}
                 <button
                   type="button"
-                  onClick={() => setStep('phone')}
+                  onClick={() => {
+                    clearRecaptcha();
+                    setStep('phone');
+                  }}
                   className="w-full text-green-600 hover:text-green-700 font-heading font-semibold py-2 px-4 transition-colors"
                 >
                   ← Change phone number
@@ -251,6 +553,26 @@ const Login = () => {
                     <>
                       <CheckCircle className="w-5 h-5" />
                       <span>Verify & Sign In</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Resend Code Button (exact same as HTML) */}
+                <button
+                  type="button"
+                  onClick={handleResendVerificationCode}
+                  disabled={loading}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-heading font-semibold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Resending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-4 h-4" />
+                      <span>Resend Code</span>
                     </>
                   )}
                 </button>
