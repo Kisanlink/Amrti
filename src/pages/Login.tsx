@@ -12,10 +12,15 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'phone' | 'verify'>('phone');
   const [sessionInfo, setSessionInfo] = useState<string>('');
+  const [lastPhoneNumber, setLastPhoneNumber] = useState<string>('');
   const [formData, setFormData] = useState({
     phoneNumber: '',
     verificationCode: ''
   });
+
+  // Session timeout warning and management (exact same as HTML)
+  const [sessionTimeoutWarning, setSessionTimeoutWarning] = useState<NodeJS.Timeout | null>(null);
+  const [sessionTimeoutTimer, setSessionTimeoutTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Get redirect URL from location state or default to home
   const from = (location.state as any)?.from || '/';
@@ -25,6 +30,110 @@ const Login = () => {
     return () => {
       clearRecaptcha();
     };
+  }, []);
+
+  // Session timeout warning and management (exact same as HTML)
+  const startSessionTimeoutWarning = () => {
+    // Clear any existing timers
+    if (sessionTimeoutWarning) {
+      clearTimeout(sessionTimeoutWarning);
+    }
+    if (sessionTimeoutTimer) {
+      clearInterval(sessionTimeoutTimer);
+    }
+
+    // Show warning at 3 minutes (1 minute before expiry)
+    const warning = setTimeout(() => {
+      setError('⚠ Verification code will expire in 1 minute. Please enter your code soon or request a new one.');
+      
+      // Start countdown timer
+      let timeLeft = 60; // 1 minute
+      const timer = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+          setError(`⚠ Verification code expires in ${timeLeft} seconds. Please enter your code or request a new one.`);
+        } else {
+          clearInterval(timer);
+          setError('❌ Verification code has expired. Please request a new code.');
+          clearSessionData();
+        }
+      }, 1000);
+      
+      setSessionTimeoutTimer(timer);
+    }, 3 * 60 * 1000); // 3 minutes
+    
+    setSessionTimeoutWarning(warning);
+  };
+
+  const clearSessionData = () => {
+    // Clear session data
+    setSessionInfo('');
+    setLastPhoneNumber('');
+    localStorage.removeItem('phone_auth_session');
+    
+    // Clear timers
+    if (sessionTimeoutWarning) {
+      clearTimeout(sessionTimeoutWarning);
+      setSessionTimeoutWarning(null);
+    }
+    if (sessionTimeoutTimer) {
+      clearInterval(sessionTimeoutTimer);
+      setSessionTimeoutTimer(null);
+    }
+    
+    // Hide verification section
+    setStep('phone');
+  };
+
+  const validateSession = () => {
+    const sessionData = localStorage.getItem('phone_auth_session');
+    if (!sessionData) {
+      return false;
+    }
+
+    try {
+      const session = JSON.parse(sessionData);
+      const now = Date.now();
+      
+      // Check if session is expired
+      if (now > session.expires_at) {
+        localStorage.removeItem('phone_auth_session');
+        return false;
+      }
+      
+      // Restore session data
+      setSessionInfo(session.session_info);
+      setLastPhoneNumber(session.phone_number);
+      
+      // Calculate remaining time and restart warning if needed
+      const remainingTime = session.expires_at - now;
+      if (remainingTime > 0) {
+        // Show verification section if session is still valid
+        setStep('verify');
+        
+        // Show remaining time
+        const minutesLeft = Math.ceil(remainingTime / (60 * 1000));
+        setError(`✅ Verification session active. ${minutesLeft} minute(s) remaining.`);
+        
+        // Restart warning if more than 1 minute left
+        if (remainingTime > 60 * 1000) {
+          const warningDelay = Math.max(0, remainingTime - (60 * 1000)); // 1 minute before expiry
+          setTimeout(() => {
+            startSessionTimeoutWarning();
+          }, warningDelay);
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      localStorage.removeItem('phone_auth_session');
+      return false;
+    }
+  };
+
+  // Validate existing session on component mount (exact same as HTML)
+  useEffect(() => {
+    validateSession();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,8 +241,26 @@ const Login = () => {
       if (result.success && result.data) {
         setError(null);
         setSessionInfo(result.data.session_info);
-        setStep('verify');
+        setLastPhoneNumber(formData.phoneNumber);
+      setStep('verify');
         console.log('Verification code sent! Check your phone for SMS.');
+        
+        // Store session info and phone number for verification with timestamp (exact same as HTML)
+        const sessionData = {
+          session_info: result.data.session_info,
+          phone_number: formData.phoneNumber,
+          timestamp: Date.now(),
+          expires_at: Date.now() + (4 * 60 * 1000) // 4 minutes (Firebase expires at 5 minutes)
+        };
+        
+        // Persist session data to localStorage
+        localStorage.setItem('phone_auth_session', JSON.stringify(sessionData));
+        
+        // Start session timeout warning
+        startSessionTimeoutWarning();
+        
+        // Clear the phone number input for security
+        setFormData(prev => ({ ...prev, phoneNumber: '' }));
       } else {
         setError(`Failed to send verification code: ${result.message || 'Unknown error'}`);
       }
@@ -168,6 +295,20 @@ const Login = () => {
       return;
     }
 
+    // Check if session info exists and is valid
+    if (!sessionInfo) {
+      // Try to restore from localStorage
+      if (!validateSession()) {
+        setError('Please send verification code first');
+        return;
+      }
+    }
+
+    if (!lastPhoneNumber) {
+      setError('Phone number not found. Please start the process again.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -181,7 +322,7 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone_number: formData.phoneNumber,
+          phone_number: lastPhoneNumber,
           code: formData.verificationCode,
           session_info: sessionInfo
         })
@@ -202,7 +343,7 @@ const Login = () => {
         // Handle specific error cases
         if (errorMessage.includes('session expired') || errorMessage.includes('SESSION_EXPIRED')) {
           setError('❌ Verification session expired. Please request a new code.');
-          clearRecaptcha();
+          clearSessionData();
         } else {
           setError(`Verification failed: ${errorMessage}`);
         }
@@ -253,6 +394,9 @@ const Login = () => {
         // Clear the verification code input
         setFormData(prev => ({ ...prev, verificationCode: '' }));
         
+        // Clear session data and timers
+        clearSessionData();
+        
         // Navigate to the intended page
         navigate(from);
       } else {
@@ -282,9 +426,10 @@ const Login = () => {
     }
   };
 
+
   // Resend Verification Code (exact same as HTML)
   const handleResendVerificationCode = async () => {
-    const phoneNumber = formData.phoneNumber;
+    const phoneNumber = lastPhoneNumber || formData.phoneNumber;
     
     if (!phoneNumber) {
       setError('Please enter a phone number first');
@@ -292,13 +437,11 @@ const Login = () => {
     }
     
     // Clear existing session data
-    clearRecaptcha();
-
-    setLoading(true);
-    setError(null);
+    clearSessionData();
 
     try {
-      console.log('Resending verification code...');
+      setError('Resending verification code...');
+      setLoading(true);
       
       // Reset reCAPTCHA verifier
       clearRecaptcha();
@@ -312,13 +455,7 @@ const Login = () => {
       // Get new reCAPTCHA token
       const recaptchaToken = await getRecaptchaToken();
       
-      // Call backend API to resend verification code (exact same as HTML)
-      console.log('Sending request to:', 'http://localhost:8082/api/v1/auth/phone/send-code');
-      console.log('Request payload:', {
-        phone_number: phoneNumber,
-        recaptcha_token: recaptchaToken
-      });
-      
+      // Call backend API to resend verification code
       const response = await fetch('http://localhost:8082/api/v1/auth/phone/send-code', {
         method: 'POST',
         headers: {
@@ -330,20 +467,15 @@ const Login = () => {
         })
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
       // Check if response is ok and has content
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Error response text:', errorText);
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.message || errorJson.error || errorMessage;
         } catch (e) {
-          // If not JSON, use the text as is
           errorMessage = errorText || errorMessage;
         }
         
@@ -355,14 +487,11 @@ const Login = () => {
       let result;
       try {
         const responseText = await response.text();
-        console.log('Response text:', responseText);
-        
         if (!responseText) {
           setError('Empty response from server');
           return;
         }
         result = JSON.parse(responseText);
-        console.log('Parsed result:', result);
       } catch (e) {
         setError('Invalid response format from server');
         console.error('JSON parse error:', e);
@@ -371,9 +500,23 @@ const Login = () => {
       
       // Handle the response based on the backend's API format
       if (result.success && result.data) {
-        setError(null);
+        setError('New verification code sent! Check your phone.');
         setSessionInfo(result.data.session_info);
-        console.log('New verification code sent! Check your phone.');
+        setLastPhoneNumber(phoneNumber);
+        
+        // Store session info and phone number for verification with timestamp
+        const sessionData = {
+          session_info: result.data.session_info,
+          phone_number: phoneNumber,
+          timestamp: Date.now(),
+          expires_at: Date.now() + (4 * 60 * 1000) // 4 minutes
+        };
+        
+        // Persist session data to localStorage
+        localStorage.setItem('phone_auth_session', JSON.stringify(sessionData));
+        
+        // Start session timeout warning
+        startSessionTimeoutWarning();
       } else {
         setError(`Failed to resend verification code: ${result.message || 'Unknown error'}`);
       }
@@ -522,9 +665,29 @@ const Login = () => {
                     />
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Enter the 6-digit code sent to {formData.phoneNumber}
+                    Enter the 6-digit code sent to {lastPhoneNumber || formData.phoneNumber}
                   </p>
                 </div>
+
+                {/* Resend Code Button */}
+                <button
+                  type="button"
+                  onClick={handleResendVerificationCode}
+                  disabled={loading}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-heading font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Resending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Resend Code</span>
+                    </>
+                  )}
+                </button>
 
                 {/* Back to Phone Button */}
                 <button

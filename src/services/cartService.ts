@@ -667,20 +667,24 @@ export class CartService {
   static async applyCoupon(couponCode: string): Promise<Cart> {
     try {
       console.log(`Applying coupon: ${couponCode}`);
-      const response = await cartApi.applyCoupon(couponCode);
-      console.log('Apply coupon response:', response);
-      
-      // Update cart with discount information
-      const updatedCart = {
-        ...response.data.cart,
-        discount_amount: response.data.discount_amount,
-        discounted_total: response.data.discounted_total
-      };
-      
-      // Dispatch cart updated event
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
-      
-      return updatedCart;
+      const isAuth = await this.isAuthenticated();
+      if (isAuth) {
+        const response = await cartApi.applyCoupon(couponCode);
+        console.log('Apply coupon response:', response);
+        const updatedCart = {
+          ...response.data.cart,
+          discount_amount: response.data.discount_amount,
+          discounted_total: response.data.discounted_total
+        } as Cart;
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        return updatedCart;
+      } else {
+        // Guest flow
+        const guestCart = await GuestCartService.applyCoupon(couponCode);
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        // Cast to Cart-compatible shape where needed by UI; discount fields handled conditionally
+        return guestCart as unknown as Cart;
+      }
     } catch (error: any) {
       console.error('Failed to apply coupon:', error);
       throw new Error(error.message || 'Failed to apply coupon. Please try again later.');
@@ -694,20 +698,22 @@ export class CartService {
   static async removeCoupon(): Promise<Cart> {
     try {
       console.log('Removing coupon from cart');
-      const response = await cartApi.removeCoupon();
-      console.log('Remove coupon response:', response);
-      
-      // Update cart without discount information
-      const updatedCart = {
-        ...response.data.cart,
-        discount_amount: 0,
-        discounted_total: undefined
-      };
-      
-      // Dispatch cart updated event
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
-      
-      return updatedCart;
+      const isAuth = await this.isAuthenticated();
+      if (isAuth) {
+        const response = await cartApi.removeCoupon();
+        console.log('Remove coupon response:', response);
+        const updatedCart = {
+          ...response.data.cart,
+          discount_amount: 0,
+          discounted_total: undefined
+        } as Cart;
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        return updatedCart;
+      } else {
+        const guestCart = await GuestCartService.removeCoupon();
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        return guestCart as unknown as Cart;
+      }
     } catch (error: any) {
       console.error('Failed to remove coupon:', error);
       throw new Error(error.message || 'Failed to remove coupon. Please try again later.');

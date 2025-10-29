@@ -1,4 +1,6 @@
-// Firebase configuration (exact same as working HTML)
+// Firebase configuration (updated to match backend expectations)
+// Note: This uses reCAPTCHA v2 for Firebase phone authentication (required by Firebase)
+// reCAPTCHA v3 is handled separately in utils/recaptchaV3.ts for login form protection
 const firebaseConfig = {
     apiKey: "AIzaSyCPzNrFV3Q6a4rcAQF-60G3h3K1WBQqQFI",
     authDomain: "amrti-m1355.firebaseapp.com",
@@ -8,6 +10,9 @@ const firebaseConfig = {
     appId: "1:261470136593:web:167ab30b6a363e461244b0",
     measurementId: "G-8GT1Y5QCL2"
 };
+
+// reCAPTCHA site key that matches backend expectations
+const RECAPTCHA_SITE_KEY = "6LfXi_QrAAAAAL4qkNyc4gmOiRoPswIfKEhD7LZZ";
 
 // Global variables (exact same as working HTML)
 let firebase: any = null;
@@ -92,13 +97,13 @@ export const getAuth = async (): Promise<any> => {
   return auth;
 };
 
-// Initialize reCAPTCHA for phone authentication (exact same as working HTML)
+// Initialize reCAPTCHA for phone authentication (updated to match backend expectations)
 export const initializeRecaptcha = async (): Promise<void> => {
   if (!recaptchaVerifier) {
     const firebase = await getFirebase();
     
     recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      'size': 'normal', // Changed from invisible to normal for better user experience
+      'size': 'invisible',
       'callback': (response: any) => {
         console.log('reCAPTCHA solved');
       },

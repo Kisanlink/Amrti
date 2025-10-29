@@ -1,83 +1,162 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Heart, ShoppingCart, Plus, Star, Truck, Shield, RotateCcw, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import WishlistService from '../services/wishlistService';
 import CartService from '../services/cartService';
-import type { WishlistItem } from '../services/wishlistService';
+import { useWishlist, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
+import { useNotification } from '../context/NotificationContext';
 
 const Wishlist = () => {
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const { showNotification } = useNotification();
 
-  // Load wishlist on mount
-  useEffect(() => {
-    const loadWishlist = async () => {
-      try {
-        const wishlistData = await WishlistService.getWishlist();
-        setWishlist(wishlistData);
-      } catch (err) {
-        console.error('Failed to load wishlist:', err);
-        setError('Failed to load wishlist');
-        setWishlist([]);
+  // Use React Query hooks for wishlist data
+  const { data: wishlist = [], isLoading: loading, error } = useWishlist();
+  const removeFromWishlistMutation = useRemoveFromWishlist();
+  const clearWishlistMutation = useClearWishlist();
+
+  const handleRemoveFromWishlist = (productId: string) => {
+    removeFromWishlistMutation.mutate(productId, {
+      onSuccess: () => {
+        showNotification({
+          type: 'success',
+          message: 'Product removed from wishlist'
+        });
+      },
+      onError: () => {
+        showNotification({
+          type: 'error',
+          message: 'Failed to remove from wishlist'
+        });
       }
-    };
-    
-    loadWishlist();
-  }, []);
-
-  const handleRemoveFromWishlist = async (productId: string) => {
-    try {
-      const updatedWishlist = await WishlistService.removeFromWishlist(productId);
-      setWishlist(updatedWishlist);
-    } catch (err) {
-      console.error('Failed to remove from wishlist:', err);
-      setError('Failed to remove from wishlist');
-    }
+    });
   };
 
   const handleMoveToCart = async (productId: string) => {
     setIsProcessing(productId);
     try {
-      const updatedWishlist = await WishlistService.moveToCart(productId);
-      setWishlist(updatedWishlist);
+      // Add to cart
+      await CartService.addItem(productId, 1);
+      
+      // Remove from wishlist
+      removeFromWishlistMutation.mutate(productId, {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: 'Product moved to cart successfully!'
+          });
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to move to cart'
+          });
+        }
+      });
     } catch (err) {
       console.error('Failed to move to cart:', err);
-      setError('Failed to move to cart');
+      showNotification({
+        type: 'error',
+        message: 'Failed to move to cart'
+      });
     } finally {
       setIsProcessing(null);
     }
   };
 
-  const handleClearWishlist = async () => {
+  const handleClearWishlist = () => {
     if (window.confirm('Are you sure you want to clear your wishlist?')) {
-      try {
-        const updatedWishlist = await WishlistService.clearWishlist();
-        setWishlist(updatedWishlist);
-      } catch (err) {
-        console.error('Failed to clear wishlist:', err);
-        setError('Failed to clear wishlist');
-      }
+      clearWishlistMutation.mutate(undefined, {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: 'Wishlist cleared successfully'
+          });
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to clear wishlist'
+          });
+        }
+      });
     }
   };
 
   const handleAddAllToCart = async () => {
     try {
       setIsProcessing('all');
-      const updatedWishlist = await WishlistService.addAllToCart();
-      setWishlist(updatedWishlist);
-      // Show success message
-      setError(null);
+      
+      // Add all wishlist items to cart
+      for (const item of wishlist) {
+        await CartService.addItem(item.product_id, 1);
+      }
+      
+      // Clear wishlist
+      clearWishlistMutation.mutate(undefined, {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: 'All items added to cart successfully!'
+          });
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to add all items to cart'
+          });
+        }
+      });
     } catch (err) {
-      console.error('Failed to add all items to cart:', err);
-      setError('Failed to add all items to cart');
+      console.error('Failed to add all to cart:', err);
+      showNotification({
+        type: 'error',
+        message: 'Failed to add all items to cart'
+      });
     } finally {
       setIsProcessing(null);
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen">
+          <div className="container-custom py-12 sm:py-16">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg text-gray-600">Loading your wishlist...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen">
+          <div className="container-custom py-12 sm:py-16">
+            <div className="text-center">
+              <div className="text-red-500 text-lg mb-4">Failed to load wishlist</div>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (wishlist.length === 0) {
     return (

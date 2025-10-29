@@ -491,61 +491,7 @@ export const cartApi = {
 };
 
 // ==================== FAVORITES API ====================
-
-export interface Favorite {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
-  user_id: string;
-  product_id: string;
-  product?: Product;
-}
-
-export interface FavoritesResponse {
-  count: number;
-  favorites: Favorite[];
-  message: string;
-}
-
-export interface FavoriteCheckResponse {
-  is_favorite: boolean;
-  message: string;
-}
-
-export interface AddFavoriteResponse {
-  favorite: Favorite;
-  message: string;
-}
-
-export const favoritesApi = {
-  // Check if product is in favorites
-  checkFavorite: async (productId: string): Promise<FavoriteCheckResponse> => {
-    return apiRequest<FavoriteCheckResponse>(`/favorites/check/${productId}`);
-  },
-
-  // Add to favorites
-  addToFavorites: async (productId: string): Promise<AddFavoriteResponse> => {
-    return apiRequest<AddFavoriteResponse>('/favorites', {
-      method: 'POST',
-      body: JSON.stringify({ product_id: productId }),
-    });
-  },
-
-  // Get user favorites
-  getFavorites: async (): Promise<FavoritesResponse> => {
-    return apiRequest<FavoritesResponse>('/favorites');
-  },
-
-  // Remove from favorites
-  removeFromFavorites: async (productId: string): Promise<{ message: string }> => {
-    return apiRequest<{ message: string }>('/favorites', {
-      method: 'DELETE',
-      body: JSON.stringify({ product_id: productId }),
-    });
-  },
-};
+// Favorites API has been removed as requested
 
 // ==================== ORDERS API ====================
 
@@ -804,7 +750,6 @@ export default {
   recipes: recipesApi,
   auth: authApi,
   cart: cartApi,
-  favorites: favoritesApi,
   profile: profileApi,
   orders: ordersApi,
   payment: paymentApi,

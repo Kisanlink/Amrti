@@ -107,6 +107,45 @@ export class GuestCartService {
   }
 
   /**
+   * Apply coupon to guest cart
+   */
+  static async applyCoupon(couponCode: string): Promise<GuestCart> {
+    try {
+      await this.guestApiRequest<{ success: boolean; data: any; message: string }>(
+        '/cart/apply-coupon',
+        {
+          method: 'POST',
+          body: JSON.stringify({ coupon_code: couponCode }),
+        }
+      );
+
+      // Return updated cart after applying coupon
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to apply coupon (guest):', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove coupon from guest cart
+   */
+  static async removeCoupon(): Promise<GuestCart> {
+    try {
+      await this.guestApiRequest<{ success: boolean; data: any; message: string }>(
+        '/cart/remove-coupon',
+        { method: 'DELETE' }
+      );
+
+      // Return updated cart after removing coupon
+      return await this.getCart();
+    } catch (error) {
+      console.error('Failed to remove coupon (guest):', error);
+      throw error;
+    }
+  }
+
+  /**
    * Cache cart data locally
    */
   private static cacheCart(cart: GuestCart): void {

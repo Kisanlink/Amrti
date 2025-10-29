@@ -17,7 +17,7 @@ import CheckoutService, {
 } from '../services/checkoutService';
 import CartService from '../services/cartService';
 import { useNotification } from '../context/NotificationContext';
-
+import LoginRequiredModal from '../components/ui/LoginRequiredModal';
 import AuthService from '../services/authService';
 
 const Checkout: React.FC = () => {
@@ -57,6 +57,7 @@ const Checkout: React.FC = () => {
   const [validationWarnings, setValidationWarnings] = useState<ValidationIssue[]>([]);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<string>('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Checkout data
   const [checkoutData, setCheckoutData] = useState<any>(null);
@@ -86,40 +87,12 @@ const Checkout: React.FC = () => {
 
 
 
-  // Check if user is authenticated and reset checkout state
+  // Initialize checkout on component mount
   useEffect(() => {
-    const checkAuthAndInitialize = async () => {
-      console.log('=== CHECKOUT AUTH CHECK ===');
-      console.log('Checkout page - checking authentication...');
+    const initializeCheckoutFlow = async () => {
+      console.log('=== CHECKOUT INITIALIZATION ===');
+      console.log('Checkout page - initializing...');
       
-      // Force refresh authentication state first
-      AuthService.refreshAuthState();
-      
-      // Wait a bit for the state to be updated
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const isAuth = AuthService.isAuthenticated();
-      const currentUser = AuthService.getCurrentUser();
-      const token = await AuthService.getIdToken();
-      
-      console.log('AuthService.isAuthenticated():', isAuth);
-      console.log('Current user:', currentUser);
-      console.log('Token available:', !!token);
-      console.log('LocalStorage user:', localStorage.getItem('user'));
-      console.log('LocalStorage token:', localStorage.getItem('authToken'));
-      
-      // Additional debugging
-      console.log('All localStorage keys:', Object.keys(localStorage));
-      console.log('AuthService.currentUser:', (AuthService as any).currentUser);
-      
-      if (!isAuth) {
-        console.log('User not authenticated, redirecting to login');
-        console.log('=== REDIRECTING TO LOGIN ===');
-        navigate('/login', { state: { from: '/checkout' } });
-        return;
-      }
-      
-      console.log('User authenticated, initializing checkout');
       // Reset checkout state to start fresh
       setStep('address');
       setPaymentSuccess(false);
@@ -129,13 +102,13 @@ const Checkout: React.FC = () => {
       initializeCheckout();
     };
 
-    // Check authentication immediately
-    checkAuthAndInitialize();
+    // Initialize checkout immediately
+    initializeCheckoutFlow();
 
-    // Listen for authentication state changes
+    // Listen for authentication state changes to refresh data if needed
     const handleUserLogin = () => {
-      console.log('User logged in, re-checking authentication for checkout');
-      checkAuthAndInitialize();
+      console.log('User logged in, refreshing checkout data');
+      initializeCheckout();
     };
 
     window.addEventListener('userLoggedIn', handleUserLogin);
@@ -143,7 +116,7 @@ const Checkout: React.FC = () => {
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLogin);
     };
-  }, [navigate]);
+  }, []);
 
   // Scroll to top when step changes or loading state changes
   useEffect(() => {
@@ -160,6 +133,15 @@ const Checkout: React.FC = () => {
     return () => clearTimeout(timer);
   }, [step, loading]);
 
+  // Helper function to check authentication and show login modal if needed
+  const requireAuth = (action: () => void) => {
+    if (!AuthService.isAuthenticated()) {
+      setShowLoginModal(true);
+      return;
+    }
+    action();
+  };
+
   const initializeCheckout = async () => {
     try {
       setLoading(true);
@@ -171,7 +153,13 @@ const Checkout: React.FC = () => {
         stepRef.current = 'address';
       }
       
-      // Prepare checkout data
+      // For guest users, just show the form without calling prepareCheckout
+      if (!AuthService.isAuthenticated()) {
+        setLoading(false);
+        return;
+      }
+      
+      // Prepare checkout data for authenticated users
       const data = await CheckoutService.prepareCheckout();
       setCheckoutData(data);
       
@@ -203,41 +191,44 @@ const Checkout: React.FC = () => {
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Validate address
-      if (!address.first_name || !address.last_name || !address.mobile || !address.street || !address.city || !address.state || !address.postal_code) {
-        setError('Please fill in all required fields.');
-        return;
-      }
-      
-      // Estimate shipping
-      const shippingData = await CheckoutService.estimateShipping(address);
-      setShippingOptions(shippingData.shipping_options);
-      setAddressId(shippingData.address_id);
-      
-      if (shippingData.shipping_options.length === 0) {
-        setError('No shipping options available for this address.');
-        return;
-      }
-      
-      // Auto-select first shipping option
-      setSelectedShipping(shippingData.shipping_options[0]);
-      setStep('shipping');
-      localStorage.setItem('checkout-step', 'shipping');
-      
-      // Force scroll to top immediately
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      
-    } catch (err) {
-      setError('Failed to estimate shipping. Please try again later.');
-    } finally {
-      setLoading(false);
+    // Validate address first
+    if (!address.first_name || !address.last_name || !address.mobile || !address.street || !address.city || !address.state || !address.postal_code) {
+      setError('Please fill in all required fields.');
+      return;
     }
+    
+    // Require authentication for shipping estimation
+    requireAuth(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Estimate shipping
+        const shippingData = await CheckoutService.estimateShipping(address);
+        setShippingOptions(shippingData.shipping_options);
+        setAddressId(shippingData.address_id);
+        
+        if (shippingData.shipping_options.length === 0) {
+          setError('No shipping options available for this address.');
+          return;
+        }
+        
+        // Auto-select first shipping option
+        setSelectedShipping(shippingData.shipping_options[0]);
+        setStep('shipping');
+        localStorage.setItem('checkout-step', 'shipping');
+        
+        // Force scroll to top immediately
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        
+      } catch (err) {
+        setError('Failed to estimate shipping. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleShippingSubmit = async () => {
@@ -246,28 +237,29 @@ const Checkout: React.FC = () => {
       return;
     }
     
-    try {
-      setLoading(true);
-      setError(null);
-      
-  
-      
-      // Create payment order with shipping address
-      const order = await CheckoutService.createOrder(address, addressId);
-      setOrderData(order);
-      setStep('payment');
-      localStorage.setItem('checkout-step', 'payment');
-      
-      // Force scroll to top immediately
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      
-    } catch (err) {
-      setError('Failed to create order. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+    // Require authentication for order creation
+    requireAuth(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Create payment order with shipping address
+        const order = await CheckoutService.createOrder(address, addressId);
+        setOrderData(order);
+        setStep('payment');
+        localStorage.setItem('checkout-step', 'payment');
+        
+        // Force scroll to top immediately
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        
+      } catch (err) {
+        setError('Failed to create order. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handlePayment = async () => {
@@ -276,51 +268,54 @@ const Checkout: React.FC = () => {
       return;
     }
     
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Initialize Razorpay checkout
-      const paymentResponse = await CheckoutService.initializeRazorpayCheckout(orderData);
-      
-      // Verify payment
-      const verificationData = {
-        razorpay_payment_id: paymentResponse.razorpay_payment_id,
-        razorpay_order_id: paymentResponse.razorpay_order_id,
-        razorpay_signature: paymentResponse.razorpay_signature
-      };
-      
-      const verification = await CheckoutService.verifyPayment(verificationData);
-      
-      if (verification.success) {
-        // Extract order ID from the verification response
-        const orderId = verification.order_id;
-        
-        // Set success states
-        setSuccessOrderId(orderId);
-        setPaymentSuccess(true);
+    // Require authentication for payment
+    requireAuth(async () => {
+      try {
+        setLoading(true);
         setError(null);
+        
+        // Initialize Razorpay checkout
+        const paymentResponse = await CheckoutService.initializeRazorpayCheckout(orderData);
+        
+        // Verify payment
+        const verificationData = {
+          razorpay_payment_id: paymentResponse.razorpay_payment_id,
+          razorpay_order_id: paymentResponse.razorpay_order_id,
+          razorpay_signature: paymentResponse.razorpay_signature
+        };
+        
+        const verification = await CheckoutService.verifyPayment(verificationData);
+        
+        if (verification.success) {
+          // Extract order ID from the verification response
+          const orderId = verification.order_id;
+          
+          // Set success states
+          setSuccessOrderId(orderId);
+          setPaymentSuccess(true);
+          setError(null);
+          setLoading(false);
+          
+          // Clear cart
+          await CartService.clearCart();
+          
+          // Show success message
+          showNotification({
+            type: 'success',
+            message: 'Order placed successfully! Redirecting to order details...'
+          });
+          
+          return; // Stop execution here
+        } else {
+          throw new Error('Payment verification failed');
+        }
+        
+      } catch (err) {
+        setError('Payment failed. Please try again later.');
+      } finally {
         setLoading(false);
-        
-        // Clear cart
-        await CartService.clearCart();
-        
-        // Show success message
-        showNotification({
-          type: 'success',
-          message: 'Order placed successfully! Redirecting to order details...'
-        });
-        
-        return; // Stop execution here
-      } else {
-        throw new Error('Payment verification failed');
       }
-      
-    } catch (err) {
-      setError('Payment failed. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
 
@@ -385,6 +380,23 @@ const Checkout: React.FC = () => {
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Checkout</h1>
           <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Complete your purchase</p>
+          
+          {/* Guest User Notice */}
+          {!AuthService.isAuthenticated() && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-blue-800 mb-1">
+                    Login Required
+                  </h3>
+                  <p className="text-sm text-blue-700">
+                    Please login to continue with your checkout. You can fill out the form below, but you'll need to login when you're ready to proceed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Validation Warnings */}
@@ -632,7 +644,8 @@ const Checkout: React.FC = () => {
                   disabled={loading}
                   className="w-full bg-green-600 text-white py-2.5 sm:py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                 >
-                  {loading ? 'Estimating Shipping...' : 'Continue to Shipping'}
+                  {loading ? 'Estimating Shipping...' : 
+                   !AuthService.isAuthenticated() ? 'Login to Continue' : 'Continue to Shipping'}
                 </button>
               </form>
             </motion.div>
@@ -684,7 +697,8 @@ const Checkout: React.FC = () => {
                 disabled={loading || !selectedShipping}
                 className="w-full bg-green-600 text-white py-2.5 sm:py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
-                {loading ? 'Creating Order...' : 'Continue to Payment'}
+                {loading ? 'Creating Order...' : 
+                 !AuthService.isAuthenticated() ? 'Login to Continue' : 'Continue to Payment'}
               </button>
             </motion.div>
           )}
@@ -739,7 +753,8 @@ const Checkout: React.FC = () => {
                 disabled={loading}
                 className="w-full bg-green-600 text-white py-2.5 sm:py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
-                {loading ? 'Processing Payment...' : 'Pay Now'}
+                {loading ? 'Processing Payment...' : 
+                 !AuthService.isAuthenticated() ? 'Login to Continue' : 'Pay Now'}
               </button>
                 </>
               ) : (
@@ -789,6 +804,14 @@ const Checkout: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="Please login to continue with your checkout"
+        redirectUrl="/checkout"
+      />
     </div>
   );
 };

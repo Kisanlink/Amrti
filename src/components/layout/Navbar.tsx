@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2, Package } from 'lucide-react';
 import CartService from '../../services/cartService';
-import WishlistService from '../../services/wishlistService';
 import AuthService, { AuthUser } from '../../services/authService';
 import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
+import CartCount from '../ui/CartCount';
+import { useWishlistCount } from '../../hooks/queries/useWishlist';
 
 const Navbar = () => {
 
@@ -14,8 +15,8 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCartPopup, setShowCartPopup] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
+  // Cart count is now handled by TanStack Query
+  const { data: wishlistCount = 0, isLoading: isWishlistLoading } = useWishlistCount();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   
@@ -39,28 +40,7 @@ const Navbar = () => {
       setUser(currentUser);
       setAuthenticated(isAuth);
       
-      // Only load cart and wishlist data if user is authenticated
-      if (isAuth) {
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to load cart count:', error);
-          setCartCount(0);
-        }
-        
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to load wishlist count:', error);
-          setWishlistCount(0);
-        }
-      } else {
-        // Set counts to 0 for unauthenticated users
-        setCartCount(0);
-        setWishlistCount(0);
-      }
+      // Wishlist count is now handled by React Query
     };
     
     loadInitialData();
@@ -77,8 +57,7 @@ const Navbar = () => {
     const handleUserLogout = () => {
       setUser(null);
       setAuthenticated(false);
-      setCartCount(0);
-      setWishlistCount(0);
+      // Wishlist count will be updated automatically by React Query
     };
 
     // Add event listeners
@@ -92,45 +71,7 @@ const Navbar = () => {
     };
   }, []);
 
-  // Listen for cart and wishlist updates
-  useEffect(() => {
-    const handleCartUpdate = async () => {
-      // Only update cart count if user is authenticated
-      if (AuthService.isAuthenticated()) {
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to update cart count:', error);
-        }
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    const handleWishlistUpdate = async () => {
-      // Only update wishlist count if user is authenticated
-      if (AuthService.isAuthenticated()) {
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to update wishlist count:', error);
-        }
-      } else {
-        setWishlistCount(0);
-      }
-    };
-
-    // Listen for custom events
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
-
-    return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
-    };
-  }, []);
+  // Wishlist updates are now handled by React Query automatically
 
   useEffect(() => {
     const handleScroll = () => {
@@ -386,26 +327,23 @@ const Navbar = () => {
             </div>
             
             {/* Wishlist */}
-                          <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors relative">
-              <Heart size={20} />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-400 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
+            <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors">
+              <div className="relative flex items-center">
+                <Heart size={20} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </div>
             </Link>
             
             {/* Cart */}
             <button 
               onClick={() => setShowCartPopup(true)}
-                              className="p-2 text-russet-700 hover:text-green-600 transition-colors relative"
+              className="p-2 text-russet-700 hover:text-green-600 transition-colors relative"
             >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
+              <CartCount showIcon={true} />
             </button>
             
             {/* User Menu */}
@@ -494,12 +432,7 @@ const Navbar = () => {
               onClick={() => setShowCartPopup(!showCartPopup)}
               className="relative p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
             >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
+              <CartCount showIcon={true} />
             </button>
             
             {/* Burger Menu Button */}
@@ -675,7 +608,7 @@ const Navbar = () => {
                         className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
                       >
                         <ShoppingCart size={20} />
-                        <span className="text-base">Cart ({cartCount})</span>
+                        <span className="text-base">Cart</span>
                       </button>
                   
                       {/* User Account */}
@@ -684,7 +617,7 @@ const Navbar = () => {
                           <div className="pt-4 border-t border-gray-200">
                             <div className="px-3 py-3 bg-gray-50 rounded-lg mb-2">
                               <p className="text-sm font-semibold text-gray-900">{user?.displayName || 'User'}</p>
-                              <p className="text-xs text-gray-600">{user?.email}</p>
+                              <p className="text-xs text-gray-600">{user?.phoneNumber}</p>
                             </div>
                             
                             <Link 

@@ -3,7 +3,7 @@ import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filte
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import ProductService from '../services/productService';
+import { useAllProducts } from '../hooks/queries/useProducts';
 import type { Product } from '../context/AppContext';
 import CartService from '../services/cartService';
 import WishlistService from '../services/wishlistService';
@@ -11,7 +11,6 @@ import { useNotification } from '../context/NotificationContext';
 
 const Products = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Products');
   const [cartCount, setCartCount] = useState(0);
@@ -29,25 +28,32 @@ const Products = () => {
   });
   const { showNotification } = useNotification();
 
-  // Load products and categories on mount
+  // Use TanStack Query to fetch products
+  const { data: productsResponse, isLoading, error } = useAllProducts();
+
+  // Process products data
+  const products = productsResponse?.data || [];
+
+  // Warm wishlist once and set local heart state
   useEffect(() => {
-    const loadData = async () => {
+    const loadWishlist = async () => {
       try {
-        const productsResponse = await ProductService.getAllProducts(1, 100);
-        setProducts(productsResponse.data);
-        // For now, set default categories since getProductCategories doesn't exist
-        setCategories(['Superfoods', 'Herbs']);
-        // Initialize counts - will be updated via events
-        setCartCount(0);
-        setWishlistCount(0);
-      } catch (error) {
-        console.error('Failed to load products:', error);
-        setProducts([]);
-        setCategories([]);
+        const list = await WishlistService.getWishlist();
+        setWishlistItems(new Set(list.map((it) => it.product_id)));
+      } catch (e) {
+        setWishlistItems(new Set());
       }
     };
-    
-    loadData();
+    loadWishlist();
+  }, [productsResponse?.data]);
+
+  // Load categories and initialize counts on mount
+  useEffect(() => {
+    // For now, set default categories since getProductCategories doesn't exist
+    setCategories(['Superfoods', 'Herbs']);
+    // Initialize counts - will be updated via events
+    setCartCount(0);
+    setWishlistCount(0);
   }, []);
 
   // Listen for cart and wishlist updates
@@ -160,8 +166,43 @@ const Products = () => {
         return a.name.localeCompare(b.name);
     }
   });
-  
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300">
+          <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading products...</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300">
+          <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="text-center">
+                <p className="text-red-600">Failed to load products</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
 import CartService from '../services/cartService';
-import WishlistService from '../services/wishlistService';
 import ReviewService, { type Review } from '../services/reviewService';
 import ReviewCard from '../components/ui/ReviewCard';
 import ReviewForm from '../components/ui/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
+import { useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -18,8 +18,9 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
+  // Use React Query hooks for wishlist
+  const { data: isInWishlist = false, isLoading: isCheckingWishlist } = useIsInWishlist(id || '');
+  const toggleWishlistMutation = useToggleWishlist();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     ingredients: true,
@@ -43,31 +44,25 @@ const ProductDetail = () => {
   const handleWishlistToggle = async () => {
     if (!id || !product) return;
     
-    setIsUpdatingWishlist(true);
-    try {
-      if (isInWishlist) {
-        await WishlistService.removeFromWishlist(id);
-        setIsInWishlist(false);
-        showNotification({
-          type: 'success',
-          message: `${product.name} removed from wishlist`
-        });
-      } else {
-        await WishlistService.addToWishlist(id);
-        setIsInWishlist(true);
-        showNotification({
-          type: 'success',
-          message: `${product.name} added to wishlist successfully!`
-        });
+    toggleWishlistMutation.mutate(
+      { productId: id, isInWishlist },
+      {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: isInWishlist 
+              ? `${product.name} removed from wishlist`
+              : `${product.name} added to wishlist successfully!`
+          });
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to update wishlist'
+          });
+        }
       }
-    } catch (error) {
-      showNotification({
-        type: 'error',
-        message: 'Failed to update wishlist'
-      });
-    } finally {
-      setIsUpdatingWishlist(false);
-    }
+    );
   };
 
 
@@ -154,8 +149,7 @@ const ProductDetail = () => {
           }
         }
         
-        // Set default wishlist status (will be updated when user interacts with wishlist)
-        setIsInWishlist(false);
+        // Wishlist status is now handled by React Query hooks
           
           // Get suggested products (same category, excluding current product)
           const allProductsResponse = await ProductService.getAllProducts(1, 100);
@@ -185,6 +179,8 @@ const ProductDetail = () => {
     
     loadProductData();
   }, [id]);
+
+  // Wishlist updates are now handled by React Query automatically
 
   // Handle review like update
   const handleReviewLikeUpdate = (reviewId: string, likesCount: number, hasUserLiked: boolean) => {
@@ -407,13 +403,13 @@ const ProductDetail = () => {
                    <div className="absolute top-3 left-3 z-10">
                      <button 
                        onClick={handleWishlistToggle}
-                       disabled={isUpdatingWishlist}
+                       disabled={toggleWishlistMutation.isPending || isCheckingWishlist}
                        className={`p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
                          isInWishlist ? 'text-red-500' : 'text-gray-600'
                        }`}
                        title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                      >
-                       {isUpdatingWishlist ? (
+                       {toggleWishlistMutation.isPending || isCheckingWishlist ? (
                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                        ) : (
                          <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
