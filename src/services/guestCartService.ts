@@ -431,8 +431,9 @@ export class GuestCartService {
 
   /**
    * Migrate guest cart to user account
+   * Returns the merged cart from the API response
    */
-  static async migrateCart(authToken: string): Promise<void> {
+  static async migrateCart(authToken: string): Promise<any> {
     try {
       const sessionId = this.getSessionId();
       
@@ -452,10 +453,17 @@ export class GuestCartService {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      console.log('Guest cart migrated successfully');
+      const responseData = await response.json();
+      console.log('Guest cart migrated successfully, response:', responseData);
+      
+      // Extract merged cart from response
+      const mergedCart = responseData.data;
       
       // Clear guest cart data
       this.clearGuestCartData();
+      
+      // Return merged cart for immediate cache update
+      return mergedCart;
       
     } catch (error) {
       console.error('Failed to migrate guest cart:', error);

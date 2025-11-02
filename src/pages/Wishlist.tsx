@@ -1,20 +1,32 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Heart, ShoppingCart, Plus, Star, Truck, Shield, RotateCcw, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
-import { useWishlist, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
+import { useWishlistWithPolling, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
 import { useNotification } from '../context/NotificationContext';
 
 const Wishlist = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const { showNotification } = useNotification();
 
-  // Use React Query hooks for wishlist data
-  const { data: wishlist = [], isLoading: loading, error } = useWishlist();
+  // Use React Query hooks for wishlist data - ALWAYS fetches fresh on mount
+  const { data: wishlist = [], isLoading: loading, error } = useWishlistWithPolling();
   const removeFromWishlistMutation = useRemoveFromWishlist();
   const clearWishlistMutation = useClearWishlist();
+
+  // Debug: Log wishlist data when it changes
+  useEffect(() => {
+    console.log('Wishlist page - Data:', { 
+      wishlist, 
+      length: wishlist.length,
+      loading,
+      error,
+      items: wishlist,
+      isArray: Array.isArray(wishlist)
+    });
+  }, [wishlist, loading, error]);
 
   const handleRemoveFromWishlist = (productId: string) => {
     removeFromWishlistMutation.mutate(productId, {

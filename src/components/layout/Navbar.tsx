@@ -8,6 +8,7 @@ import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
 import CartCount from '../ui/CartCount';
 import { useWishlistCount } from '../../hooks/queries/useWishlist';
+import { useAppSelector } from '../../store';
 
 const Navbar = () => {
 
@@ -15,8 +16,11 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCartPopup, setShowCartPopup] = useState(false);
-  // Cart count is now handled by TanStack Query
-  const { data: wishlistCount = 0, isLoading: isWishlistLoading } = useWishlistCount();
+  // Use Redux DIRECTLY - no hooks needed, Redux updates trigger re-render automatically
+  const wishlistCount = useAppSelector((state) => state.counter.wishlistCount);
+  
+  // Sync from cache on mount only (background sync)
+  useWishlistCount();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   
@@ -58,6 +62,10 @@ const Navbar = () => {
       setUser(null);
       setAuthenticated(false);
       // Wishlist count will be updated automatically by React Query
+      // Navigate to login page if not already there
+      if (location.pathname !== '/login') {
+        navigate('/login', { replace: true });
+      }
     };
 
     // Add event listeners
@@ -387,11 +395,12 @@ const Navbar = () => {
                         </Link>
 
                         <button
-                          onClick={() => {
-                            AuthService.logout();
+                          onClick={async () => {
+                            await AuthService.logout();
                             setUser(null);
                             setAuthenticated(false);
                             setShowUserMenu(false);
+                            navigate('/login', { replace: true });
                           }}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
@@ -639,11 +648,12 @@ const Navbar = () => {
                             </Link>
 
                             <button 
-                              onClick={() => {
-                                  AuthService.logout();
+                              onClick={async () => {
+                                await AuthService.logout();
                                 setUser(null);
                                 setAuthenticated(false);
                                 setIsOpen(false);
+                                navigate('/login', { replace: true });
                               }}
                               className="flex items-center space-x-3 w-full py-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors rounded-lg"
                             >

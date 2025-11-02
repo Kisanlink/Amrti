@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCartCount } from '../../hooks/queries/useCart';
+import { useAppSelector } from '../../store';
 import { ShoppingCart } from 'lucide-react';
 
 interface CartCountProps {
@@ -8,19 +9,11 @@ interface CartCountProps {
 }
 
 const CartCount: React.FC<CartCountProps> = ({ className = '', showIcon = true }) => {
-  const { data: cartCount, isLoading, error } = useCartCount();
-
-  if (isLoading) {
-    return (
-      <div className={`flex items-center gap-1 ${className}`}>
-        {showIcon && <ShoppingCart className="w-5 h-5" />}
-        <span className="text-sm font-medium">...</span>
-      </div>
-    );
-  }
-
-  // Handle error or no data gracefully
-  const count = cartCount?.item_count || 0;
+  // Use Redux DIRECTLY - no hooks needed, Redux updates trigger re-render automatically
+  const count = useAppSelector((state) => state.counter.cartCount);
+  
+  // Sync from cache on mount only (background sync)
+  useCartCount();
 
   return (
     <div className={`relative flex items-center ${className}`}>

@@ -1,9 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import { useAppDispatch } from './store';
+import { setCartCount, setWishlistCount, resetCounters } from './store/slices/counterSlice';
+import CartService from './services/cartService';
+import WishlistService from './services/wishlistService';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from './lib/queryClient';
+import { updateCartQueries } from './hooks/queries/useCart';
 import Home from './pages/Home';
 import About from './pages/About';
 import Products from './pages/Products';
@@ -11,6 +18,11 @@ import ProductDetail from './pages/ProductDetail';
 import MoringaProduct from './pages/MoringaProduct';
 import Recipes from './pages/Recipes';
 import RecipeDetail from './pages/RecipeDetail';
+import RecipeSubmission from './pages/RecipeSubmission';
+import MySubmissions from './pages/MySubmissions';
+import AdminPendingRecipes from './pages/admin/AdminPendingRecipes';
+import AdminReviewDetail from './pages/admin/AdminReviewDetail';
+import AdminPortal from './pages/admin/AdminPortal';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
@@ -32,13 +44,44 @@ import WelcomeScreen from './components/ui/WelcomeScreen';
 import { useWelcomeScreen } from './hooks/useWelcomeScreen';
 import './index.css';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient(); // Added for cache invalidation
   const { showWelcome, handleWelcomeComplete } = useWelcomeScreen();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalData, setLoginModalData] = useState({
     message: 'Please login to continue',
     redirectUrl: '/'
   });
+
+  // Check if current route is an admin route
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // Initialize counters on app mount
+  useEffect(() => {
+    const initializeCounters = async () => {
+      try {
+        // Initialize cart count
+        const cartCount = await CartService.getItemCount();
+        dispatch(setCartCount(cartCount));
+      } catch (error) {
+        console.warn('Failed to initialize cart count:', error);
+        dispatch(setCartCount(0));
+      }
+
+      try {
+        // Initialize wishlist count
+        const wishlistCount = await WishlistService.getWishlistCount();
+        dispatch(setWishlistCount(wishlistCount));
+      } catch (error) {
+        console.warn('Failed to initialize wishlist count:', error);
+        dispatch(setWishlistCount(0));
+      }
+    };
+
+    initializeCounters();
+  }, [dispatch]);
 
   // Listen for login required events
   useEffect(() => {
@@ -50,62 +93,143 @@ function App() {
       setShowLoginModal(true);
     };
 
+    const handleUserLogin = async () => {
+      // CRITICAL: After login, wait for cart migration and update cache IMMEDIATELY
+      // Migration happens in authService, but we need to wait a bit for it to complete
+      // Then invalidate cache to force refetch with new merged cart
+      setTimeout(async () => {
+        try {
+          // Invalidate cart cache to force refetch with new merged cart
+          queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+          
+          // Also try to get the merged cart directly if migration completed
+          try {
+            const mergedCart = await CartService.getCart();
+            if (mergedCart) {
+              // Update cache immediately with merged cart data using the helper function
+              updateCartQueries(queryClient, mergedCart, dispatch);
+            }
+          } catch (error) {
+            console.warn('Failed to get merged cart after migration:', error);
+            // Fallback: invalidate and let React Query refetch
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+          }
+        } catch (error) {
+          console.error('Error handling cart after login:', error);
+          // Fallback: invalidate cache
+          queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+        }
+      }, 500); // Wait 500ms for migration to complete
+      
+      // Refresh counters after login
+      try {
+        const cartCount = await CartService.getItemCount();
+        dispatch(setCartCount(cartCount));
+      } catch {
+        dispatch(setCartCount(0));
+      }
+      
+      try {
+        const wishlistCount = await WishlistService.getWishlistCount();
+        dispatch(setWishlistCount(wishlistCount));
+      } catch {
+        dispatch(setWishlistCount(0));
+      }
+    };
+
+    const handleUserLogout = async () => {
+      // Reset counters on logout
+      dispatch(resetCounters());
+      
+      // Reinitialize counters for guest
+      try {
+        const cartCount = await CartService.getItemCount();
+        dispatch(setCartCount(cartCount));
+      } catch {
+        dispatch(setCartCount(0));
+      }
+      
+      try {
+        const wishlistCount = await WishlistService.getWishlistCount();
+        dispatch(setWishlistCount(wishlistCount));
+      } catch {
+        dispatch(setWishlistCount(0));
+      }
+    };
+
     window.addEventListener('loginRequired', handleLoginRequired as EventListener);
+    window.addEventListener('userLoggedIn', handleUserLogin);
+    window.addEventListener('userLoggedOut', handleUserLogout);
     
     return () => {
       window.removeEventListener('loginRequired', handleLoginRequired as EventListener);
+      window.removeEventListener('userLoggedIn', handleUserLogin);
+      window.removeEventListener('userLoggedOut', handleUserLogout);
     };
-  }, []);
+  }, [dispatch, queryClient]);
 
+  return (
+    <>
+      <ScrollToTop />
+      {showWelcome && (
+        <WelcomeScreen onComplete={handleWelcomeComplete} duration={4000} />
+      )}
+      <div className="flex flex-col min-h-screen">
+        {!isAdminRoute && <Navbar />}
+        <main className={isAdminRoute ? 'flex-grow' : 'flex-grow'}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/products/moringa101" element={<MoringaProduct />} />
+            <Route path="/moringa" element={<MoringaProduct />} />
+            <Route path="/product/moringa/101" element={<MoringaProduct />} />
+            <Route path="/recipes" element={<Recipes />} />
+            <Route path="/recipes/:id" element={<RecipeDetail />} />
+            <Route path="/recipe-submission" element={<RecipeSubmission />} />
+            <Route path="/my-submissions" element={<MySubmissions />} />
+            <Route path="/admin/portal" element={<AdminPortal />} />
+            <Route path="/admin/reviews" element={<AdminPendingRecipes />} />
+            <Route path="/admin/reviews/:reviewId" element={<AdminReviewDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:orderId" element={<Orders />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/cancellation-refund" element={<CancellationRefund />} />
+          </Routes>
+        </main>
+        {!isAdminRoute && <Footer />}
+      </div>
+      
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message={loginModalData.message}
+        redirectUrl={loginModalData.redirectUrl}
+      />
+    </>
+  );
+}
+
+function App() {
   return (
     <AppProvider>
       <NotificationProvider>
         <Router>
-          <ScrollToTop />
-          {showWelcome && (
-            <WelcomeScreen onComplete={handleWelcomeComplete} duration={4000} />
-          )}
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/products/moringa101" element={<MoringaProduct />} />
-                <Route path="/moringa" element={<MoringaProduct />} />
-                <Route path="/product/moringa/101" element={<MoringaProduct />} />
-                <Route path="/recipes" element={<Recipes />} />
-                <Route path="/recipes/:id" element={<RecipeDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/orders/:orderId" element={<Orders />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/shipping" element={<Shipping />} />
-                <Route path="/returns" element={<Returns />} />
-                <Route path="/cancellation-refund" element={<CancellationRefund />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-          
-          {/* Login Required Modal */}
-          <LoginRequiredModal
-            isOpen={showLoginModal}
-            onClose={() => setShowLoginModal(false)}
-            message={loginModalData.message}
-            redirectUrl={loginModalData.redirectUrl}
-          />
+          <AppContent />
         </Router>
       </NotificationProvider>
     </AppProvider>

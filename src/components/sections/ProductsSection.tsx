@@ -4,8 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAllProducts } from '../../hooks/queries/useProducts';
 import { useWishlist, useToggleWishlist } from '../../hooks/queries/useWishlist';
+import { useAddToCart } from '../../hooks/queries/useCart';
 import type { Product } from '../../context/AppContext';
-import CartService from '../../services/cartService';
 import { useNotification } from '../../context/NotificationContext';
 
 // ProductCard component defined outside to avoid hooks order issues
@@ -18,6 +18,7 @@ interface ProductCardProps {
   showNotification: (notification: any) => void;
   isProductInWishlist: (productId: string) => boolean;
   onWishlistToggle: (productId: string, isInWishlist: boolean) => void;
+  onAddToCart: (productId: string) => void;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -28,7 +29,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   setLoadingStates, 
   showNotification, 
   isProductInWishlist, 
-  onWishlistToggle 
+  onWishlistToggle,
+  onAddToCart
 }) => {
   const discount = Math.round(((product.actual_price - product.price) / product.actual_price) * 100);
   
@@ -131,24 +133,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </button>
             ) : (
               <button
-                onClick={async (e) => {
+                onClick={(e) => {
                   handleButtonClick(e);
-                  setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
-                  try {
-                    await CartService.addItem(product.id, 1);
-                    showNotification({
-                      type: 'success',
-                      message: `${product.name} added to cart successfully!`
-                    });
-                  } catch (err) {
-                    console.error('Failed to add to cart:', err);
-                    showNotification({
-                      type: 'error',
-                      message: 'Failed to add item to cart'
-                    });
-                  } finally {
-                    setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
-                  }
+                  onAddToCart(product.id);
                 }}
                 disabled={loadingStates[`cart-${product.id}`]}
                 className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -197,9 +184,17 @@ const ProductsSection = () => {
   // Use TanStack Query to fetch products
   const { data: productsResponse, isLoading, error } = useAllProducts();
   
-  // Use React Query for wishlist
+  // Use React Query for wishlist - ALWAYS fetches on mount to sync Redux
   const { data: wishlistItems = [] } = useWishlist();
   const toggleWishlistMutation = useToggleWishlist();
+  
+  // Use React Query for cart - instant updates
+  const addToCartMutation = useAddToCart();
+  
+  // Debug: Log wishlist when it changes
+  useEffect(() => {
+    console.log('ProductsSection - Wishlist updated:', wishlistItems);
+  }, [wishlistItems]);
 
   // Process products data
   const products = useMemo(() => {
@@ -239,6 +234,7 @@ const ProductsSection = () => {
 
   // Handle wishlist toggle
   const handleWishlistToggle = useCallback((productId: string, isInWishlist: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: true }));
     toggleWishlistMutation.mutate(
       { productId, isInWishlist },
       {
@@ -249,16 +245,42 @@ const ProductsSection = () => {
               ? 'Product removed from wishlist'
               : 'Product added to wishlist successfully!'
           });
+          setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: false }));
         },
         onError: () => {
           showNotification({
             type: 'error',
             message: 'Failed to update wishlist'
           });
+          setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: false }));
         }
       }
     );
   }, [toggleWishlistMutation, showNotification]);
+  
+  // Handle add to cart - uses React Query mutation for instant updates
+  const handleAddToCart = useCallback((productId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: true }));
+    addToCartMutation.mutate(
+      { productId, quantity: 1 },
+      {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: 'Product added to cart successfully!'
+          });
+          setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: false }));
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to add to cart'
+          });
+          setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: false }));
+        }
+      }
+    );
+  }, [addToCartMutation, showNotification]);
 
   // Memoize the product cards to prevent unnecessary re-renders
   const productCards = useMemo(() => 
@@ -273,8 +295,9 @@ const ProductsSection = () => {
         showNotification={showNotification}
         isProductInWishlist={isProductInWishlist}
         onWishlistToggle={handleWishlistToggle}
+        onAddToCart={handleAddToCart}
       />
-    )), [products, handleCardClick, handleButtonClick, loadingStates, showNotification, isProductInWishlist, handleWishlistToggle]
+    )), [products, handleCardClick, handleButtonClick, loadingStates, showNotification, isProductInWishlist, handleWishlistToggle, handleAddToCart]
   );
 
   // Show loading state

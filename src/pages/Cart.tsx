@@ -3,12 +3,21 @@ import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, Rota
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import CartService from '../services/cartService';
-import type { Cart } from '../services/api';
+import { useCartWithPolling, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useApplyCoupon, useRemoveCoupon, useClearCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
 
 // Coupon Section Component
-const CouponSection = ({ cart, onCouponApplied }: { cart: Cart; onCouponApplied: () => void }) => {
+const CouponSection = ({ 
+  cart, 
+  onCouponApplied,
+  applyCouponMutation,
+  removeCouponMutation
+}: { 
+  cart: any; 
+  onCouponApplied: () => void;
+  applyCouponMutation: ReturnType<typeof useApplyCoupon>;
+  removeCouponMutation: ReturnType<typeof useRemoveCoupon>;
+}) => {
   const [couponCode, setCouponCode] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -33,7 +42,7 @@ const availableCoupons = [
 
     try {
       setIsApplying(true);
-      await CartService.applyCoupon(couponToApply);
+      await applyCouponMutation.mutateAsync(couponToApply);
       setAppliedCoupon(couponToApply);
       setCouponCode('');
       onCouponApplied();
@@ -55,7 +64,7 @@ const availableCoupons = [
   const handleRemoveCoupon = async () => {
     try {
       setIsApplying(true);
-      await CartService.removeCoupon();
+      await removeCouponMutation.mutateAsync();
       setAppliedCoupon(null);
       onCouponApplied();
       showNotification({
@@ -157,60 +166,55 @@ const availableCoupons = [
 const Cart = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
-  const [cart, setCart] = useState<Cart>({ 
-    id: '', 
-    created_at: '', 
-    updated_at: '', 
-    created_by: '', 
-    updated_by: '', 
-    user_id: '', 
-    total_items: 0, 
-    total_price: 0, 
-    discount_amount: 0, 
-    items: [] 
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
-  // Load cart function
-  const loadCart = async () => {
-    try {
-      setLoading(true);
-      const cartData = await CartService.getCart();
-      console.log('Cart data received in component:', cartData);
-      console.log('Cart items with products:', cartData.items);
-      
-      // Ensure items array exists and handle empty cart
-      const cartWithItems = {
-        ...cartData,
-        items: cartData.items || []
-      };
-      
-      setCart(cartWithItems);
-    } catch (err) {
-      console.error('Failed to load cart:', err);
-      setError('Failed to load cart');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use React Query hooks for cart data - updates via cache invalidation from mutations
+  const { data: cartData, isLoading: loading, error: cartError } = useCartWithPolling();
+  const removeFromCartMutation = useRemoveFromCart();
+  const incrementMutation = useIncrementCartItem();
+  const decrementMutation = useDecrementCartItem();
+  const applyCouponMutation = useApplyCoupon();
+  const removeCouponMutation = useRemoveCoupon();
+  const clearCartMutation = useClearCart();
 
-  // Load cart on mount
+  // Normalize cart data for component use - ensure we always have valid data
+  const cart = cartData || null;
+  
+  // Debug: Log when cartData changes
   useEffect(() => {
-    loadCart();
-  }, []);
+    if (cartData) {
+      console.log('Cart page - Received cart data:', cartData);
+    }
+  }, [cartData]);
+
+  const error = cartError ? 'Failed to load cart' : null;
+
+  // Cart page automatically polls every 1 second - no need for event listeners
 
   const handleQuantityChange = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     
     setIsUpdating(productId);
     try {
-      const updatedCart = await CartService.updateItemQuantity(productId, newQuantity);
-      setCart(updatedCart);
+      // Use update mutation
+      const updateMutation = incrementMutation.isPending || decrementMutation.isPending 
+        ? (newQuantity > (cart.items.find((item: any) => item.product_id === productId)?.quantity || 0))
+          ? incrementMutation
+          : decrementMutation
+        : null;
+      
+      // For now, use increment/decrement mutations
+      if (newQuantity > (cart.items.find((item: any) => item.product_id === productId)?.quantity || 0)) {
+        await incrementMutation.mutateAsync(productId);
+      } else {
+        await decrementMutation.mutateAsync(productId);
+      }
     } catch (err) {
       console.error('Failed to update quantity:', err);
-      setError('Failed to update quantity');
+      showNotification({
+        type: 'error',
+        message: 'Failed to update quantity'
+      });
     } finally {
       setIsUpdating(null);
     }
@@ -218,22 +222,34 @@ const Cart = () => {
 
   const handleRemoveItem = async (productId: string) => {
     try {
-      const updatedCart = await CartService.removeItem(productId);
-      setCart(updatedCart);
+      await removeFromCartMutation.mutateAsync(productId);
+      showNotification({
+        type: 'success',
+        message: 'Item removed from cart'
+      });
     } catch (err) {
       console.error('Failed to remove item:', err);
-      setError('Failed to remove item');
+      showNotification({
+        type: 'error',
+        message: 'Failed to remove item'
+      });
     }
   };
 
   const handleClearCart = async () => {
     if (window.confirm('Are you sure you want to clear your cart?')) {
       try {
-        const updatedCart = await CartService.clearCart();
-        setCart(updatedCart);
+        await clearCartMutation.mutateAsync();
+        showNotification({
+          type: 'success',
+          message: 'Cart cleared successfully'
+        });
       } catch (err) {
         console.error('Failed to clear cart:', err);
-        setError('Failed to clear cart');
+        showNotification({
+          type: 'error',
+          message: 'Failed to clear cart'
+        });
       }
     }
   };
@@ -242,7 +258,8 @@ const Cart = () => {
   const shippingCost = 0;
   
   // Calculate total - use discounted_total if available, otherwise calculate manually
-  const total = cart.discounted_total || (cart.total_price + shippingCost - cart.discount_amount);
+  const total = ('discounted_total' in cart ? cart.discounted_total : null) 
+    || ((cart as any).final_price || cart.total_price + shippingCost - (cart.discount_amount || 0));
 
   if (loading) {
     return (
@@ -312,7 +329,22 @@ const Cart = () => {
     );
   }
 
-  if (!cart.items || cart.items.length === 0 || cart.total_items === 0) {
+  // Handle both Cart and GuestCart types - ensure we check data properly
+  const totalItems = cart ? (cart.total_items || (cart as any)?.items_count || 0) : 0;
+  const cartItems = cart ? (cart.items || []) : [];
+  
+  // Debug: Log cart data when it changes
+  useEffect(() => {
+    console.log('Cart page - Cart data updated:', { 
+      hasCart: !!cart,
+      cart, 
+      totalItems, 
+      cartItemsLength: cartItems.length,
+      items: cartItems 
+    });
+  }, [cart, totalItems, cartItems.length, cartItems]);
+  
+  if (!cart || totalItems === 0 || cartItems.length === 0) {
     return (
       <>
         <ScrollToTop />
@@ -388,7 +420,7 @@ const Cart = () => {
             Shopping Cart
           </h1>
           <p className="text-base sm:text-lg text-black-700">
-            {cart.total_items} item{cart.total_items !== 1 ? 's' : ''} in your cart
+            {totalItems} item{totalItems !== 1 ? 's' : ''} in your cart
           </p>
         </div>
 
@@ -408,7 +440,7 @@ const Cart = () => {
               </h2>
 
               <div className="space-y-4 sm:space-y-6">
-                {cart.items.map((item) => (
+                {cartItems.map((item: any) => (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -507,15 +539,15 @@ const Cart = () => {
 
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex justify-between">
-                  <span className="text-black-700 text-sm sm:text-base">Subtotal ({cart.total_items} items)</span>
-                  <span className="font-semibold text-sm sm:text-base">₹{cart.total_price}</span>
+                  <span className="text-black-700 text-sm sm:text-base">Subtotal ({totalItems} items)</span>
+                  <span className="font-semibold text-sm sm:text-base">₹{cart.total_price || (cart as any)?.final_price || 0}</span>
                 </div>
                 
 
-                {cart.discount_amount > 0 && (
+                {((cart.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
                   <div className="flex justify-between text-green-600">
                     <span className="text-sm sm:text-base">Discount</span>
-                    <span className="font-semibold text-sm sm:text-base">-₹{cart.discount_amount}</span>
+                    <span className="font-semibold text-sm sm:text-base">-₹{cart.discount_amount || (cart as any)?.discount_amount || 0}</span>
                   </div>
                 )}
                 
@@ -528,7 +560,12 @@ const Cart = () => {
               </div>
 
               {/* Coupon Section */}
-              <CouponSection cart={cart} onCouponApplied={loadCart} />
+              <CouponSection 
+                cart={cart} 
+                onCouponApplied={() => {}} 
+                applyCouponMutation={applyCouponMutation}
+                removeCouponMutation={removeCouponMutation}
+              />
 
               {/* Checkout Button */}
               <button 

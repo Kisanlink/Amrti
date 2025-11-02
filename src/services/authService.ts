@@ -350,6 +350,124 @@ export class AuthService {
   }
 
   /**
+   * Admin login with email and password
+   */
+  static async adminLogin(email: string, password: string): Promise<AuthUser> {
+    try {
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
+      const API_BASE_URL = 'http://localhost:8082';
+      const requestBody = {
+        email,
+        password
+      };
+
+      console.log('Sending admin login request:', { email });
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to login';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      let data: any;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
+        throw new Error('Failed to parse server response');
+      }
+
+      console.log('Admin login response:', data);
+
+      // Extract token and user data from response based on actual API structure
+      const token = data.data?.tokens?.id_token || data.data?.token || data.token || data.data?.id_token;
+      const userData = data.data?.user || data.user;
+      const userRole = userData?.role || '';
+
+      if (!token) {
+        throw new Error('No authentication token received from server');
+      }
+
+      if (!userData) {
+        throw new Error('No user data received from server');
+      }
+
+      // Store token
+      localStorage.setItem('authToken', token);
+      
+      // Store refresh token if available
+      const refreshToken = data.data?.tokens?.refresh_token || data.data?.refresh_token;
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      // Create AuthUser object from response
+      const authUser: AuthUser = {
+        uid: userData.uid || userData.id || 'admin',
+        phoneNumber: userData.phone_number || null,
+        displayName: userData.name || userData.displayName || email.split('@')[0],
+        isVerified: userData.is_verified !== false || userData.email_verified !== false,
+        photoURL: userData.photo_url || userData.photoURL || null,
+        createdAt: userData.created_at ? new Date(userData.created_at).toISOString() : new Date().toISOString(),
+        lastLoginAt: userData.last_login ? new Date(userData.last_login).toISOString() : new Date().toISOString(),
+        id: userData.id || userData.uid || 'admin',
+        isActive: userData.is_active !== false,
+        isNewUser: userData.is_new_user || false,
+      };
+
+      // Store user data with role
+      const userWithRole = {
+        ...authUser,
+        role: userRole,
+        email: userData.email || email,
+      };
+      localStorage.setItem('user', JSON.stringify(userWithRole));
+      localStorage.setItem('userRole', userRole); // Store role separately for easy access
+      
+      this.currentUser = authUser as any;
+
+      // Dispatch login event with role information
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+        detail: { ...authUser, role: userRole } 
+      }));
+
+      // Migrate guest cart to user account (only for non-admin users)
+      if (userRole !== 'Admin') {
+        try {
+          const { CartService } = await import('./cartService');
+          await CartService.migrateGuestCart();
+        } catch (error) {
+          console.error('Failed to migrate guest cart:', error);
+          // Don't throw error as this shouldn't block the login process
+        }
+      }
+
+      // Return auth user with role
+      return { ...authUser, role: userRole } as any;
+    } catch (error) {
+      console.error('Admin login failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Logout user
    */
   static async logout(): Promise<void> {
@@ -375,8 +493,10 @@ export class AuthService {
       localStorage.removeItem('favorites');
       localStorage.removeItem(this.AUTO_FILL_PROFILE_KEY); // Clear auto-fill flag
       
-      // Dispatch logout event
-      window.dispatchEvent(new CustomEvent('userLoggedOut'));
+      // Dispatch logout event with counter reset
+      window.dispatchEvent(new CustomEvent('userLoggedOut', { 
+        detail: { resetCounters: true } 
+      }));
     } catch (error) {
       console.error('Logout failed:', error);
       // Still clear local data even if API call or Firebase logout fails

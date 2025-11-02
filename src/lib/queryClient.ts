@@ -70,6 +70,21 @@ export const queryKeys = {
       ['recipes', 'category', category, page] as const,
   },
   
+  // Recipe submissions queries
+  recipeSubmissions: {
+    all: ['recipeSubmissions'] as const,
+    mySubmissions: ['recipeSubmissions', 'mySubmissions'] as const,
+    detail: (reviewId: string) => ['recipeSubmissions', 'detail', reviewId] as const,
+  },
+  
+  // Admin recipe reviews queries
+  adminRecipes: {
+    all: ['adminRecipes'] as const,
+    pending: (page: number, pageSize: number, status?: string) => 
+      ['adminRecipes', 'pending', { page, pageSize, status }] as const,
+    detail: (reviewId: string) => ['adminRecipes', 'detail', reviewId] as const,
+  },
+  
   // Wishlist queries
   wishlist: {
     all: ['wishlist'] as const,

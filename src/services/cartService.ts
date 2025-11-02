@@ -28,30 +28,35 @@ export class CartService {
 
   /**
    * Migrate guest cart to user account when user logs in
+   * Returns the merged cart from the API response
    */
-  static async migrateGuestCart(): Promise<void> {
+  static async migrateGuestCart(): Promise<any> {
     try {
       const isAuth = await this.isAuthenticated();
       if (!isAuth) {
         console.log('User not authenticated, no migration needed');
-        return;
+        return null;
       }
 
       const guestSessionId = GuestCartService.getCurrentSessionId();
       if (!guestSessionId) {
         console.log('No guest cart to migrate');
-        return;
+        return null;
       }
 
       console.log('Migrating guest cart to user account...');
       const token = await AuthService.getIdToken();
       if (token) {
-        await GuestCartService.migrateCart(token);
-        console.log('Guest cart migrated successfully');
+        const mergedCart = await GuestCartService.migrateCart(token);
+        console.log('Guest cart migrated successfully, merged cart:', mergedCart);
+        // Return merged cart for immediate cache update
+        return mergedCart;
       }
+      return null;
     } catch (error) {
       console.error('Failed to migrate guest cart:', error);
       // Don't throw error as this shouldn't block the login process
+      return null;
     }
   }
 

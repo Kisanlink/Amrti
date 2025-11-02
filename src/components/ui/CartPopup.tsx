@@ -117,7 +117,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
 
   // Handle checkout navigation
   const handleCheckout = () => {
-    if (!cart || cart.items.length === 0) {
+    const totalItems = cart?.total_items || (cart as any)?.items_count || 0;
+    const cartItems = cart?.items || [];
+    
+    if (!cart || totalItems === 0 || cartItems.length === 0) {
       showNotification({
         type: 'error',
         message: 'Your cart is empty'
@@ -169,8 +172,11 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     );
   }
 
-  // Empty cart state
-  if (!cart || cart.total_items === 0) {
+  // Empty cart state - handle both Cart and GuestCart types
+  const totalItems = cart?.total_items || (cart as any)?.items_count || 0;
+  const cartItems = cart?.items || [];
+  
+  if (!cart || totalItems === 0 || cartItems.length === 0) {
     return createPortal(
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -210,7 +216,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {cart.items.map((item) => (
+            {cartItems.map((item: any) => (
               <div key={item.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
                        {/* Product Image */}
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -337,18 +343,18 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         <div className="p-4 border-t border-gray-200">
           <div className="space-y-2 mb-4">
             <div className="flex justify-between">
-              <span className="text-gray-600 text-sm">Subtotal ({cart.total_items} items)</span>
-              <span className="font-medium text-sm">₹{cart.total_price}</span>
+              <span className="text-gray-600 text-sm">Subtotal ({totalItems} items)</span>
+              <span className="font-medium text-sm">₹{cart.total_price || (cart as any)?.final_price || 0}</span>
                    </div>
-            {cart.discount_amount > 0 && (
+            {((cart.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
               <div className="flex justify-between text-green-600 text-sm">
                 <span>Discount</span>
-                <span>-₹{cart.discount_amount}</span>
+                <span>-₹{cart.discount_amount || (cart as any)?.discount_amount || 0}</span>
                  </div>
             )}
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
-              <span>₹{'discounted_total' in cart ? cart.discounted_total : cart.total_price}</span>
+              <span>₹{'discounted_total' in cart ? cart.discounted_total : ((cart as any)?.final_price || cart.total_price || 0)}</span>
                    </div>
                  </div>
 

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, Truck, Shield, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, Truck, Shield, RotateCcw, Plus, FileText } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import RecipeService from '../services/recipeService';
@@ -263,10 +263,31 @@ const Recipes = () => {
                 Moringa Recipes
               </span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-black-700 max-w-3xl mx-auto leading-relaxed px-2 sm:px-4 lg:px-0">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-black-700 max-w-3xl mx-auto leading-relaxed px-2 sm:px-4 lg:px-0 mb-6 sm:mb-8">
               Discover amazing recipes that showcase the incredible benefits of moringa. 
               From smoothies to desserts, these recipes are both nutritious and delicious.
             </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+            >
+              <button
+                onClick={() => navigate('/recipe-submission')}
+                className="inline-flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-lg hover:shadow-xl font-heading font-semibold text-sm sm:text-base"
+              >
+                <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>Submit Your Recipe</span>
+              </button>
+              <button
+                onClick={() => navigate('/my-submissions')}
+                className="inline-flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-green-600 border-2 border-green-600 rounded-lg hover:bg-green-50 transition-colors duration-300 shadow-lg hover:shadow-xl font-heading font-semibold text-sm sm:text-base"
+              >
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>My Submissions</span>
+              </button>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -543,6 +564,22 @@ const Recipes = () => {
                       <p className="text-xs sm:text-sm text-black-600">Good for you</p>
                     </div>
                   </div>
+                </div>
+                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                  <button
+                    onClick={() => navigate('/recipe-submission')}
+                    className="inline-flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-lg hover:shadow-xl font-heading font-semibold text-sm sm:text-base"
+                  >
+                    <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span>Share Your Recipe</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/my-submissions')}
+                    className="inline-flex items-center space-x-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-green-600 border-2 border-green-600 rounded-lg hover:bg-green-50 transition-colors duration-300 shadow-lg hover:shadow-xl font-heading font-semibold text-sm sm:text-base"
+                  >
+                    <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span>My Submissions</span>
+                  </button>
                 </div>
               </div>
             </div>

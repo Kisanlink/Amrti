@@ -4,12 +4,12 @@ import { Link, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
-import CartService from '../services/cartService';
 import ReviewService, { type Review } from '../services/reviewService';
 import ReviewCard from '../components/ui/ReviewCard';
 import ReviewForm from '../components/ui/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
 import { useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
+import { useAddToCart } from '../hooks/queries/useCart';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,10 +17,11 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   // Use React Query hooks for wishlist
   const { data: isInWishlist = false, isLoading: isCheckingWishlist } = useIsInWishlist(id || '');
   const toggleWishlistMutation = useToggleWishlist();
+  // Use React Query hooks for cart
+  const addToCartMutation = useAddToCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     ingredients: true,
@@ -551,28 +552,29 @@ const ProductDetail = () => {
                   </button>
                 ) : (
                 <button 
-                  onClick={async () => {
-                    setIsAddingToCart(true);
-                    try {
-                      await CartService.addItem(product.id, quantity);
-                      showNotification({
-                        type: 'success',
-                        message: `${product.name} added to cart successfully!`
-                      });
-                    } catch (err) {
-                      console.error('Failed to add to cart:', err);
-                      showNotification({
-                        type: 'error',
-                        message: 'Failed to add item to cart'
-                      });
-                    } finally {
-                      setIsAddingToCart(false);
-                    }
+                  onClick={() => {
+                    addToCartMutation.mutate(
+                      { productId: product.id, quantity },
+                      {
+                        onSuccess: () => {
+                          showNotification({
+                            type: 'success',
+                            message: `${product.name} added to cart successfully!`
+                          });
+                        },
+                        onError: () => {
+                          showNotification({
+                            type: 'error',
+                            message: 'Failed to add item to cart'
+                          });
+                        }
+                      }
+                    );
                   }}
-                  disabled={isAddingToCart}
+                  disabled={addToCartMutation.isPending}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-semibold py-2.5 sm:py-3 lg:py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  {isAddingToCart ? (
+                  {addToCartMutation.isPending ? (
                     <>
                       <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Adding...</span>
