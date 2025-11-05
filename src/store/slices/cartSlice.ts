@@ -355,3 +355,6 @@ const cartSlice = createSlice({
 
 export const { clearError, setGuestMode, setAuthenticatedMode, clearCartState } = cartSlice.actions;
 export default cartSlice.reducer;
+
+
+
