@@ -199,6 +199,34 @@ export const recipesApi = {
 
 // ==================== PRODUCTS API ====================
 
+// Raw API response structure
+export interface ProductsApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    products: Product[];
+    pagination: {
+      page: number;
+      per_page: number;
+      total: number;
+      total_pages: number;
+      has_next: boolean;
+      has_prev: boolean;
+    };
+    message?: string;
+  };
+  timestamp: string;
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+// Transformed response structure for internal use
 export interface ProductsResponse {
   success: boolean;
   message: string;
@@ -223,8 +251,8 @@ export interface ProductDetailResponse {
 
 export const productsApi = {
   // Get all products with pagination
-  getProducts: async (page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products?page=${page}&per_page=${per_page}`);
+  getProducts: async (page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products?page=${page}&per_page=${per_page}`);
   },
 
   // Get product by ID
@@ -233,13 +261,13 @@ export const productsApi = {
   },
 
   // Get products by category
-  getProductsByCategory: async (category: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products/category/${category}?page=${page}&per_page=${per_page}`);
+  getProductsByCategory: async (category: string, page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products/category/${category}?page=${page}&per_page=${per_page}`);
   },
 
   // Search products
-  searchProducts: async (search_term: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products/search?q=${encodeURIComponent(search_term)}&page=${page}&per_page=${per_page}`);
+  searchProducts: async (search_term: string, page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products/search?q=${encodeURIComponent(search_term)}&page=${page}&per_page=${per_page}`);
   },
 };
 
@@ -606,13 +634,6 @@ export interface ProfileImageResponse {
 }
 
 export const profileApi = {
-  // Auto-fill profile (first time setup)
-  autoFillProfile: async (): Promise<ProfileResponse> => {
-    return apiRequest<ProfileResponse>('/profiles/auto', {
-      method: 'POST',
-    });
-  },
-
   // Get user profile
   getProfile: async (): Promise<ProfileResponse> => {
     return apiRequest<ProfileResponse>('/profiles');

@@ -19,8 +19,14 @@ const Navbar = () => {
   // Use Redux DIRECTLY - no hooks needed, Redux updates trigger re-render automatically
   const wishlistCount = useAppSelector((state) => state.counter.wishlistCount);
   
+  // Use Redux auth state for reliable authentication status
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  
   // Sync from cache on mount only (background sync)
   useWishlistCount();
+  
+  // Keep local state as fallback for immediate updates
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   
@@ -36,29 +42,70 @@ const Navbar = () => {
   const { showNotification } = useNotification();
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Load user and authentication state on mount
+  // Sync Redux auth state with local state - this is the primary source of truth
   useEffect(() => {
-    const loadInitialData = async () => {
+    if (authUser || isAuthenticated) {
+      console.log('Navbar: Syncing from Redux', { authUser, isAuthenticated });
+      setUser(authUser);
+      setAuthenticated(isAuthenticated);
+    } else {
+      // If Redux doesn't have user, try to get from AuthService (fallback)
       const currentUser = AuthService.getCurrentUser();
       const isAuth = AuthService.isAuthenticated();
-      setUser(currentUser);
-      setAuthenticated(isAuth);
-      
-      // Wishlist count is now handled by React Query
-    };
-    
-    loadInitialData();
-  }, []);
+      if (currentUser && isAuth) {
+        console.log('Navbar: Syncing from AuthService fallback', { currentUser, isAuth });
+        setUser(currentUser);
+        setAuthenticated(isAuth);
+      }
+    }
+  }, [authUser, isAuthenticated]);
 
-  // Listen to authentication state changes
-  useEffect(() => {
-    const handleUserLogin = (event: CustomEvent) => {
-      const currentUser = AuthService.getCurrentUser();
-    setUser(currentUser);
+  // Refresh auth state when user menu is opened
+  const handleUserMenuToggle = () => {
+    // Refresh auth state before showing menu
+    const currentUser = authUser || AuthService.getCurrentUser();
+    const isAuth = isAuthenticated || AuthService.isAuthenticated();
+    
+    if (currentUser) {
+      setUser(currentUser);
       setAuthenticated(true);
+    } else {
+      setUser(null);
+      setAuthenticated(false);
+    }
+    
+    setShowUserMenu(!showUserMenu);
+  };
+
+  // Listen to authentication state changes (backup to Redux)
+  useEffect(() => {
+    const handleUserLogin = (event: Event) => {
+      // Get user from event detail if available, otherwise from AuthService
+      const customEvent = event as CustomEvent<AuthUser>;
+      const eventUser = customEvent.detail;
+      
+      console.log('Navbar: User logged in event received', { eventUser, authUser, isAuthenticated });
+      
+      // Update local state immediately for UI responsiveness
+      const updateAuthState = () => {
+        const currentUser = eventUser || AuthService.getCurrentUser();
+        const isAuth = currentUser ? true : AuthService.isAuthenticated();
+        
+        console.log('Navbar: Updating auth state', { currentUser, isAuth });
+        setUser(currentUser);
+        setAuthenticated(isAuth);
+      };
+      
+      // Update immediately
+      updateAuthState();
+      
+      // Also update after a short delay to catch any async updates
+      setTimeout(updateAuthState, 100);
+      setTimeout(updateAuthState, 500);
     };
 
     const handleUserLogout = () => {
+      console.log('Navbar: User logged out');
       setUser(null);
       setAuthenticated(false);
       // Wishlist count will be updated automatically by React Query
@@ -69,15 +116,15 @@ const Navbar = () => {
     };
 
     // Add event listeners
-    window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
+    window.addEventListener('userLoggedIn', handleUserLogin);
     window.addEventListener('userLoggedOut', handleUserLogout);
 
     // Cleanup
     return () => {
-      window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
+      window.removeEventListener('userLoggedIn', handleUserLogin);
       window.removeEventListener('userLoggedOut', handleUserLogout);
     };
-  }, []);
+  }, [location.pathname, navigate]);
 
   // Wishlist updates are now handled by React Query automatically
 
@@ -357,7 +404,7 @@ const Navbar = () => {
             {/* User Menu */}
             <div className="relative user-menu">
               <button 
-                onClick={() => setShowUserMenu(!showUserMenu)}
+                onClick={handleUserMenuToggle}
                 className="p-2 text-russet-700 hover:text-green-600 transition-colors"
               >
                 <User size={20} />
@@ -372,11 +419,11 @@ const Navbar = () => {
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-black-200 py-2 z-50"
                   >
-                    {authenticated ? (
+                    {(authenticated || isAuthenticated) ? (
                       <>
                         <div className="px-4 py-2 border-b border-black-200">
-                          <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
-                          <p className="text-xs text-black-600">{user?.phoneNumber}</p>
+                          <p className="text-sm font-semibold text-black-900">{(user || authUser)?.displayName || 'User'}</p>
+                          <p className="text-xs text-black-600">{(user || authUser)?.phoneNumber}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -621,12 +668,12 @@ const Navbar = () => {
                       </button>
                   
                       {/* User Account */}
-                      {authenticated ? (
+                      {(authenticated || isAuthenticated) ? (
                         <>
                           <div className="pt-4 border-t border-gray-200">
                             <div className="px-3 py-3 bg-gray-50 rounded-lg mb-2">
-                              <p className="text-sm font-semibold text-gray-900">{user?.displayName || 'User'}</p>
-                              <p className="text-xs text-gray-600">{user?.phoneNumber}</p>
+                              <p className="text-sm font-semibold text-gray-900">{(user || authUser)?.displayName || 'User'}</p>
+                              <p className="text-xs text-gray-600">{(user || authUser)?.phoneNumber}</p>
                             </div>
                             
                             <Link 

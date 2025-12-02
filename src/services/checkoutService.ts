@@ -100,6 +100,16 @@ export interface CreateOrderResponse {
   checkout_url: string;
 }
 
+export interface MagicCheckoutOrderResponse {
+  order_id: string;
+  amount: number;
+  currency: string;
+  key_id: string;
+  receipt: string;
+  has_saved_address: boolean;
+  saved_address?: string;
+}
+
 export interface PaymentVerificationRequest {
   razorpay_payment_id: string;
   razorpay_order_id: string;
@@ -172,6 +182,49 @@ export const checkoutApi = {
       method: 'POST',
       body: JSON.stringify(verificationData),
     });
+  },
+
+  // Create Magic Checkout order
+  createMagicCheckoutOrder: async (): Promise<MagicCheckoutOrderResponse> => {
+    // Get session ID for guest checkout if not authenticated
+    const { default: AuthService } = await import('./authService');
+    const isAuthenticated = AuthService.isAuthenticated();
+    
+    // Use the same API base URL as apiRequest
+    const API_BASE_URL = 'http://localhost:8082';
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (isAuthenticated) {
+      const token = await AuthService.getIdToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        throw new Error('Authentication token not available. Please login again.');
+      }
+    } else {
+      // For guest checkout, use session ID
+      const sessionId = localStorage.getItem('sessionId') || sessionStorage.getItem('sessionId');
+      if (sessionId) {
+        headers['X-Session-ID'] = sessionId;
+      } else {
+        throw new Error('Please login or provide session ID for guest checkout');
+      }
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/v1/payments/magic-checkout/create-order`, {
+      method: 'POST',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+      const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
   },
 };
 

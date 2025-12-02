@@ -67,6 +67,44 @@ const ProductDetail = () => {
   };
 
 
+  // Helper function to get all image URLs from the product
+  const getAllImageUrls = (product: any): string[] => {
+    if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
+      // Filter out inactive images and ensure image_url exists
+      const activeImages = product.images.filter((img: any) => 
+        img.is_active !== false && img.image_url && img.image_url.trim() !== ''
+      );
+      
+      // Sort images by sort_order, with is_primary first
+      const sortedImages = [...activeImages].sort((a, b) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      
+      const imageUrls = sortedImages.map((img: any) => img.image_url);
+      console.log('All images from API:', {
+        total: product.images.length,
+        active: activeImages.length,
+        rendered: imageUrls.length,
+        urls: imageUrls
+      });
+      
+      return imageUrls;
+    }
+    // Fallback to old structure for backward compatibility
+    const fallbackUrls = [
+      product?.image_url,
+      product?.image_url_1,
+      product?.image_url_2,
+      product?.image_url_3,
+      product?.image_url_4
+    ].filter(url => url && url.trim() !== '');
+    
+    console.log('Using fallback image structure:', fallbackUrls);
+    return fallbackUrls;
+  };
+
   // Auto-scroll functionality
   useEffect(() => {
     if (!product || !isAutoScroll) {
@@ -77,13 +115,7 @@ const ProductDetail = () => {
       return;
     }
 
-    const allImageUrls = [
-      product.image_url,
-      product.image_url_1,
-      product.image_url_2,
-      product.image_url_3,
-      product.image_url_4
-    ].filter(url => url && url.trim() !== '');
+    const allImageUrls = getAllImageUrls(product);
 
     if (allImageUrls.length <= 1) {
       return; // No need to auto-scroll if there's only one image
@@ -238,8 +270,14 @@ const ProductDetail = () => {
   }
 
   // Fixed 100g variant
-  const currentVariant = { size: '100g', price: product.price, originalPrice: product.originalPrice };
-  const discount = Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100);
+  const currentVariant = { 
+    size: '100g', 
+    price: product.price, 
+    originalPrice: product.actual_price || product.originalPrice || product.price 
+  };
+  const discount = currentVariant.originalPrice > currentVariant.price 
+    ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100)
+    : 0;
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -333,13 +371,7 @@ const ProductDetail = () => {
                 >
                 {(() => {
                   // Get all available image URLs
-                  const allImageUrls = [
-                    product.image_url,
-                    product.image_url_1,
-                    product.image_url_2,
-                    product.image_url_3,
-                    product.image_url_4
-                  ].filter(url => url && url.trim() !== '');
+                  const allImageUrls = getAllImageUrls(product);
                   
                   // Ensure we have at least one image
                   if (allImageUrls.length === 0) {
@@ -431,13 +463,7 @@ const ProductDetail = () => {
                 <div className="flex gap-3 overflow-x-auto pb-2">
                    {/* Create array of all available image URLs */}
                     {(() => {
-                      const allImageUrls = [
-                        product.image_url,
-                        product.image_url_1,
-                        product.image_url_2,
-                        product.image_url_3,
-                        product.image_url_4
-                      ].filter(url => url && url.trim() !== '');
+                      const allImageUrls = getAllImageUrls(product);
                       
                       // If no images available, don't show thumbnails
                       if (allImageUrls.length === 0) {
@@ -495,7 +521,7 @@ const ProductDetail = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-black-600 text-xs sm:text-sm">({product.reviews} reviews)</span>
+                  <span className="text-black-600 text-xs sm:text-sm">({product.review_count || product.reviews || 0} reviews)</span>
                 </div>
               </div>
 
@@ -543,7 +569,12 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-1 sm:space-y-2">
-                {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                {(() => {
+                  const stockStatus = product.inventory?.stock_status || product.stock_status || 'In Stock';
+                  const availableStock = product.inventory?.available_stock ?? product.inventory?.current_stock ?? product.stock ?? 0;
+                  const isOutOfStock = stockStatus === "Coming Soon" || stockStatus === "Comming Soon" || availableStock === 0;
+                  
+                  return isOutOfStock ? (
                   <button 
                     disabled
                     className="w-full bg-gray-400 text-white font-heading font-semibold py-2.5 sm:py-3 lg:py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 cursor-not-allowed text-sm sm:text-base"
@@ -586,7 +617,8 @@ const ProductDetail = () => {
                     </>
                   )}
                 </button>
-                )}
+                );
+                })()}
               </div>
             </div>
           </div>
@@ -794,11 +826,14 @@ const ProductDetail = () => {
                               e.currentTarget.parentNode?.appendChild(fallbackDiv);
                             }}
                           />
-                          {suggestedProduct.originalPrice > suggestedProduct.price && (
+                          {(() => {
+                            const originalPrice = suggestedProduct.actual_price || suggestedProduct.originalPrice || suggestedProduct.price;
+                            return originalPrice > suggestedProduct.price && (
                               <div className="absolute top-2 left-2 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                              {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
-                            </div>
-                          )}
+                                {Math.round(((originalPrice - suggestedProduct.price) / originalPrice) * 100)}% OFF
+                              </div>
+                            );
+                          })()}
                             <div className="absolute top-2 right-2 bg-beige-300/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-semibold text-black-700">
                             {suggestedProduct.category}
                           </div>
@@ -818,20 +853,26 @@ const ProductDetail = () => {
                                 />
                               ))}
                               </div>
-                              <span className="text-xs text-black-600">({suggestedProduct.reviews})</span>
+                              <span className="text-xs text-black-600">({suggestedProduct.review_count || suggestedProduct.reviews || 0})</span>
                           </div>
 
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-1">
                                 <span className="font-bold text-green-600 text-sm">₹{suggestedProduct.price}</span>
-                              {suggestedProduct.originalPrice > suggestedProduct.price && (
-                                  <span className="text-xs text-black-500 line-through">₹{suggestedProduct.originalPrice}</span>
-                              )}
+                              {(() => {
+                                const originalPrice = suggestedProduct.actual_price || suggestedProduct.originalPrice;
+                                return originalPrice && originalPrice > suggestedProduct.price && (
+                                  <span className="text-xs text-black-500 line-through">₹{originalPrice}</span>
+                                );
+                              })()}
                             </div>
                               <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
-                              suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              (() => {
+                                const stockStatus = suggestedProduct.inventory?.stock_status || suggestedProduct.stock_status || 'In Stock';
+                                return stockStatus === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                              })()
                             }`}>
-                              {suggestedProduct.stock_status}
+                              {suggestedProduct.inventory?.stock_status || suggestedProduct.stock_status || 'In Stock'}
                             </span>
                           </div>
 

@@ -99,9 +99,26 @@ export const getAuth = async (): Promise<any> => {
 
 // Initialize reCAPTCHA for phone authentication (updated to match backend expectations)
 export const initializeRecaptcha = async (): Promise<void> => {
-  if (!recaptchaVerifier) {
-    const firebase = await getFirebase();
-    
+  // Clear existing verifier if it exists
+  if (recaptchaVerifier) {
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {
+      console.warn('Error clearing existing reCAPTCHA:', e);
+    }
+    recaptchaVerifier = null;
+  }
+
+  // Ensure Firebase is initialized first
+  const firebase = await getFirebase();
+  
+  // Check if the DOM element exists
+  const recaptchaContainer = document.getElementById('recaptcha-container');
+  if (!recaptchaContainer) {
+    throw new Error('reCAPTCHA container element not found. Please ensure the form is properly rendered.');
+  }
+  
+  try {
     recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
       'size': 'invisible',
       'callback': (response: any) => {
@@ -114,12 +131,20 @@ export const initializeRecaptcha = async (): Promise<void> => {
     });
     
     // Render the reCAPTCHA
-    recaptchaVerifier.render().then((widgetId: any) => {
-      console.log('reCAPTCHA rendered with widget ID:', widgetId);
-    }).catch((error: any) => {
-      console.error('Error rendering reCAPTCHA:', error);
-      throw new Error('Failed to load reCAPTCHA. Please refresh the page.');
-    });
+    await recaptchaVerifier.render();
+    console.log('reCAPTCHA rendered successfully');
+  } catch (error: any) {
+    console.error('Error initializing reCAPTCHA:', error);
+    recaptchaVerifier = null;
+    
+    // Provide more specific error messages
+    if (error.message && error.message.includes('container')) {
+      throw new Error('reCAPTCHA container not found. Please refresh the page.');
+    } else if (error.message && error.message.includes('script')) {
+      throw new Error('reCAPTCHA script not loaded. Please refresh the page.');
+    } else {
+      throw new Error(`Failed to initialize reCAPTCHA: ${error.message || 'Unknown error'}`);
+    }
   }
 };
 

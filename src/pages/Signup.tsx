@@ -195,6 +195,9 @@ const Signup = () => {
               </p>
             </div>
 
+                {/* reCAPTCHA Container */}
+                <div id="recaptcha-container" className="flex justify-center my-4"></div>
+
             <div className="flex items-start">
               <input
                 id="terms"

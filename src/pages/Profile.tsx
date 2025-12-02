@@ -138,22 +138,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleAutoFill = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const profileData = await ProfileService.autoFillProfile();
-      setProfile(profileData);
-      showNotification({ type: 'success', message: 'Profile auto-filled successfully!' });
-      await loadProfile(); // Reload to get updated data
-    } catch (err) {
-      console.error('Failed to auto-fill profile:', err);
-      setError('Failed to auto-fill profile. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -206,12 +190,6 @@ const Profile: React.FC = () => {
         <div className="text-center">
           <div className="text-gray-500 text-xl mb-4">👤</div>
           <p className="text-gray-600 mb-4">No profile found</p>
-          <button
-            onClick={handleAutoFill}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Create Profile
-          </button>
         </div>
       </div>
     );

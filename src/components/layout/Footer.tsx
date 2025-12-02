@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { productsApi } from '../../services/api';
+import ProductService from '../../services/productService';
 import RecipeService from '../../services/recipeService';
 
 const Footer = () => {
@@ -35,19 +35,46 @@ const Footer = () => {
       try {
         setLoading(true);
         
-        // Fetch products
-        const productsResponse = await productsApi.getProducts(1, 20);
-        if (productsResponse.data && Array.isArray(productsResponse.data)) {
+        // Fetch products using ProductService which handles response transformation
+        const productsResponse = await ProductService.getAllProducts(1, 20);
+        console.log('Footer - ProductService Response:', productsResponse);
+        console.log('Footer - Products data:', productsResponse.data);
+        console.log('Footer - Is data array?', Array.isArray(productsResponse.data));
+        console.log('Footer - Data length:', productsResponse.data?.length);
+        
+        // ProductService.getAllProducts() returns ProductsResponse with data as an array
+        if (productsResponse.data && Array.isArray(productsResponse.data) && productsResponse.data.length > 0) {
+          console.log('Footer - Setting products:', productsResponse.data.length);
           setProducts(productsResponse.data);
+        } else {
+          console.warn('Footer - No products in response:', {
+            hasData: !!productsResponse.data,
+            isArray: Array.isArray(productsResponse.data),
+            length: productsResponse.data?.length,
+            response: productsResponse,
+          });
+          setProducts([]);
         }
         
         // Fetch recipes
-        const recipesResponse = await RecipeService.getAllRecipes(1, 10);
-        if (recipesResponse.recipes && Array.isArray(recipesResponse.recipes)) {
-          setRecipes(recipesResponse.recipes);
+        try {
+          const recipesResponse = await RecipeService.getAllRecipes(1, 10);
+          if (recipesResponse.recipes && Array.isArray(recipesResponse.recipes)) {
+            setRecipes(recipesResponse.recipes);
+          } else if (recipesResponse && Array.isArray(recipesResponse)) {
+            setRecipes(recipesResponse);
+          }
+        } catch (recipeError) {
+          console.error('Failed to fetch recipes for footer:', recipeError);
+          setRecipes([]);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch data for footer:', error);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
+        // Set empty arrays on error to prevent UI issues
+        setProducts([]);
+        setRecipes([]);
       } finally {
         setLoading(false);
       }
@@ -131,10 +158,10 @@ const Footer = () => {
                     <div key={index} className="h-4 bg-gray-700 rounded animate-pulse"></div>
                   ))}
                 </div>
-              ) : (
+              ) : products.length > 0 ? (
                 <ul className="space-y-2">
                   {products.slice(0, 8).map((product) => (
-                    <li key={product.id}>
+                    <li key={product.id || product.name}>
                       <Link
                         to={`/product/${product.id}`}
                         className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
@@ -154,6 +181,11 @@ const Footer = () => {
                     </li>
                   )}
                 </ul>
+              ) : (
+                <div>
+                  <p className="text-gray-400 text-sm">No products available</p>
+                  <p className="text-gray-500 text-xs mt-1">Debug: products.length = {products.length}, loading = {loading ? 'true' : 'false'}</p>
+                </div>
               )}
             </motion.div>
 

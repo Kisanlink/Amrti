@@ -127,9 +127,21 @@ export class CartService {
               console.log(`Fetching product details for ${item.product_id}...`);
               const product = await ProductService.getProductById(item.product_id);
               console.log(`Product details for ${item.product_id}:`, product);
+              
+              // Ensure product has image_url for backward compatibility
+              let enrichedProduct: any = { ...product };
+              
+              // If product has images array but no image_url, extract from images
+              if (!enrichedProduct.image_url && enrichedProduct.images && Array.isArray(enrichedProduct.images)) {
+                const primaryImage = enrichedProduct.images.find((img: any) => img.is_primary) || enrichedProduct.images[0];
+                if (primaryImage?.image_url) {
+                  enrichedProduct.image_url = primaryImage.image_url;
+                }
+              }
+              
               return {
                 ...item,
-                product
+                product: enrichedProduct
               };
             } catch (error) {
               console.error(`Failed to fetch product ${item.product_id}:`, error);

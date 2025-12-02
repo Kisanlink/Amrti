@@ -52,30 +52,6 @@ export interface PhoneVerifyResponse {
 
 export class AuthService {
   private static currentUser: FirebaseUser | null = null;
-  private static readonly AUTO_FILL_PROFILE_KEY = 'autoFillProfileCalled';
-
-  /**
-   * Call auto-fill profile API only once per user
-   */
-  private static async callAutoFillProfile(): Promise<void> {
-    try {
-      // Check if we've already called this API for this user
-      const hasCalledAutoFill = localStorage.getItem(this.AUTO_FILL_PROFILE_KEY);
-      if (hasCalledAutoFill) {
-        return; // Already called, skip
-      }
-
-      // TODO: Implement auto-fill profile API when available
-      console.log('Auto-fill profile API not yet implemented');
-      
-      // Mark as called to prevent future calls
-      localStorage.setItem(this.AUTO_FILL_PROFILE_KEY, 'true');
-      
-    } catch (error) {
-      console.error('Failed to call auto-fill profile API:', error);
-      // Don't throw error to avoid breaking the login flow
-    }
-  }
 
   /**
    * Initialize Firebase authentication
@@ -126,11 +102,37 @@ export class AuthService {
         throw new Error('Please enter a valid phone number');
       }
 
-      // Get reCAPTCHA token (exact same as working HTML)
-      console.log('Getting reCAPTCHA token...');
+      // Initialize reCAPTCHA first
+      console.log('Initializing reCAPTCHA...');
       
-      // Get reCAPTCHA token (reCAPTCHA should already be initialized)
-      const recaptchaToken = await getRecaptchaToken();
+      // Check if the recaptcha container exists
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        throw new Error('reCAPTCHA container not found. Please ensure the form is properly rendered.');
+      }
+      
+      try {
+        await initializeRecaptcha();
+        console.log('reCAPTCHA initialized successfully');
+      } catch (initError: any) {
+        console.error('reCAPTCHA initialization error:', initError);
+        throw new Error(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
+      }
+      
+      // Wait a moment for reCAPTCHA to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get reCAPTCHA token
+      console.log('Getting reCAPTCHA token...');
+      let recaptchaToken: string;
+      try {
+        recaptchaToken = await getRecaptchaToken();
+        console.log('reCAPTCHA token obtained successfully');
+      } catch (tokenError: any) {
+        console.error('reCAPTCHA token error:', tokenError);
+        clearRecaptcha(); // Reset verifier
+        throw new Error(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
+      }
 
       const API_BASE_URL = 'http://localhost:8082';
       const requestBody = {
@@ -268,9 +270,6 @@ export class AuthService {
       console.log('Dispatching userLoggedIn event with user:', authUser);
       window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
       
-      // Call auto-fill profile API (only once)
-      this.callAutoFillProfile();
-      
       // Migrate guest cart to user account
       try {
         const { CartService } = await import('./cartService');
@@ -329,9 +328,6 @@ export class AuthService {
       } catch (error) {
         console.warn('Failed to store auth token:', error);
       }
-      
-      // Call auto-fill profile API (only once)
-      this.callAutoFillProfile();
       
       // Migrate guest cart to user account
       try {
@@ -491,7 +487,6 @@ export class AuthService {
       localStorage.removeItem('authToken');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
-      localStorage.removeItem(this.AUTO_FILL_PROFILE_KEY); // Clear auto-fill flag
       
       // Dispatch logout event with counter reset
       window.dispatchEvent(new CustomEvent('userLoggedOut', { 
@@ -504,7 +499,6 @@ export class AuthService {
       localStorage.removeItem('authToken');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
-      localStorage.removeItem(this.AUTO_FILL_PROFILE_KEY); // Clear auto-fill flag
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
       throw error;
     }

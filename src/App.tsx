@@ -6,8 +6,10 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import { useAppDispatch } from './store';
 import { setCartCount, setWishlistCount, resetCounters } from './store/slices/counterSlice';
+import { setUser, setToken, clearAuth } from './store/slices/authSlice';
 import CartService from './services/cartService';
 import WishlistService from './services/wishlistService';
+import AuthService from './services/authService';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './lib/queryClient';
 import { updateCartQueries } from './hooks/queries/useCart';
@@ -25,7 +27,7 @@ import AdminReviewDetail from './pages/admin/AdminReviewDetail';
 import AdminPortal from './pages/admin/AdminPortal';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
-import Checkout from './pages/Checkout';
+import Checkout from './pages/CheckoutMagic';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
@@ -58,7 +60,7 @@ function AppContent() {
   // Check if current route is an admin route
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  // Initialize counters on app mount
+  // Initialize counters and auth state on app mount
   useEffect(() => {
     const initializeCounters = async () => {
       try {
@@ -80,7 +82,30 @@ function AppContent() {
       }
     };
 
+    const initializeAuth = async () => {
+      try {
+        // Initialize Redux auth state from AuthService
+        const currentUser = AuthService.getCurrentUser();
+        const isAuth = AuthService.isAuthenticated();
+        
+        if (currentUser && isAuth) {
+          dispatch(setUser(currentUser));
+          try {
+            const token = await AuthService.getIdToken();
+            if (token) {
+              dispatch(setToken(token));
+            }
+          } catch (error) {
+            console.warn('Failed to get token on init:', error);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to initialize auth state:', error);
+      }
+    };
+
     initializeCounters();
+    initializeAuth();
   }, [dispatch]);
 
   // Listen for login required events
@@ -93,7 +118,27 @@ function AppContent() {
       setShowLoginModal(true);
     };
 
-    const handleUserLogin = async () => {
+    const handleUserLogin = async (event?: Event) => {
+      // Update Redux auth state immediately
+      const customEvent = event as CustomEvent;
+      const eventUser = customEvent?.detail;
+      const currentUser = eventUser || AuthService.getCurrentUser();
+      
+      if (currentUser) {
+        console.log('App: Updating Redux auth state on login', currentUser);
+        dispatch(setUser(currentUser));
+        
+        // Get and set token
+        try {
+          const token = await AuthService.getIdToken();
+          if (token) {
+            dispatch(setToken(token));
+          }
+        } catch (error) {
+          console.warn('Failed to get token after login:', error);
+        }
+      }
+      
       // CRITICAL: After login, wait for cart migration and update cache IMMEDIATELY
       // Migration happens in authService, but we need to wait a bit for it to complete
       // Then invalidate cache to force refetch with new merged cart
@@ -138,6 +183,9 @@ function AppContent() {
     };
 
     const handleUserLogout = async () => {
+      // Update Redux auth state
+      dispatch(clearAuth());
+      
       // Reset counters on logout
       dispatch(resetCounters());
       

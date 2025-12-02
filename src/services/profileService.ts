@@ -30,20 +30,6 @@ export interface UserProfile {
 
 export class ProfileService {
   /**
-   * Auto-fill profile (first time setup)
-   * @returns Promise with profile data
-   */
-  static async autoFillProfile(): Promise<UserProfile> {
-    try {
-      const response = await profileApi.autoFillProfile();
-      return response.data;
-    } catch (error) {
-      console.error('Failed to auto-fill profile:', error);
-      throw new Error('Failed to create profile. Please try again later.');
-    }
-  }
-
-  /**
    * Get user profile
    * @returns Promise with profile data
    */

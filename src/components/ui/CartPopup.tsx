@@ -1,8 +1,7 @@
-import { X, Trash2, Plus, Minus, Gift } from 'lucide-react';
-import { useState } from 'react';
+import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useApplyCoupon, useRemoveCoupon } from '../../hooks/queries/useCart';
+import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem } from '../../hooks/queries/useCart';
 import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -12,9 +11,6 @@ interface CartPopupProps {
 }
 
 const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
-  const [couponCode, setCouponCode] = useState('');
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
@@ -24,14 +20,6 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
   const removeFromCart = useRemoveFromCart();
   const incrementCartItem = useIncrementCartItem();
   const decrementCartItem = useDecrementCartItem();
-  const applyCoupon = useApplyCoupon();
-  const removeCoupon = useRemoveCoupon();
-
-  // Available coupons
-  const availableCoupons = [
-    { code: 'DEAL5', discount: '5%' },
-    { code: 'SAVE10', discount: '10%' }
-  ];
 
   // Handle quantity update
   const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
@@ -74,46 +62,6 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
     }
   };
 
-  // Handle coupon application
-  const handleApplyCoupon = async (couponToApply?: string) => {
-    const codeToApply = couponToApply || couponCode.trim();
-    if (!codeToApply) return;
-
-      setIsApplyingCoupon(true);
-    try {
-      await applyCoupon.mutateAsync(codeToApply);
-      setAppliedCoupon(codeToApply);
-      setCouponCode('');
-      showNotification({
-        type: 'success',
-        message: 'Coupon applied successfully!'
-      });
-    } catch (error) {
-      showNotification({
-        type: 'error',
-        message: 'Failed to apply coupon'
-      });
-    } finally {
-      setIsApplyingCoupon(false);
-    }
-  };
-
-  // Handle coupon removal
-  const handleRemoveCoupon = async () => {
-    try {
-      await removeCoupon.mutateAsync();
-      setAppliedCoupon(null);
-      showNotification({
-        type: 'success',
-        message: 'Coupon removed successfully!'
-      });
-    } catch (error) {
-      showNotification({
-        type: 'error',
-        message: 'Failed to remove coupon'
-      });
-    }
-  };
 
   // Handle checkout navigation
   const handleCheckout = () => {
@@ -216,25 +164,57 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {cartItems.map((item: any) => (
+            {cartItems.map((item: any) => {
+              // Get product image - handle both new (images array) and old (image_url) structures
+              const getProductImage = () => {
+                if (!item.product) return null;
+                
+                // Check for images array (new structure)
+                if (item.product.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
+                  // Get primary image or first image
+                  const primaryImage = item.product.images.find((img: any) => img.is_primary) || item.product.images[0];
+                  return primaryImage?.image_url || null;
+                }
+                
+                // Fallback to image_url (old structure)
+                return item.product.image_url || item.product.primary_image?.image_url || null;
+              };
+              
+              const productImage = getProductImage();
+              const productName = item.product?.name || 'Product';
+              
+              return (
               <div key={item.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
                        {/* Product Image */}
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  {item.product?.image_url ? (
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {productImage ? (
                     <img
-                      src={item.product.image_url}
-                      alt={item.product.name}
+                      src={productImage}
+                      alt={productName}
                       className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent && !parent.querySelector('.placeholder')) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'placeholder w-full h-full bg-gray-300 rounded flex items-center justify-center';
+                          placeholder.innerHTML = '<span class="text-xs text-gray-500">📦</span>';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                    <div className="w-full h-full bg-gray-300 rounded flex items-center justify-center">
+                      <span className="text-xs text-gray-500">📦</span>
+                    </div>
                   )}
                        </div>
                        
                        {/* Product Details */}
                        <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-gray-900 truncate text-sm">
-                    {item.product?.name || 'Product'}
+                    {productName}
                              </h3>
                   <p className="text-xs text-gray-600">
                     ₹{item.unit_price} each
@@ -278,66 +258,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                   <Trash2 className="w-4 h-4" />
                 </button>
                    </div>
-            ))}
+              );
+            })}
                    </div>
                  </div>
-
-               {/* Coupon Section */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-2 mb-3">
-            <Gift className="w-4 h-4 text-green-600" />
-            <span className="font-medium text-gray-900 text-sm">Apply Coupon</span>
-                         </div>
-          
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg mb-3">
-              <span className="text-green-800 font-medium text-sm">
-                Coupon: {appliedCoupon} applied
-                         </span>
-                       <button
-                         onClick={handleRemoveCoupon}
-                disabled={removeCoupon.isPending}
-                className="text-red-600 hover:text-red-700 disabled:opacity-50 text-sm"
-                       >
-                Remove
-                       </button>
-                     </div>
-                   ) : (
-            <div className="flex space-x-2 mb-3">
-                         <input
-                           type="text"
-                           value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="Enter coupon code"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                         />
-                         <button
-                           onClick={() => handleApplyCoupon()}
-                           disabled={isApplyingCoupon || !couponCode.trim()}
-                className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
-                         >
-                {isApplyingCoupon ? 'Applying...' : 'Apply'}
-                         </button>
-                 </div>
-               )}
-               
-          {/* Available Coupons */}
-          <div>
-            <p className="text-xs text-gray-600 mb-2">Available coupons:</p>
-            <div className="flex flex-wrap gap-1">
-              {availableCoupons.map((coupon) => (
-               <button
-                  key={coupon.code}
-                  onClick={() => handleApplyCoupon(coupon.code)}
-                  disabled={isApplyingCoupon || appliedCoupon === coupon.code}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {coupon.code} - {coupon.discount}
-               </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
         {/* Summary */}
         <div className="p-4 border-t border-gray-200">

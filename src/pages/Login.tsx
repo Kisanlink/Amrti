@@ -170,8 +170,24 @@ const Login = () => {
     try {
       console.log('Initializing reCAPTCHA...');
       
+      // Ensure the recaptcha container exists
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        setError('reCAPTCHA container not found. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+      
       // Initialize reCAPTCHA first (exact same as HTML)
-      await initializeRecaptcha();
+      try {
+        await initializeRecaptcha();
+        console.log('reCAPTCHA initialized successfully');
+      } catch (initError: any) {
+        console.error('reCAPTCHA initialization error:', initError);
+        setError(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
       
       // Wait a moment for reCAPTCHA to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -179,7 +195,17 @@ const Login = () => {
       console.log('Getting reCAPTCHA token...');
       
       // Get reCAPTCHA token
-      const recaptchaToken = await getRecaptchaToken();
+      let recaptchaToken: string;
+      try {
+        recaptchaToken = await getRecaptchaToken();
+        console.log('reCAPTCHA token obtained successfully');
+      } catch (tokenError: any) {
+        console.error('reCAPTCHA token error:', tokenError);
+        setError(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
+        clearRecaptcha(); // Reset verifier
+        setLoading(false);
+        return;
+      }
       
       console.log('Sending verification code...');
       
@@ -446,17 +472,43 @@ const Login = () => {
       setError('Resending verification code...');
       setLoading(true);
       
+      // Ensure the recaptcha container exists
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        setError('reCAPTCHA container not found. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+      
       // Reset reCAPTCHA verifier
       clearRecaptcha();
       
       // Initialize new reCAPTCHA
-      await initializeRecaptcha();
+      try {
+        await initializeRecaptcha();
+        console.log('reCAPTCHA re-initialized successfully');
+      } catch (initError: any) {
+        console.error('reCAPTCHA re-initialization error:', initError);
+        setError(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
       
       // Wait for reCAPTCHA to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Get new reCAPTCHA token
-      const recaptchaToken = await getRecaptchaToken();
+      let recaptchaToken: string;
+      try {
+        recaptchaToken = await getRecaptchaToken();
+        console.log('reCAPTCHA token obtained successfully for resend');
+      } catch (tokenError: any) {
+        console.error('reCAPTCHA token error on resend:', tokenError);
+        setError(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
+        clearRecaptcha(); // Reset verifier
+        setLoading(false);
+        return;
+      }
       
       // Call backend API to resend verification code
       const response = await fetch('http://localhost:8082/api/v1/auth/phone/send-code', {
