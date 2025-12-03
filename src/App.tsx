@@ -29,6 +29,7 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/CheckoutMagic';
 import Orders from './pages/Orders';
+import OrderSuccess from './pages/OrderSuccess';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -243,6 +244,7 @@ function AppContent() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:orderId" element={<Orders />} />
             <Route path="/profile" element={<Profile />} />

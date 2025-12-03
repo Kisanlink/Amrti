@@ -422,8 +422,39 @@ const Navbar = () => {
                     {(authenticated || isAuthenticated) ? (
                       <>
                         <div className="px-4 py-2 border-b border-black-200">
-                          <p className="text-sm font-semibold text-black-900">{(user || authUser)?.displayName || 'User'}</p>
-                          <p className="text-xs text-black-600">{(user || authUser)?.phoneNumber}</p>
+                          <p className="text-sm font-semibold text-black-900">
+                            {(() => {
+                              const currentUser = user || authUser;
+                              // Try to get name from stored user object (which may have additional fields)
+                              try {
+                                const storedUserStr = localStorage.getItem('user');
+                                if (storedUserStr) {
+                                  const storedUser = JSON.parse(storedUserStr);
+                                  if (storedUser.name) return storedUser.name;
+                                }
+                              } catch (e) {
+                                // Ignore parsing errors
+                              }
+                              // Fallback to displayName or 'User'
+                              return currentUser?.displayName || 'User';
+                            })()}
+                          </p>
+                          <p className="text-xs text-black-600">
+                            {(() => {
+                              const currentUser = user || authUser;
+                              // Try to get email from stored user object
+                              try {
+                                const storedUserStr = localStorage.getItem('user');
+                                if (storedUserStr) {
+                                  const storedUser = JSON.parse(storedUserStr);
+                                  if (storedUser.email) return storedUser.email;
+                                }
+                              } catch (e) {
+                                // Ignore parsing errors
+                              }
+                              return currentUser?.phoneNumber || '';
+                            })()}
+                          </p>
                         </div>
                         <Link
                           to="/profile"

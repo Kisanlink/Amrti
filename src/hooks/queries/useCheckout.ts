@@ -14,9 +14,13 @@ import {
   setSelectedShipping,
   clearCheckout,
   setPaymentSuccess,
+  setVerifyingPayment,
 } from '../../store/slices/checkoutSlice';
 import type { AppDispatch, RootState } from '../../store';
 import AuthService from '../../services/authService';
+import CartService from '../../services/cartService';
+import { updateCartQueries } from './useCart';
+import { queryKeys } from '../../lib/queryClient';
 
 // Hook to get checkout state from Redux
 export const useCheckoutState = () => {
@@ -67,6 +71,7 @@ export const useEstimateShipping = () => {
 export const useCreateMagicCheckoutOrder = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
@@ -82,7 +87,7 @@ export const useCreateMagicCheckoutOrder = () => {
     onSuccess: (orderData) => {
       // Open Razorpay Magic Checkout modal
       if (orderData && typeof window !== 'undefined') {
-        openMagicCheckoutModal(orderData, dispatch, navigate);
+        openMagicCheckoutModal(orderData, dispatch, navigate, queryClient);
       }
     },
   });
@@ -115,7 +120,8 @@ export const useVerifyPayment = () => {
 const openMagicCheckoutModal = async (
   orderData: any,
   dispatch: AppDispatch,
-  navigate: (path: string) => void
+  navigate: (path: string) => void,
+  queryClient: any
 ) => {
   // Load Razorpay Magic Checkout script if not already loaded
   if (!(window as any).Razorpay) {
@@ -136,8 +142,14 @@ const openMagicCheckoutModal = async (
     // Handler for successful payment
     handler: async function(response: any) {
       try {
+        // Set verifying state to show verifying UI
+        dispatch(setVerifyingPayment(true));
+        
+        // Import API config dynamically
+        const { buildApiUrl } = await import('../../config/apiConfig');
+        
         // Verify payment on backend
-        const verifyResponse = await fetch('http://localhost:8082/api/v1/payments/verify', {
+        const verifyResponse = await fetch(buildApiUrl('/payments/verify'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -154,6 +166,22 @@ const openMagicCheckoutModal = async (
         
         if (verifyResult.success) {
           dispatch(setPaymentSuccess({ success: true, orderId: verifyResult.order_id }));
+          
+          // Clear cart immediately after successful payment
+          try {
+            const clearedCart = await CartService.clearCart();
+            
+            // Update all cart queries and Redux state
+            if (queryClient) {
+              updateCartQueries(queryClient, clearedCart, dispatch);
+              // Also invalidate queries to ensure fresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+            }
+          } catch (cartError) {
+            console.error('Failed to clear cart after order:', cartError);
+            // Don't block navigation if cart clearing fails
+          }
+          
           // Redirect to success page
           navigate(`/order-success?order_id=${verifyResult.order_id}`);
         } else {
@@ -169,6 +197,9 @@ const openMagicCheckoutModal = async (
             message: error.message || 'Payment verification failed. Please contact support.',
           },
         }));
+      } finally {
+        // Clear verifying state
+        dispatch(setVerifyingPayment(false));
       }
     },
     

@@ -9,9 +9,8 @@ interface Address {
   country: string;
 }
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:8082';
-const API_VERSION = 'v1';
+// API Configuration - Import from config file
+import { API_BASE_URL, API_VERSION } from '../config/apiConfig';
 
 // Request headers
 export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {

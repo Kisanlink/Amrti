@@ -354,7 +354,8 @@ export class AuthService {
         throw new Error('Email and password are required');
       }
 
-      const API_BASE_URL = 'http://localhost:8082';
+      // Import API config dynamically to avoid circular dependencies
+      const { API_BASE_URL } = await import('../config/apiConfig');
       const requestBody = {
         email,
         password
@@ -433,6 +434,7 @@ export class AuthService {
         ...authUser,
         role: userRole,
         email: userData.email || email,
+        name: userData.name || userData.displayName || authUser.displayName || null, // Store name field separately
       };
       localStorage.setItem('user', JSON.stringify(userWithRole));
       localStorage.setItem('userRole', userRole); // Store role separately for easy access

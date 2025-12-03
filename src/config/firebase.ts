@@ -98,7 +98,7 @@ export const getAuth = async (): Promise<any> => {
 };
 
 // Initialize reCAPTCHA for phone authentication (updated to match backend expectations)
-export const initializeRecaptcha = async (): Promise<void> => {
+export const initializeRecaptcha = async (containerId: string = 'recaptcha-container'): Promise<void> => {
   // Clear existing verifier if it exists
   if (recaptchaVerifier) {
     try {
@@ -113,13 +113,13 @@ export const initializeRecaptcha = async (): Promise<void> => {
   const firebase = await getFirebase();
   
   // Check if the DOM element exists
-  const recaptchaContainer = document.getElementById('recaptcha-container');
+  const recaptchaContainer = document.getElementById(containerId);
   if (!recaptchaContainer) {
-    throw new Error('reCAPTCHA container element not found. Please ensure the form is properly rendered.');
+    throw new Error(`reCAPTCHA container element not found (${containerId}). Please ensure the form is properly rendered.`);
   }
   
   try {
-    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier(containerId, {
       'size': 'invisible',
       'callback': (response: any) => {
         console.log('reCAPTCHA solved');
@@ -139,7 +139,7 @@ export const initializeRecaptcha = async (): Promise<void> => {
     
     // Provide more specific error messages
     if (error.message && error.message.includes('container')) {
-      throw new Error('reCAPTCHA container not found. Please refresh the page.');
+      throw new Error(`reCAPTCHA container not found (${containerId}). Please refresh the page.`);
     } else if (error.message && error.message.includes('script')) {
       throw new Error('reCAPTCHA script not loaded. Please refresh the page.');
     } else {

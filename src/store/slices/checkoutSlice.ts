@@ -150,6 +150,9 @@ const checkoutSlice = createSlice({
       state.paymentSuccess = action.payload.success;
       state.successOrderId = action.payload.orderId || null;
     },
+    setVerifyingPayment: (state, action: PayloadAction<boolean>) => {
+      state.isVerifyingPayment = action.payload;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -227,6 +230,7 @@ export const {
   setSelectedShipping,
   clearCheckout,
   setPaymentSuccess,
+  setVerifyingPayment,
   clearError,
 } = checkoutSlice.actions;
 
