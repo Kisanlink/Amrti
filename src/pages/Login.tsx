@@ -725,12 +725,10 @@ const Login = () => {
       // Call admin login API
       const user = await AuthService.adminLogin(formData.email, formData.password);
       
-      console.log('Admin login successful:', user);
+      // Check if user is Admin and redirect to admin portal (case-insensitive check)
+      const userRole = (user as any)?.role || localStorage.getItem('userRole') || '';
       
-      // Check if user is Admin and redirect to admin portal
-      const userRole = (user as any)?.role || localStorage.getItem('userRole');
-      
-      if (userRole === 'Admin') {
+      if (userRole && userRole.toLowerCase() === 'admin') {
         // Redirect to admin portal/dashboard
         navigate('/admin/portal', { replace: true });
       } else {

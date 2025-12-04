@@ -95,14 +95,14 @@ const AdminPortal: React.FC = () => {
         const user = JSON.parse(userData);
         parsedRole = user.role;
       } catch (e) {
-        console.error('Failed to parse user data:', e);
+        // Failed to parse user data
       }
     }
 
     setUserRole(parsedRole);
 
-    // If not admin, redirect to home
-    if (parsedRole !== 'Admin') {
+    // If not admin, redirect to home (case-insensitive check)
+    if (!parsedRole || parsedRole.toLowerCase() !== 'admin') {
       showNotification({
         type: 'error',
         message: 'You do not have permission to access the admin portal.'

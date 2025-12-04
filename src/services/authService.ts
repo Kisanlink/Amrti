@@ -405,7 +405,9 @@ export class AuthService {
       // Extract token and user data from response based on actual API structure
       const token = data.data?.tokens?.id_token || data.data?.token || data.token || data.data?.id_token;
       const userData = data.data?.user || data.user;
-      const userRole = userData?.role || '';
+      const rawRole = userData?.role || '';
+      // Normalize role to handle case variations (admin, Admin, ADMIN, etc.)
+      const userRole = rawRole ? rawRole.toLowerCase() === 'admin' ? 'Admin' : rawRole : '';
 
       if (!token) {
         throw new Error('No authentication token received from server');
@@ -413,6 +415,11 @@ export class AuthService {
 
       if (!userData) {
         throw new Error('No user data received from server');
+      }
+
+      // Ensure only admin users can log in via this method (case-insensitive check)
+      if (userRole.toLowerCase() !== 'admin') {
+        throw new Error('You are not authorized to access the admin panel');
       }
 
       // Store token
