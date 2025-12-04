@@ -460,11 +460,30 @@ export class GuestCartService {
       const responseData = await response.json();
       console.log('Guest cart migrated successfully, response:', responseData);
       
-      // Extract merged cart from response
-      const mergedCart = responseData.data;
+      // Extract merged cart from response - handle different response structures
+      const mergedCart = responseData.data?.cart || responseData.data || responseData.cart || responseData;
       
-      // Clear guest cart data
-      this.clearGuestCartData();
+      // Verify merged cart has items
+      const mergedItems = mergedCart?.items || [];
+      const mergedTotalItems = mergedCart?.total_items || (mergedCart as any)?.items_count || 0;
+      
+      console.log('Merged cart verification:', {
+        hasCart: !!mergedCart,
+        totalItems: mergedTotalItems,
+        itemsCount: mergedItems.length,
+        cartId: mergedCart?.id || (mergedCart as any)?.cart_id,
+        items: mergedItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+      });
+      
+      if (mergedTotalItems === 0 || mergedItems.length === 0) {
+        console.warn('WARNING: Migration API returned empty cart. Items may not have been migrated.');
+        // Don't clear guest cart data if migration failed
+        // Return the merged cart anyway so caller can handle it
+      } else {
+        // Only clear guest cart data if migration succeeded
+        this.clearGuestCartData();
+        console.log('Guest cart data cleared after successful migration');
+      }
       
       // Return merged cart for immediate cache update
       return mergedCart;

@@ -15,24 +15,20 @@ export interface UpdateCartItemRequest {
 export class CartService {
   /**
    * Check if user is authenticated
+   * Uses synchronous check for immediate response
    */
-  private static async isAuthenticated(): Promise<boolean> {
-    try {
-      const user = await AuthService.getCurrentUser();
-      return user !== null;
-    } catch (error) {
-      console.log('User not authenticated, using guest cart');
-      return false;
-    }
+  private static isAuthenticated(): boolean {
+    return AuthService.isAuthenticated();
   }
 
   /**
    * Migrate guest cart to user account when user logs in
    * Returns the merged cart from the API response
+   * CRITICAL: This must succeed or items will be lost
    */
   static async migrateGuestCart(): Promise<any> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       if (!isAuth) {
         console.log('User not authenticated, no migration needed');
         return null;
@@ -44,24 +40,123 @@ export class CartService {
         return null;
       }
 
-      console.log('Migrating guest cart to user account...');
-      const token = await AuthService.getIdToken();
-      if (token) {
-        const mergedCart = await GuestCartService.migrateCart(token);
-        console.log('Guest cart migrated successfully, merged cart:', mergedCart);
-        // Return merged cart for immediate cache update
-        return mergedCart;
+      // First, get the guest cart to see what we're migrating
+      const guestCart = await GuestCartService.getCart();
+      const guestItems = guestCart?.items || [];
+      const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
+      
+      if (guestTotalItems === 0 || guestItems.length === 0) {
+        console.log('Guest cart is empty, nothing to migrate');
+        return null;
       }
-      return null;
-    } catch (error) {
+
+      console.log('Migrating guest cart to user account...', {
+        guestSessionId,
+        guestItemsCount: guestItems.length,
+        guestTotalItems,
+        items: guestItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+      });
+
+      const token = await AuthService.getIdToken();
+      if (!token) {
+        console.error('No auth token available for cart migration');
+        throw new Error('Authentication token not available for cart migration');
+      }
+
+      // Retry migration up to 3 times to ensure it succeeds
+      let mergedCart: any = null;
+      let lastError: any = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          mergedCart = await GuestCartService.migrateCart(token);
+          console.log(`Cart migration attempt ${attempt + 1} completed:`, mergedCart);
+          
+          // Verify migration succeeded by checking if merged cart has items
+          const mergedItems = mergedCart?.items || [];
+          const mergedTotalItems = mergedCart?.total_items || (mergedCart as any)?.items_count || 0;
+          
+          if (mergedTotalItems > 0 && mergedItems.length > 0) {
+            const mergedCartId = mergedCart?.id || mergedCart?.cart_id || (mergedCart as any)?.cartId;
+            const mergedUserId = mergedCart?.user_id || (mergedCart as any)?.userId;
+            
+            // CRITICAL: Verify the migrated cart is an authenticated cart (not guest cart)
+            if (mergedCartId && mergedCartId.startsWith('guest_')) {
+              console.error('ERROR: Migration returned guest cart ID! This should not happen.');
+              throw new Error('Cart migration failed - received guest cart instead of authenticated cart');
+            }
+            
+            console.log('Cart migration verified - items in merged cart:', {
+              cartId: mergedCartId,
+              userId: mergedUserId,
+              totalItems: mergedTotalItems,
+              itemsCount: mergedItems.length,
+              isAuthenticatedCart: !mergedCartId?.startsWith('guest_'),
+              items: mergedItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+            });
+            
+            // Final verification: Fetch the authenticated cart to ensure it has the items
+            try {
+              const verifiedCart = await cartApi.getCart();
+              const verifiedCartData = verifiedCart.data.cart;
+              const verifiedItems = verifiedCartData?.items || [];
+              const verifiedTotalItems = verifiedCartData?.total_items || (verifiedCartData as any)?.items_count || 0;
+              const verifiedCartId = verifiedCartData?.id || verifiedCartData?.cart_id;
+              
+              if (verifiedTotalItems > 0 && verifiedItems.length > 0 && verifiedCartId && !verifiedCartId.startsWith('guest_')) {
+                console.log('Final cart verification passed after migration:', {
+                  cartId: verifiedCartId,
+                  userId: verifiedCartData?.user_id,
+                  totalItems: verifiedTotalItems,
+                  itemsCount: verifiedItems.length
+                });
+                return mergedCart;
+              } else {
+                console.warn('Cart verification after migration failed - cart may not have items yet');
+                // Wait a bit and retry
+                if (attempt < 2) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+                }
+              }
+            } catch (verifyError) {
+              console.error('Failed to verify cart after migration:', verifyError);
+              // Continue with merged cart anyway
+              return mergedCart;
+            }
+          } else {
+            console.warn(`Cart migration attempt ${attempt + 1}: Merged cart is empty, retrying...`);
+            if (attempt < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+            }
+          }
+        } catch (error: any) {
+          console.error(`Cart migration attempt ${attempt + 1} failed:`, error);
+          lastError = error;
+          if (attempt < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+          }
+        }
+      }
+      
+      // If all retries failed, throw error
+      if (!mergedCart || (mergedCart?.items || []).length === 0) {
+        console.error('Cart migration failed after all retries. Guest cart items may be lost.');
+        throw new Error(lastError?.message || 'Cart migration failed. Guest cart items were not migrated.');
+      }
+      
+      return mergedCart;
+    } catch (error: any) {
       console.error('Failed to migrate guest cart:', error);
-      // Don't throw error as this shouldn't block the login process
-      return null;
+      // CRITICAL: Don't silently fail - throw error so it can be handled
+      throw error;
     }
   }
 
   /**
    * Add item to cart (works for both authenticated and guest users)
+   * CRITICAL: Ensures cart consistency by using the correct cart API based on authentication
+   * If user is logged in → uses authenticated cart API (with auth token)
+   * If user is NOT logged in → uses guest cart API (with session ID)
    * @param productId - Product ID to add
    * @param quantity - Quantity to add
    * @returns Promise with updated cart
@@ -70,21 +165,68 @@ export class CartService {
     try {
       console.log(`Adding item to cart: ${productId}, quantity: ${quantity}`);
       
-      const isAuth = await this.isAuthenticated();
+      // CRITICAL: Use synchronous authentication check for immediate response
+      const isAuth = this.isAuthenticated();
+      console.log('Authentication status when adding item:', isAuth);
       
+      // Double-check: Verify we have auth token if authenticated
       if (isAuth) {
-        // User is authenticated, use regular cart API
+        const token = await AuthService.getIdToken();
+        if (!token) {
+          console.warn('User appears authenticated but no token available, falling back to guest cart');
+          // Fall back to guest cart if no token
+          const guestCart = await GuestCartService.addItem(productId, quantity);
+          console.log('Guest cart add item response (fallback):', {
+            cartId: guestCart?.id || (guestCart as any)?.cart_id,
+            sessionId: GuestCartService.getCurrentSessionId(),
+            totalItems: guestCart?.total_items || (guestCart as any)?.items_count,
+            itemsCount: guestCart?.items?.length || 0
+          });
+          return guestCart;
+        }
+        
+        // User is authenticated with valid token, use regular cart API
+        console.log('Using authenticated cart API to add item');
         const response = await cartApi.addItem(productId, quantity);
-        console.log('Add item response:', response);
+        const cartData = response.data;
+        
+        console.log('Add item response (authenticated):', {
+          cartId: cartData?.id || cartData?.cart_id || (cartData as any)?.cartId,
+          userId: cartData?.user_id || (cartData as any)?.userId,
+          totalItems: cartData?.total_items || (cartData as any)?.items_count || 0,
+          itemsCount: cartData?.items?.length || 0,
+          isAuthenticated: true
+        });
+        
+        // Verify the cart ID is an authenticated cart (not guest cart)
+        const cartId = cartData?.id || cartData?.cart_id || (cartData as any)?.cartId;
+        if (cartId && cartId.startsWith('guest_')) {
+          console.error('ERROR: Authenticated user got guest cart ID! This should not happen.');
+          throw new Error('Cart identification error. Please try again.');
+        }
         
         // Dispatch cart updated event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
         
-        return response.data;
+        return cartData;
       } else {
-        // User is not authenticated, use guest cart
+        // User is not authenticated, use guest cart with session ID
+        console.log('Using guest cart API to add item');
         const guestCart = await GuestCartService.addItem(productId, quantity);
-        console.log('Guest cart add item response:', guestCart);
+        const cartId = guestCart?.id || (guestCart as any)?.cart_id;
+        
+        console.log('Guest cart add item response:', {
+          cartId: cartId,
+          sessionId: GuestCartService.getCurrentSessionId(),
+          totalItems: guestCart?.total_items || (guestCart as any)?.items_count || 0,
+          itemsCount: guestCart?.items?.length || 0,
+          isAuthenticated: false
+        });
+        
+        // Verify the cart ID is a guest cart
+        if (cartId && !cartId.startsWith('guest_')) {
+          console.warn('WARNING: Guest user got non-guest cart ID. This may indicate a migration issue.');
+        }
         
         return guestCart;
       }
@@ -104,22 +246,111 @@ export class CartService {
 
   /**
    * Get user's cart (works for both authenticated and guest users)
+   * CRITICAL: Ensures cart consistency by checking for guest cart migration if needed
    * @returns Promise with cart details
    */
   static async getCart(): Promise<Cart | GuestCart> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
+        // User is authenticated - check if there's a guest cart that needs migration
+        const guestSessionId = GuestCartService.getCurrentSessionId();
+        if (guestSessionId) {
+          try {
+            // Check if guest cart has items
+            const guestCart = await GuestCartService.getCart();
+            const guestItems = guestCart?.items || [];
+            const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
+            
+            // If guest cart has items, migrate it first
+            if (guestTotalItems > 0 && guestItems.length > 0) {
+              console.log('Guest cart has items, migrating before retrieving authenticated cart...', {
+                guestItemsCount: guestItems.length,
+                guestTotalItems,
+                items: guestItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+              });
+              
+              try {
+                const migratedCart = await this.migrateGuestCart();
+                if (migratedCart) {
+                  console.log('Guest cart migrated successfully, using migrated cart');
+                  // After migration, get the authenticated cart (which should now have the migrated items)
+                  // Fall through to get authenticated cart below
+                }
+              } catch (migrationError) {
+                console.error('Failed to migrate guest cart, continuing with authenticated cart:', migrationError);
+                // Continue with authenticated cart even if migration fails
+              }
+            }
+          } catch (guestCartError) {
+            // If guest cart doesn't exist or is empty, that's fine - continue with authenticated cart
+            console.log('No guest cart to migrate, using authenticated cart');
+          }
+        }
+        
         // User is authenticated, use regular cart API
         const response = await cartApi.getCart();
         const cart = response.data.cart;
         
+        // CRITICAL: Verify cart has items - if empty, check if guest cart still has items
+        const items = cart.items || [];
+        const totalItems = cart.total_items || (cart as any)?.items_count || 0;
+        
+        if (totalItems === 0 && items.length === 0 && guestSessionId) {
+          // Authenticated cart is empty, but we might have a guest cart with items
+          try {
+            const guestCart = await GuestCartService.getCart();
+            const guestItems = guestCart?.items || [];
+            const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
+            
+            if (guestTotalItems > 0 && guestItems.length > 0) {
+              console.warn('Authenticated cart is empty but guest cart has items - attempting migration...');
+              try {
+                const migratedCart = await this.migrateGuestCart();
+                if (migratedCart) {
+                  // Re-fetch authenticated cart after migration
+                  const retryResponse = await cartApi.getCart();
+                  const retryCart = retryResponse.data.cart;
+                  const retryItems = retryCart.items || [];
+                  const retryTotalItems = retryCart.total_items || (retryCart as any)?.items_count || 0;
+                  
+                  if (retryTotalItems > 0 && retryItems.length > 0) {
+                    console.log('Cart migration successful, using migrated cart');
+                    // Use the migrated cart
+                    const { default: ProductService } = await import('./productService');
+                    const enrichedItems = await Promise.all(
+                      retryItems.map(async (item) => {
+                        try {
+                          const product = await ProductService.getProductById(item.product_id);
+                          let enrichedProduct: any = { ...product };
+                          if (!enrichedProduct.image_url && enrichedProduct.images && Array.isArray(enrichedProduct.images)) {
+                            const primaryImage = enrichedProduct.images.find((img: any) => img.is_primary) || enrichedProduct.images[0];
+                            if (primaryImage?.image_url) {
+                              enrichedProduct.image_url = primaryImage.image_url;
+                            }
+                          }
+                          return { ...item, product: enrichedProduct };
+                        } catch (error) {
+                          console.error(`Failed to fetch product ${item.product_id}:`, error);
+                          return item;
+                        }
+                      })
+                    );
+                    return { ...retryCart, items: enrichedItems };
+                  }
+                }
+              } catch (migrationError) {
+                console.error('Migration failed when authenticated cart was empty:', migrationError);
+              }
+            }
+          } catch (guestError) {
+            console.log('No guest cart available');
+          }
+        }
+        
         // Fetch product details for each cart item
         const { default: ProductService } = await import('./productService');
-        
-        // Handle case where cart has no items
-        const items = cart.items || [];
         
         const enrichedItems = await Promise.all(
           items.map(async (item) => {

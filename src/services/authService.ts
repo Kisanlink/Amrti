@@ -452,14 +452,36 @@ export class AuthService {
 
       // Migrate guest cart to user account BEFORE dispatching login event (only for non-admin users)
       // This ensures the cart is migrated before any components react to the login
+      // CRITICAL: Migration must succeed or cart items will be lost
       if (userRole !== 'Admin') {
         try {
           const { CartService } = await import('./cartService');
           const migratedCart = await CartService.migrateGuestCart();
-          console.log('Cart migration completed before login event:', migratedCart);
-        } catch (error) {
-          console.error('Failed to migrate guest cart:', error);
-          // Don't throw error as this shouldn't block the login process
+          
+          if (migratedCart) {
+            const mergedItems = migratedCart?.items || [];
+            const mergedTotalItems = migratedCart?.total_items || (migratedCart as any)?.items_count || 0;
+            console.log('Cart migration completed before login event:', {
+              totalItems: mergedTotalItems,
+              itemsCount: mergedItems.length,
+              cartId: migratedCart.id || (migratedCart as any)?.cart_id
+            });
+            
+            // Verify migration actually worked
+            if (mergedTotalItems === 0 || mergedItems.length === 0) {
+              console.warn('WARNING: Cart migration returned empty cart. Items may not have been migrated.');
+            }
+          } else {
+            console.log('No cart migration needed (guest cart was empty)');
+          }
+        } catch (error: any) {
+          console.error('CRITICAL: Failed to migrate guest cart:', error);
+          // Log error but don't block login - user can still login but may lose cart items
+          // The error will be visible in console for debugging
+          console.error('Cart migration error details:', {
+            message: error.message,
+            stack: error.stack
+          });
         }
       }
 

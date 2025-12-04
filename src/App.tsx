@@ -140,24 +140,71 @@ function AppContent() {
         }
       }
       
-      // CRITICAL: After login, wait for cart migration and update cache IMMEDIATELY
-      // Migration happens in authService, but we need to wait a bit for it to complete
-      // Then invalidate cache to force refetch with new merged cart
+      // CRITICAL: After login, verify cart migration succeeded and retry if needed
+      // Migration happens in authService, but we need to verify it worked
       setTimeout(async () => {
         try {
-          // Invalidate cart cache to force refetch with new merged cart
-          queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+          // Get guest cart items before they're cleared (if still available)
+          const { GuestCartService } = await import('./services/guestCartService');
+          const guestSessionId = GuestCartService.getCurrentSessionId();
+          let guestCartItems: any[] = [];
           
-          // Also try to get the merged cart directly if migration completed
-          try {
-            const mergedCart = await CartService.getCart();
-            if (mergedCart) {
-              // Update cache immediately with merged cart data using the helper function
-              updateCartQueries(queryClient, mergedCart, dispatch);
+          if (guestSessionId) {
+            try {
+              const guestCart = await GuestCartService.getCart();
+              guestCartItems = guestCart?.items || [];
+              console.log('Guest cart items before migration verification:', guestCartItems.length);
+            } catch (e) {
+              console.log('Could not fetch guest cart (may already be cleared)');
             }
-          } catch (error) {
-            console.warn('Failed to get merged cart after migration:', error);
-            // Fallback: invalidate and let React Query refetch
+          }
+          
+          // Wait a bit for migration to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Verify migration by checking authenticated cart
+          let mergedCart = await CartService.getCart();
+          const mergedItems = mergedCart?.items || [];
+          const mergedTotalItems = mergedCart?.total_items || (mergedCart as any)?.items_count || 0;
+          
+          console.log('Post-login cart verification:', {
+            mergedTotalItems,
+            mergedItemsCount: mergedItems.length,
+            guestItemsCount: guestCartItems.length
+          });
+          
+          // If cart is empty but we had guest items, migration may have failed - retry
+          if (mergedTotalItems === 0 && guestCartItems.length > 0) {
+            console.warn('Cart migration may have failed - cart is empty but guest had items. Retrying migration...');
+            
+            try {
+              // Retry migration
+              const retryMergedCart = await CartService.migrateGuestCart();
+              if (retryMergedCart) {
+                mergedCart = retryMergedCart;
+                const retryItems = retryMergedCart?.items || [];
+                const retryTotalItems = retryMergedCart?.total_items || (retryMergedCart as any)?.items_count || 0;
+                
+                if (retryTotalItems > 0 && retryItems.length > 0) {
+                  console.log('Cart migration retry succeeded:', {
+                    totalItems: retryTotalItems,
+                    itemsCount: retryItems.length
+                  });
+                } else {
+                  console.error('Cart migration retry still returned empty cart');
+                }
+              }
+            } catch (retryError) {
+              console.error('Cart migration retry failed:', retryError);
+            }
+          }
+          
+          // Update cache with merged cart
+          if (mergedCart) {
+            updateCartQueries(queryClient, mergedCart, dispatch);
+            console.log('Cart cache updated after login');
+          } else {
+            // Invalidate to force refetch
             queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
           }
         } catch (error) {
@@ -165,7 +212,7 @@ function AppContent() {
           // Fallback: invalidate cache
           queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
         }
-      }, 500); // Wait 500ms for migration to complete
+      }, 1000); // Wait 1 second for migration to complete
       
       // Refresh counters after login
       try {

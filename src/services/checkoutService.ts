@@ -193,59 +193,171 @@ export const checkoutApi = {
     
     console.log('Creating Magic Checkout order, authenticated:', isAuthenticated);
     
-    // CRITICAL: Verify cart exists on backend before making API call
-    // This is especially important for logged-in users to ensure cart wasn't cleared
+    // CRITICAL: Ensure cart consistency before checkout
+    // This ensures we're using the same cart that was used when adding items
+    const { default: CartService } = await import('./cartService');
+    const { GuestCartService } = await import('./guestCartService');
+    
+    // Step 1: Check if there's a guest cart that needs migration (if user is authenticated)
     if (isAuthenticated) {
-      const { default: CartService } = await import('./cartService');
-      
-      // Retry cart verification up to 3 times with delays
-      let cartVerified = false;
-      let verifiedCart: any = null;
-      
-      for (let attempt = 0; attempt < 3; attempt++) {
+      const guestSessionId = GuestCartService.getCurrentSessionId();
+      if (guestSessionId) {
         try {
-          // Fetch cart directly from backend to ensure it exists
-          verifiedCart = await CartService.getCart();
-          const totalItems = verifiedCart?.total_items || (verifiedCart as any)?.items_count || 0;
-          const items = verifiedCart?.items || [];
+          const guestCart = await GuestCartService.getCart();
+          const guestItems = guestCart?.items || [];
+          const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
           
-          if (verifiedCart && totalItems > 0 && items.length > 0) {
-            console.log(`Cart verified before API call (attempt ${attempt + 1}):`, { 
-              totalItems, 
-              itemsCount: items.length,
-              cartId: verifiedCart.id 
+          // If guest cart has items, migrate it first
+          if (guestTotalItems > 0 && guestItems.length > 0) {
+            console.log('Guest cart has items before checkout, migrating...', {
+              guestItemsCount: guestItems.length,
+              guestTotalItems,
+              items: guestItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
             });
-            cartVerified = true;
-            break;
-          } else {
-            console.warn(`Cart verification attempt ${attempt + 1}: Cart exists but empty`, {
-              totalItems,
-              itemsCount: items.length,
-              cart: verifiedCart
-            });
-          }
-        } catch (error: any) {
-          console.warn(`Cart verification attempt ${attempt + 1} failed:`, error);
-          
-          // If it's the last attempt, throw the error
-          if (attempt === 2) {
-            if (error.message && error.message.includes('empty')) {
-              throw new Error('Cart appears to be empty on the server. Please refresh the page, add items to cart, and try again.');
+            
+            try {
+              const migratedCart = await CartService.migrateGuestCart();
+              if (migratedCart) {
+                console.log('Guest cart migrated successfully before checkout');
+                // Wait a moment for backend to process migration
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            } catch (migrationError) {
+              console.error('Failed to migrate guest cart before checkout:', migrationError);
+              // Continue anyway - the getCart() method will also try to migrate
             }
-            throw error;
+          }
+        } catch (guestError) {
+          console.log('No guest cart to migrate');
+        }
+      }
+    }
+    
+    // Step 2: Get the cart using CartService.getCart() which handles migration automatically
+    // This ensures we always get the correct cart (authenticated or guest)
+    let verifiedCart: any = null;
+    let cartVerified = false;
+    
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        // Use CartService.getCart() which handles migration and consistency
+        verifiedCart = await CartService.getCart();
+        const totalItems = verifiedCart?.total_items || (verifiedCart as any)?.items_count || 0;
+        const items = verifiedCart?.items || [];
+        
+        if (verifiedCart && totalItems > 0 && items.length > 0) {
+          const cartId = verifiedCart.id || (verifiedCart as any)?.cart_id || (verifiedCart as any)?.cartId;
+          const userId = verifiedCart.user_id || (verifiedCart as any)?.user_id;
+          console.log(`Cart verified before API call (attempt ${attempt + 1}):`, { 
+            totalItems, 
+            itemsCount: items.length,
+            cartId: cartId,
+            userId: userId,
+            isAuthenticated: isAuthenticated,
+            items: items.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+          });
+          cartVerified = true;
+          break;
+        } else {
+          console.warn(`Cart verification attempt ${attempt + 1}: Cart exists but empty`, {
+            totalItems,
+            itemsCount: items.length,
+            cart: verifiedCart,
+            cartId: verifiedCart?.id || (verifiedCart as any)?.cart_id,
+            userId: verifiedCart?.user_id || (verifiedCart as any)?.user_id
+          });
+          
+          // If this is the last attempt and cart is still empty, throw error
+          if (attempt === 4) {
+            throw new Error('Cart is empty. Please add items to cart.');
           }
         }
+      } catch (error: any) {
+        console.warn(`Cart verification attempt ${attempt + 1} failed:`, error);
         
-        // Wait before next retry (only if not last attempt)
-        if (attempt < 2) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // If it's the last attempt, throw the error
+        if (attempt === 4) {
+          if (error.message && (error.message.includes('empty') || error.message.includes('Cart is empty'))) {
+            throw new Error('Cart is empty. Please add items to cart.');
+          }
+          throw error;
         }
       }
       
-      if (!cartVerified || !verifiedCart) {
-        console.error('Cart verification failed after all attempts');
-        throw new Error('Unable to verify cart on server. Please refresh the page, ensure your cart has items, and try again.');
+      // Wait before next retry (only if not last attempt)
+      if (attempt < 4) {
+        await new Promise(resolve => setTimeout(resolve, 300 + (attempt * 100)));
       }
+    }
+    
+    if (!cartVerified || !verifiedCart) {
+      console.error('Cart verification failed after all attempts');
+      throw new Error('Cart is empty. Please add items to cart.');
+    }
+    
+    // Final check: Ensure we have valid cart data before proceeding
+    const finalTotalItems = verifiedCart?.total_items || (verifiedCart as any)?.items_count || 0;
+    const finalItems = verifiedCart?.items || [];
+    if (finalTotalItems === 0 || finalItems.length === 0) {
+      throw new Error('Cart is empty. Please add items to cart.');
+    }
+    
+    // CRITICAL: Validate cart on server one more time RIGHT before API call
+    // This ensures the server has the cart at the exact moment we make the request
+    console.log('Performing final server-side cart validation...');
+    try {
+      const { cartApi } = await import('./api');
+      
+      // Call the cart validation endpoint to ensure server has the cart
+      const validationResponse = await cartApi.validate();
+      console.log('Server cart validation response:', validationResponse);
+      
+      if (!validationResponse.success) {
+        throw new Error('Server cart validation failed. Cart may be empty on server.');
+      }
+      
+      // Also do a direct cart fetch to ensure server has items
+      const serverCart = await CartService.getCart();
+      const serverTotalItems = serverCart?.total_items || (serverCart as any)?.items_count || 0;
+      const serverItems = serverCart?.items || [];
+      
+      if (serverTotalItems === 0 || serverItems.length === 0) {
+        console.error('Server cart is empty even after validation:', serverCart);
+        throw new Error('Cart is empty on server. Please refresh the page and try again.');
+      }
+      
+      const serverCartId = serverCart.id || (serverCart as any)?.cart_id || (serverCart as any)?.cartId;
+      const serverUserId = serverCart.user_id || (serverCart as any)?.user_id;
+      console.log('Server cart validation passed:', {
+        totalItems: serverTotalItems,
+        itemsCount: serverItems.length,
+        cartId: serverCartId,
+        userId: serverUserId,
+        isAuthenticated: isAuthenticated,
+        items: serverItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+      });
+      
+      // CRITICAL: Verify cart IDs match (if both are available)
+      // This ensures we're using the same cart that was verified
+      if (verifiedCart && serverCart) {
+        const verifiedCartId = verifiedCart.id || (verifiedCart as any)?.cart_id || (verifiedCart as any)?.cartId;
+        if (verifiedCartId && serverCartId && verifiedCartId !== serverCartId) {
+          console.warn('Cart ID mismatch detected:', {
+            verifiedCartId,
+            serverCartId,
+            verifiedUserId: verifiedCart.user_id || (verifiedCart as any)?.user_id,
+            serverUserId
+          });
+          // This might indicate a cart migration happened - use the server cart
+          verifiedCart = serverCart;
+        }
+      }
+    } catch (validationError: any) {
+      console.error('Server cart validation failed:', validationError);
+      if (validationError.message && validationError.message.includes('empty')) {
+        throw new Error('Cart is empty on server. Please refresh the page, add items to cart, and try again.');
+      }
+      throw validationError;
     }
     
     const headers: HeadersInit = {
@@ -271,6 +383,51 @@ export const checkoutApi = {
         throw new Error('Please login or provide session ID for guest checkout');
       }
     }
+    
+    // CRITICAL: Make a direct cart API call RIGHT before create-order to ensure server has cart in session
+    // This is the final check - if cart is empty here, it's definitely empty on server
+    // Use raw cartApi.getCart() for speed (no product enrichment)
+    try {
+      const { cartApi } = await import('./api');
+      console.log('Making final cart API call to ensure server has cart in session...');
+      const cartResponse = await cartApi.getCart();
+      const finalServerCart = cartResponse.data.cart;
+      const finalServerItems = finalServerCart?.items || [];
+      const finalServerTotal = finalServerCart?.total_items || (finalServerCart as any)?.items_count || 0;
+      
+      if (finalServerTotal === 0 || finalServerItems.length === 0) {
+        console.error('Cart is empty on server right before API call:', {
+          cart: finalServerCart,
+          response: cartResponse,
+          fullResponse: JSON.stringify(cartResponse, null, 2)
+        });
+        
+        // Clear client cache since server cart is empty
+        // Note: We can't clear cache here as this is not a React component
+        // The cache will be cleared by the component that handles this error
+        console.warn('Server cart is empty - client cache should be cleared by component');
+        
+        throw new Error('Cart is empty on server. The items may not have been saved. Please add items to cart again and try checkout.');
+      }
+      
+      const finalCartId = finalServerCart.id || (finalServerCart as any)?.cart_id || (finalServerCart as any)?.cartId;
+      console.log('Server cart confirmed before API call:', {
+        totalItems: finalServerTotal,
+        itemsCount: finalServerItems.length,
+        cartId: finalCartId,
+        userId: finalServerCart.user_id || (finalServerCart as any)?.user_id,
+        items: finalServerItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+      });
+    } catch (cartError: any) {
+      console.error('Failed to verify cart on server before API call:', cartError);
+      if (cartError.message && cartError.message.includes('empty')) {
+        throw cartError; // Re-throw the error with the message about clearing cache
+      }
+      throw new Error('Cart verification failed. Please refresh the page and try again.');
+    }
+    
+    // Small delay to ensure server has processed any cart updates
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     console.log('Calling Magic Checkout create-order API...');
     const response = await fetch(buildApiUrl('/payments/magic-checkout/create-order'), {

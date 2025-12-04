@@ -32,6 +32,7 @@ const CheckoutMagic: React.FC = () => {
   
   // Fetch cart data directly - use the same query key as the main cart query
   // IMPORTANT: Keep query enabled when authenticated to ensure cart is always available
+  // CRITICAL: Set staleTime to 0 to always fetch fresh data (bypasses cache)
   const isAuthenticated = AuthService.isAuthenticated();
   const { data: cart, isLoading: isLoadingCart, refetch: refetchCart } = useQuery({
     queryKey: queryKeys.cart.all,
@@ -42,9 +43,11 @@ const CheckoutMagic: React.FC = () => {
     },
     enabled: isAuthenticated, // Only fetch when authenticated
     retry: 3, // Increased retries
-    staleTime: 0, // Always fetch fresh data
+    staleTime: 0, // CRITICAL: Always consider data stale - force fresh fetch every time
+    gcTime: 0, // Don't cache data (formerly cacheTime)
     refetchOnMount: 'always', // Always refetch on mount
     refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchInterval: false, // Don't auto-refetch
   });
   
   // Local state
@@ -160,51 +163,43 @@ const CheckoutMagic: React.FC = () => {
       return;
     }
 
-    // Validate cart - refresh first to ensure we have latest data
+    // Validate cart - CRITICAL: Clear client cache and force fresh fetch from server
+    // This ensures client and server states are synchronized
     try {
       setError(null);
       
-      // First, ensure cart query is enabled and fetch fresh data
-      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+      // STEP 1: Clear cart cache to remove any stale/optimistic data
+      // This ensures we only use server state, not client cache
+      console.log('Clearing cart cache to ensure server-client sync...');
+      queryClient.removeQueries({ queryKey: queryKeys.cart.all });
       
-      // Fetch cart directly from service with retries
-      let directCart: any = null;
-      let retryCount = 0;
-      const maxRetries = 8; // Increased retries
+      // STEP 2: Force a fresh fetch from server (bypasses all cache)
+      console.log('Forcing fresh cart fetch from server...');
+      const directCart = await queryClient.fetchQuery({
+        queryKey: queryKeys.cart.all,
+        queryFn: async () => {
+          const cartData = await CartService.getCart();
+          console.log('Fresh cart fetched from server:', {
+            cart: cartData,
+            totalItems: cartData?.total_items || (cartData as any)?.items_count || 0,
+            itemsCount: cartData?.items?.length || 0
+          });
+          return cartData;
+        },
+        staleTime: 0, // Always fetch fresh
+      });
       
-      while (retryCount < maxRetries) {
-        try {
-          directCart = await CartService.getCart();
-          console.log(`Direct cart fetch (attempt ${retryCount + 1}):`, directCart);
-          
-          // Check if cart has items
-          const totalItems = directCart?.total_items || (directCart as any)?.items_count || 0;
-          const items = directCart?.items || [];
-          
-          if (directCart && totalItems > 0 && items.length > 0) {
-            console.log('Cart validated with items:', totalItems, 'items');
-            break; // Cart is valid, exit retry loop
-          } else {
-            console.log(`Cart fetch attempt ${retryCount + 1}: Cart exists but empty (items: ${items.length}, totalItems: ${totalItems})`);
-          }
-        } catch (err) {
-          console.warn(`Cart fetch attempt ${retryCount + 1} failed:`, err);
-        }
-        
-        retryCount++;
-        
-        // Wait before next retry (increasing delay)
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 + (retryCount * 300)));
-        }
-      }
-      
-      // Final validation
+      // STEP 3: Validate the fresh cart from server
       const totalItems = directCart?.total_items || (directCart as any)?.items_count || 0;
       const items = directCart?.items || [];
       
       if (!directCart || totalItems === 0 || items.length === 0) {
-        const errorMsg = 'Your cart appears to be empty. This may happen if cart migration is still in progress. Please wait a moment and try again, or refresh the page.';
+        // Cart is empty on server - clear client cache and show error
+        console.error('Cart is empty on server. Clearing client cache...');
+        queryClient.removeQueries({ queryKey: queryKeys.cart.all });
+        queryClient.setQueryData(queryKeys.cart.all, null);
+        
+        const errorMsg = 'Your cart is empty on the server. The items may not have been saved. Please add items to cart again and try checkout.';
         setError(errorMsg);
         showNotification({
           type: 'error',
@@ -213,48 +208,94 @@ const CheckoutMagic: React.FC = () => {
         return;
       }
       
-      console.log('Cart validated, proceeding with checkout. Items:', totalItems);
+      const cartId = directCart.id || (directCart as any)?.cart_id || (directCart as any)?.cartId;
+      console.log('Cart validated from server, proceeding with checkout:', {
+        cartId: cartId,
+        totalItems: totalItems,
+        itemsCount: items.length,
+        items: items.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity })),
+        userId: directCart.user_id || (directCart as any)?.user_id
+      });
 
-      // CRITICAL: Final verification - ensure cart data is still valid and update cache
-      // This prevents race conditions where cart might be cleared between validation and API call
+      // STEP 4: Update cache with verified server cart data
       queryClient.setQueryData(queryKeys.cart.all, directCart);
       
-      // One more direct fetch right before API call to ensure backend has the cart
+      // STEP 5: Validate cart on server using validation API
+      // This ensures the server recognizes the cart before we try to create an order
+      try {
+        const { cartApi } = await import('../services/api');
+        console.log('Validating cart on server before checkout...');
+        const validationResponse = await cartApi.validate();
+        console.log('Server cart validation response:', validationResponse);
+        
+        if (!validationResponse.success) {
+          console.error('Server cart validation failed:', validationResponse);
+          throw new Error('Server cart validation failed. Please refresh the page and try again.');
+        }
+      } catch (validationError: any) {
+        console.error('Cart validation API call failed:', validationError);
+        // Don't block checkout if validation API fails, but log it
+        console.warn('Proceeding with checkout despite validation API failure');
+      }
+      
+      // STEP 6: Small delay to ensure server has synced the cart state
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // STEP 7: One final verification right before API call
+      // This is the last check to ensure server has the cart
       try {
         const finalCartCheck = await CartService.getCart();
         const finalTotalItems = finalCartCheck?.total_items || (finalCartCheck as any)?.items_count || 0;
         const finalItems = finalCartCheck?.items || [];
+        const finalCartId = finalCartCheck.id || (finalCartCheck as any)?.cart_id || (finalCartCheck as any)?.cartId;
         
         if (!finalCartCheck || finalTotalItems === 0 || finalItems.length === 0) {
-          console.error('Final cart check failed - cart is empty on backend');
+          console.error('Final cart check failed - cart is empty on backend:', {
+            cart: finalCartCheck,
+            cartId: finalCartId
+          });
           throw new Error('Cart appears to be empty on the server. Please refresh the page and try again.');
         }
         
-        console.log('Final cart verification passed:', { totalItems: finalTotalItems, itemsCount: finalItems.length });
+        console.log('Final cart verification passed:', { 
+          totalItems: finalTotalItems, 
+          itemsCount: finalItems.length,
+          cartId: finalCartId,
+          userId: finalCartCheck.user_id || (finalCartCheck as any)?.user_id,
+          items: finalItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
+        });
         
-        // Update cache with final cart data
+        // Update cache with final verified cart data
         queryClient.setQueryData(queryKeys.cart.all, finalCartCheck);
       } catch (finalCheckError: any) {
         console.error('Final cart verification failed:', finalCheckError);
         throw new Error(finalCheckError.message || 'Cart verification failed. Please refresh and try again.');
       }
 
-      // Create Magic Checkout order - this will automatically open the modal
+      // STEP 7: Create Magic Checkout order
+      // The createMagicCheckoutOrder function will also verify the cart before making the API call
+      console.log('Proceeding with order creation...');
       await createOrderMutation.mutateAsync();
     } catch (err: any) {
       console.error('Checkout error:', err);
       const errorMessage = err.message || 'Failed to start checkout. Please try again.';
-      setError(errorMessage);
-      showNotification({
-        type: 'error',
-        message: errorMessage,
-      });
       
-      // If error is about empty cart, suggest refresh
+      // If error is about empty cart, clear client cache to sync with server
       if (errorMessage.includes('empty') || errorMessage.includes('Cart is empty')) {
+        console.log('Cart is empty on server - clearing client cache...');
+        queryClient.removeQueries({ queryKey: queryKeys.cart.all });
+        queryClient.setQueryData(queryKeys.cart.all, null);
+        
+        setError('Your cart is empty on the server. The items may not have been saved. Please add items to cart again and try checkout.');
         showNotification({
           type: 'error',
-          message: 'Cart appears empty. This may be due to migration delay. Please refresh the page and try again.',
+          message: 'Cart is empty on server. Please add items to cart again.',
+        });
+      } else {
+        setError(errorMessage);
+        showNotification({
+          type: 'error',
+          message: errorMessage,
         });
       }
     }
