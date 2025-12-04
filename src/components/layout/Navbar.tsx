@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2, Package } from 'lucide-react';
 import CartService from '../../services/cartService';
 import AuthService, { AuthUser } from '../../services/authService';
+import ProfileService from '../../services/profileService';
 import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
 import CartCount from '../ui/CartCount';
@@ -29,6 +30,7 @@ const Navbar = () => {
   // Keep local state as fallback for immediate updates
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
   
   // Search state
   const [showSearch, setShowSearch] = useState(false);
@@ -59,6 +61,46 @@ const Navbar = () => {
       }
     }
   }, [authUser, isAuthenticated]);
+
+  // Load profile name for display in user menu
+  useEffect(() => {
+    const shouldLoadProfileName = (authenticated || isAuthenticated) && !profileName;
+    if (!shouldLoadProfileName) return;
+
+    let isCancelled = false;
+
+    const loadProfileName = async () => {
+      try {
+        const profile = await ProfileService.getProfile();
+        const fullName = ProfileService.getFullName(profile);
+        if (isCancelled) return;
+
+        setProfileName(fullName);
+
+        // Also persist the name into stored user data for other parts of the app
+        try {
+          const storedUserStr = localStorage.getItem('user');
+          if (storedUserStr) {
+            const storedUser = JSON.parse(storedUserStr);
+            if (!storedUser.name || storedUser.name === 'User') {
+              storedUser.name = fullName;
+              localStorage.setItem('user', JSON.stringify(storedUser));
+            }
+          }
+        } catch {
+          // Ignore storage errors
+        }
+      } catch {
+        // If profile fetch fails, silently ignore and keep existing fallbacks
+      }
+    };
+
+    loadProfileName();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [authenticated, isAuthenticated, profileName]);
 
   // Refresh auth state when user menu is opened
   const handleUserMenuToggle = () => {
@@ -424,18 +466,23 @@ const Navbar = () => {
                         <div className="px-4 py-2 border-b border-black-200">
                           <p className="text-sm font-semibold text-black-900">
                             {(() => {
+                              // Highest priority: profile name loaded from ProfileService
+                              if (profileName) return profileName;
+
                               const currentUser = user || authUser;
-                              // Try to get name from stored user object (which may have additional fields)
+
+                              // Next: name stored in localStorage user object (e.g., from profile page)
                               try {
                                 const storedUserStr = localStorage.getItem('user');
                                 if (storedUserStr) {
                                   const storedUser = JSON.parse(storedUserStr);
                                   if (storedUser.name) return storedUser.name;
                                 }
-                              } catch (e) {
+                              } catch {
                                 // Ignore parsing errors
                               }
-                              // Fallback to displayName or 'User'
+
+                              // Fallbacks: displayName, then generic 'User'
                               return currentUser?.displayName || 'User';
                             })()}
                           </p>

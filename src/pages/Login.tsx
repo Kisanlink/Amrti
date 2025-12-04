@@ -88,7 +88,7 @@ const Login = () => {
   const [signupStep, setSignupStep] = useState<'email' | 'phone' | 'verify'>('email');
   const [signupSessionInfo, setSignupSessionInfo] = useState<string>('');
   const [formData, setFormData] = useState({
-    phoneNumber: '',
+    phoneNumber: '+91',
     verificationCode: '',
     email: '',
     password: '',
@@ -1355,22 +1355,21 @@ const Login = () => {
                   </p>
                 </div>
 
-                {/* Resend Code Button */}
+                {/* Submit Button - Verify & Sign In (moved up) */}
                 <button
-                  type="button"
-                  onClick={handleResendVerificationCode}
-                  disabled={loading}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                  type="submit"
+                  disabled={loading || !formData.verificationCode}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Resending...</span>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verifying...</span>
                     </>
                   ) : (
                     <>
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Resend Code</span>
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Verify & Sign In</span>
                     </>
                   )}
                 </button>
@@ -1387,21 +1386,22 @@ const Login = () => {
                   ← Change phone number
                 </button>
 
-                {/* Submit Button */}
+                {/* Resend Code Button (moved down) */}
                 <button
-                  type="submit"
-                  disabled={loading || !formData.verificationCode}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                  type="button"
+                  onClick={handleResendVerificationCode}
+                  disabled={loading}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Verifying...</span>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Resending...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-5 h-5" />
-                      <span>Verify & Sign In</span>
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Resend Code</span>
                     </>
                   )}
                 </button>
