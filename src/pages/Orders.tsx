@@ -434,13 +434,6 @@ const Orders: React.FC = () => {
                             Track Package
                           </a>
                         )}
-                        <button
-                          onClick={() => handleInvoiceDownload(orderItem)}
-                          className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                        >
-                          <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                          Invoice
-                        </button>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Link
@@ -827,15 +820,18 @@ const Orders: React.FC = () => {
                   
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium text-gray-900">₹{(order.subtotal || (order.total_amount - (order.shipping || order.shipping_charge || 0))).toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">₹{(order.subtotal || 0).toFixed(2)}</span>
                   </div>
                   
-                  {order.discount && order.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Discount</span>
-                      <span className="font-medium text-green-600">-₹{order.discount.toFixed(2)}</span>
-                    </div>
-                  )}
+                  {(() => {
+                    const discountAmount = (order as any).discount_amount || order.discount || 0;
+                    return discountAmount > 0 ? (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Discount</span>
+                        <span className="font-medium text-green-600">-₹{discountAmount.toFixed(2)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>

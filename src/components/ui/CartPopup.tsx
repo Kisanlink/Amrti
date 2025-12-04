@@ -1,11 +1,13 @@
 import { X, Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useAddToCart } from '../../hooks/queries/useCart';
 import { useAllProducts } from '../../hooks/queries/useProducts';
 import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
+import { queryKeys } from '../../lib/queryClient';
 
 interface CartPopupProps {
   isOpen: boolean;
@@ -15,23 +17,40 @@ interface CartPopupProps {
 const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
   const { showNotification } = useNotification();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // TanStack Query hooks
-  const { data: cart, isLoading, error } = useCart();
+  const { data: cart, isLoading, error, isFetching } = useCart();
   const updateCartItem = useUpdateCartItem();
   const removeFromCart = useRemoveFromCart();
   const incrementCartItem = useIncrementCartItem();
   const decrementCartItem = useDecrementCartItem();
   const addToCartMutation = useAddToCart();
   
+  // Keep track of last known cart state to prevent empty flash during refetches
+  const lastCartRef = useRef<typeof cart>(null);
+  
+  // Update ref whenever we have valid cart data
+  useEffect(() => {
+    if (cart && (cart.total_items > 0 || (cart as any)?.items_count > 0 || (cart.items && cart.items.length > 0))) {
+      lastCartRef.current = cart;
+    }
+  }, [cart]);
+  
+  // Get cached cart data as fallback (more reliable than ref during refetches)
+  const getCachedCart = () => {
+    return queryClient.getQueryData<typeof cart>(queryKeys.cart.all);
+  };
+  
   // Fetch products for suggestions
   const { data: productsResponse } = useAllProducts();
   
   // Get suggested products (exclude products already in cart)
   const suggestedProducts = useMemo(() => {
-    if (!productsResponse?.data || !cart?.items) return [];
+    const currentCart = cart || lastCartRef.current;
+    if (!productsResponse?.data || !currentCart?.items) return [];
     
-    const cartProductIds = cart.items.map((item: any) => item.product_id);
+    const cartProductIds = currentCart.items.map((item: any) => item.product_id);
     const allProducts = productsResponse.data || [];
     
     // Filter out products already in cart and take first 6
@@ -100,10 +119,11 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
 
   // Handle checkout navigation
   const handleCheckout = () => {
-    const totalItems = cart?.total_items || (cart as any)?.items_count || 0;
-    const cartItems = cart?.items || [];
+    const checkoutCart = cart || lastCartRef.current;
+    const totalItems = checkoutCart?.total_items || (checkoutCart as any)?.items_count || 0;
+    const cartItems = checkoutCart?.items || [];
     
-    if (!cart || totalItems === 0 || cartItems.length === 0) {
+    if (!checkoutCart || totalItems === 0 || cartItems.length === 0) {
       showNotification({
         type: 'error',
         message: 'Your cart is empty'
@@ -156,10 +176,41 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
   }
 
   // Empty cart state - handle both Cart and GuestCart types
-  const totalItems = cart?.total_items || (cart as any)?.items_count || 0;
-  const cartItems = cart?.items || [];
+  // Don't show empty state if any cart mutation is pending or cart is fetching (prevents flicker when adding items)
+  const isAnyMutationPending = 
+    addToCartMutation.isPending || 
+    updateCartItem.isPending || 
+    removeFromCart.isPending || 
+    incrementCartItem.isPending || 
+    decrementCartItem.isPending;
   
-  if (!cart || totalItems === 0 || cartItems.length === 0) {
+  // Use current cart, cached cart, or last known cart during refetches (prevents empty flash)
+  const cachedCart = getCachedCart();
+  const displayCart = cart || cachedCart || lastCartRef.current;
+  const totalItems = displayCart?.total_items || (displayCart as any)?.items_count || 0;
+  const cartItems = displayCart?.items || [];
+  
+  // Check if we should prevent showing empty cart (during mutations or refetches)
+  const shouldPreventEmptyState = isAnyMutationPending || isFetching;
+  
+  // Show loading state if mutation is pending/fetching and cart appears empty (prevents empty cart flash)
+  // But only if we don't have a previous cart state to show
+  if ((!displayCart || totalItems === 0 || cartItems.length === 0) && shouldPreventEmptyState && !cachedCart && !lastCartRef.current) {
+    return createPortal(
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-2">Updating cart...</span>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+  
+  // Only show empty cart if cart is actually empty AND no mutations/fetches are pending AND we never had items
+  if ((!displayCart || totalItems === 0 || cartItems.length === 0) && !shouldPreventEmptyState && !cachedCart && !lastCartRef.current) {
     return createPortal(
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -374,17 +425,17 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
           <div className="space-y-2 mb-4">
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Subtotal ({totalItems} items)</span>
-              <span className="font-medium text-sm">₹{cart.total_price || (cart as any)?.final_price || 0}</span>
+              <span className="font-medium text-sm">₹{displayCart?.total_price || (displayCart as any)?.final_price || 0}</span>
                    </div>
-            {((cart.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
+            {((displayCart?.discount_amount && displayCart.discount_amount > 0) || ((displayCart as any)?.discount_amount && (displayCart as any).discount_amount > 0)) && (
               <div className="flex justify-between text-green-600 text-sm">
                 <span>Discount</span>
-                <span>-₹{cart.discount_amount || (cart as any)?.discount_amount || 0}</span>
+                <span>-₹{displayCart?.discount_amount || (displayCart as any)?.discount_amount || 0}</span>
                  </div>
             )}
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
-              <span>₹{'discounted_total' in cart ? cart.discounted_total : ((cart as any)?.final_price || cart.total_price || 0)}</span>
+              <span>₹{'discounted_total' in (displayCart || {}) ? (displayCart as any).discounted_total : ((displayCart as any)?.final_price || displayCart?.total_price || 0)}</span>
                    </div>
                  </div>
 
