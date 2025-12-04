@@ -288,12 +288,12 @@ const Orders: React.FC = () => {
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Back to Home
               </Link>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-                <div>
+              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-0">
+                <div className="text-center sm:text-left w-full sm:w-auto">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">My Orders</h1>
                   <p className="text-base sm:text-lg text-gray-600">Track and manage your orders</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                   {/* Sort Dropdown */}
                   <div className="flex items-center gap-2">
                     <label className="text-xs sm:text-sm font-medium text-gray-700">Sort by:</label>
