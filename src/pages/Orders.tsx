@@ -594,10 +594,6 @@ const Orders: React.FC = () => {
                           <span className="text-gray-600">Mode:</span>
                           <span className="font-medium text-gray-900">{order.shipping_mode}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Charge:</span>
-                          <span className="font-medium text-gray-900">₹{order.shipping_charge.toFixed(2)}</span>
-                        </div>
                       </div>
                     </div>
                     
@@ -878,38 +874,6 @@ const Orders: React.FC = () => {
                   >
                     Continue Shopping
                   </Link>
-                </div>
-              </motion.div>
-
-              {/* Additional Info */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Info</h2>
-                
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Razorpay Order ID:</span>
-                    <p className="font-medium text-gray-900">{order.razorpay_order_id}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Razorpay Receipt:</span>
-                    <p className="font-medium text-gray-900">{order.razorpay_receipt}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Payment Amount:</span>
-                    <p className="font-medium text-gray-900">₹{(order.razorpay_amount_paisa / 100).toFixed(2)}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Order Notes:</span>
-                    <p className="font-medium text-gray-900 text-xs break-words">{order.notes}</p>
-                  </div>
                 </div>
               </motion.div>
             </div>

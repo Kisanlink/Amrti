@@ -427,12 +427,15 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
               <span className="text-gray-600 text-sm">Subtotal ({totalItems} items)</span>
               <span className="font-medium text-sm">₹{displayCart?.total_price || (displayCart as any)?.final_price || 0}</span>
                    </div>
-            {((displayCart?.discount_amount && displayCart.discount_amount > 0) || ((displayCart as any)?.discount_amount && (displayCart as any).discount_amount > 0)) && (
-              <div className="flex justify-between text-green-600 text-sm">
-                <span>Discount</span>
-                <span>-₹{displayCart?.discount_amount || (displayCart as any)?.discount_amount || 0}</span>
+            {(() => {
+              const discountAmount = displayCart?.discount_amount ?? (displayCart as any)?.discount_amount ?? 0;
+              return discountAmount > 0 ? (
+                <div className="flex justify-between text-green-600 text-sm">
+                  <span>Discount</span>
+                  <span>-₹{discountAmount}</span>
                  </div>
-            )}
+              ) : null;
+            })()}
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
               <span>₹{'discounted_total' in (displayCart || {}) ? (displayCart as any).discounted_total : ((displayCart as any)?.final_price || displayCart?.total_price || 0)}</span>

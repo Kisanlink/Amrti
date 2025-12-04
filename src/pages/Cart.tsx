@@ -374,13 +374,15 @@ const Cart = () => {
                   <span className="font-semibold text-sm sm:text-base">₹{cart?.total_price || (cart as any)?.final_price || 0}</span>
                 </div>
                 
-
-                {((cart?.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="text-sm sm:text-base">Discount</span>
-                    <span className="font-semibold text-sm sm:text-base">-₹{cart?.discount_amount || (cart as any)?.discount_amount || 0}</span>
-                  </div>
-                )}
+                {(() => {
+                  const discountAmount = cart?.discount_amount ?? (cart as any)?.discount_amount ?? 0;
+                  return discountAmount > 0 ? (
+                    <div className="flex justify-between text-green-600">
+                      <span className="text-sm sm:text-base">Discount</span>
+                      <span className="font-semibold text-sm sm:text-base">-₹{discountAmount}</span>
+                    </div>
+                  ) : null;
+                })()}
                 
                 <div className="border-t border-gray-200 pt-3 sm:pt-4">
                   <div className="flex justify-between text-base sm:text-lg font-bold">
