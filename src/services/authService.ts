@@ -417,11 +417,6 @@ export class AuthService {
         throw new Error('No user data received from server');
       }
 
-      // Ensure only admin users can log in via this method (case-insensitive check)
-      if (userRole.toLowerCase() !== 'admin') {
-        throw new Error('You are not authorized to access the admin panel');
-      }
-
       // Store token
       localStorage.setItem('authToken', token);
       
