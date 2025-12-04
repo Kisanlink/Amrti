@@ -3,23 +3,19 @@ import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filte
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import ProductService from '../services/productService';
+import { useAllProducts } from '../hooks/queries/useProducts';
+import { useWishlist, useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
+import { useAddToCart } from '../hooks/queries/useCart';
 import type { Product } from '../context/AppContext';
-import CartService from '../services/cartService';
-import WishlistService from '../services/wishlistService';
 import { useNotification } from '../context/NotificationContext';
 
 const Products = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Products');
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [showSidebar, setShowSidebar] = useState(false);
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(false);
-  const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set()); // Track wishlist items locally
   const [filters, setFilters] = useState({
     priceRange: [0, 2000],
     availability: 'all',
@@ -29,67 +25,20 @@ const Products = () => {
   });
   const { showNotification } = useNotification();
 
-  // Load products and categories on mount
+  // Use TanStack Query to fetch products
+  const { data: productsResponse, isLoading, error } = useAllProducts();
+  
+  // Use React Query for wishlist - this loads wishlist and syncs Redux
+  const { data: wishlistItems = [] } = useWishlist();
+  const toggleWishlistMutation = useToggleWishlist();
+  const addToCartMutation = useAddToCart();
+
+  // Process products data
+  const products = productsResponse?.data || [];
+
+  // Load categories on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const productsResponse = await ProductService.getAllProducts(1, 100);
-        setProducts(productsResponse.data);
-        // For now, set default categories since getProductCategories doesn't exist
-        setCategories(['Superfoods', 'Herbs']);
-        // Initialize counts - will be updated via events
-        setCartCount(0);
-        setWishlistCount(0);
-      } catch (error) {
-        console.error('Failed to load products:', error);
-        setProducts([]);
-        setCategories([]);
-      }
-    };
-    
-    loadData();
-  }, []);
-
-  // Listen for cart and wishlist updates
-  useEffect(() => {
-    const handleCartUpdate = async () => {
-      // Only update cart count if user is authenticated
-      const AuthService = (await import('../services/authService')).default;
-      if (AuthService.isAuthenticated()) {
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to update cart count:', error);
-        }
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    const handleWishlistUpdate = async () => {
-      // Only update wishlist count if user is authenticated
-      const AuthService = (await import('../services/authService')).default;
-      if (AuthService.isAuthenticated()) {
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to update wishlist count:', error);
-        }
-      } else {
-        setWishlistCount(0);
-      }
-    };
-
-    // Listen for custom events
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
-
-    return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
-    };
+    setCategories(['Superfoods', 'Herbs']);
   }, []);
 
   // Filter products based on selected category and filters
@@ -121,8 +70,6 @@ const Products = () => {
     if (filters.newArrivals) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      // For now, consider all products as new arrivals since dateAdded is not in the interface
-      // In a real app, you would add dateAdded to the Product interface
       const productDate = new Date('2024-01-01'); // Default date
       if (productDate < thirtyDaysAgo) {
         return false;
@@ -132,9 +79,62 @@ const Products = () => {
     return true;
   });
 
-  // Helper function to check if product is in wishlist
+  // Helper function to check if product is in wishlist - uses React Query cache
   const isProductInWishlist = (productId: string): boolean => {
-    return wishlistItems.has(productId);
+    return wishlistItems.some(item => item.product_id === productId);
+  };
+  
+  // Handle wishlist toggle - uses React Query mutation for instant updates
+  const handleWishlistToggle = (productId: string) => {
+    const isInWishlist = isProductInWishlist(productId);
+    setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: true }));
+    
+    toggleWishlistMutation.mutate(
+      { productId, isInWishlist },
+      {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: isInWishlist 
+              ? 'Product removed from wishlist'
+              : 'Product added to wishlist successfully!'
+          });
+          setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: false }));
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to update wishlist'
+          });
+          setLoadingStates(prev => ({ ...prev, [`wishlist-${productId}`]: false }));
+        }
+      }
+    );
+  };
+  
+  // Handle add to cart - uses React Query mutation for instant updates
+  const handleAddToCart = (productId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: true }));
+    
+    addToCartMutation.mutate(
+      { productId, quantity: 1 },
+      {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: 'Product added to cart successfully!'
+          });
+          setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: false }));
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to add to cart'
+          });
+          setLoadingStates(prev => ({ ...prev, [`cart-${productId}`]: false }));
+        }
+      }
+    );
   };
 
   // Sort products - Moringa products first, then by selected criteria
@@ -160,8 +160,43 @@ const Products = () => {
         return a.name.localeCompare(b.name);
     }
   });
-  
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300">
+          <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading products...</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <ScrollToTop />
+        <div className="pt-16 sm:pt-20 bg-beige-300">
+          <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+            <div className="container-custom px-4 sm:px-6">
+              <div className="text-center">
+                <p className="text-red-600">Failed to load products</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -483,17 +518,9 @@ const Products = () => {
                           </button>
                         ) : (
                           <button
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation(); // Prevent card navigation
-                              setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: true }));
-                              try {
-                                await CartService.addItem(product.id, 1);
-                                // Cart count will be updated via event listener
-                              } catch (err) {
-                                console.error('Failed to add to cart:', err);
-                              } finally {
-                                setLoadingStates(prev => ({ ...prev, [`cart-${product.id}`]: false }));
-                              }
+                              handleAddToCart(product.id);
                             }}
                             disabled={loadingStates[`cart-${product.id}`]}
                             className="p-2 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white-50 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -507,35 +534,11 @@ const Products = () => {
                           </button>
                         )}
                         
-                        {/* Add to Wishlist Button */}
+                        {/* Add to Wishlist Button - uses React Query for instant updates */}
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation(); // Prevent card navigation
-                            setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: true }));
-                            try {
-                              if (isProductInWishlist(product.id)) {
-                                await WishlistService.removeFromWishlist(product.id);
-                                // Update local state
-                                setWishlistItems(prev => {
-                                  const newSet = new Set(prev);
-                                  newSet.delete(product.id);
-                                  return newSet;
-                                });
-                              } else {
-                                await WishlistService.addToWishlist(product.id);
-                                // Update local state
-                                setWishlistItems(prev => {
-                                  const newSet = new Set(prev);
-                                  newSet.add(product.id);
-                                  return newSet;
-                                });
-                              }
-                              // Wishlist count will be updated via event listener
-                            } catch (err) {
-                              console.error('Failed to update wishlist:', err);
-                            } finally {
-                              setLoadingStates(prev => ({ ...prev, [`wishlist-${product.id}`]: false }));
-                            }
+                            handleWishlistToggle(product.id);
                           }}
                           disabled={loadingStates[`wishlist-${product.id}`]}
                           className={`p-2 border rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${

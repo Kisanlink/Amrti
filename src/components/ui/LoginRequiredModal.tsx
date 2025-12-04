@@ -42,7 +42,7 @@ const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({
   };
 
   const handleSignup = () => {
-    navigate('/signup', { state: { from: redirectUrl } });
+    navigate('/login', { state: { from: redirectUrl } });
     handleClose();
   };
 

@@ -8,20 +8,36 @@ export interface OrderItem {
   total_price: number; // This is in rupees (decimal), not paisa
   product_name?: string;
   product_image?: string;
+  image_url?: string; // From API response
+  product?: {
+    name: string;
+    image_url: string;
+    image_urls?: string[];
+    description?: string;
+  };
 }
 
 export interface Order {
   id: string;
+  order_id?: string; // Alternative ID field
   created_at: string;
   updated_at: string;
-  created_by: string;
-  updated_by: string;
+  created_by?: string;
+  updated_by?: string;
   user_id: string;
   total_amount: number; // This is in rupees (decimal), not paisa
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed';
   shipping_address: string;
+  shipping_address_normalized?: {
+    address_line_1: string;
+    address_line_2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
   payment_method: string;
-  payment_status: 'pending' | 'completed' | 'failed';
+  payment_status: 'pending' | 'completed' | 'failed' | 'successful';
   notes: string;
   razorpay_order_id: string;
   razorpay_receipt: string;
@@ -36,19 +52,37 @@ export interface Order {
   delhivery_status: string;
   tracking_url: string;
   invoice_url: string;
+  item_count?: number;
+  items?: OrderItem[];
+  order_items?: OrderItem[];
+  customer?: {
+    first_name: string;
+    last_name: string;
+    phone: string;
+    email?: string;
+  };
+  subtotal?: number;
+  discount?: number;
+  shipping?: number;
+  tax?: number;
+  grand_total?: number;
 }
 
 export interface OrderResponse {
-  items: OrderItem[];
-  order: Order & {
-    items?: OrderItem[];
-  };
+  order: Order;
+  items?: OrderItem[];
 }
 
 export interface OrdersResponse {
   orders: Order[];
-  message: string;
-  success: boolean;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    has_more: boolean;
+  };
+  message?: string;
+  success?: boolean;
 }
 
 export const orderApi = {
@@ -94,7 +128,7 @@ export class OrderService {
   static async getUserOrders(): Promise<Order[]> {
     try {
       const response = await orderApi.getUserOrders();
-      return response.orders;
+      return response.orders || [];
     } catch (error) {
       console.error('Failed to fetch user orders:', error);
       throw new Error('Failed to fetch orders. Please try again later.');
@@ -140,7 +174,28 @@ export class OrderService {
         return 'bg-purple-100 text-purple-800';
       case 'delivered':
         return 'bg-green-100 text-green-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
       case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  /**
+   * Get payment status color for UI
+   * @param status - Payment status
+   * @returns Tailwind CSS color classes
+   */
+  static getPaymentStatusColor(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'successful':
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';

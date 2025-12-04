@@ -3,10 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingCart, User, Search, Heart, LogOut, Loader2, Package } from 'lucide-react';
 import CartService from '../../services/cartService';
-import WishlistService from '../../services/wishlistService';
 import AuthService, { AuthUser } from '../../services/authService';
+import ProfileService from '../../services/profileService';
 import { useNotification } from '../../context/NotificationContext';
 import CartPopup from '../ui/CartPopup';
+import CartCount from '../ui/CartCount';
+import { useWishlistCount } from '../../hooks/queries/useWishlist';
+import { useAppSelector } from '../../store';
 
 const Navbar = () => {
 
@@ -14,10 +17,20 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCartPopup, setShowCartPopup] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
+  // Use Redux DIRECTLY - no hooks needed, Redux updates trigger re-render automatically
+  const wishlistCount = useAppSelector((state) => state.counter.wishlistCount);
+  
+  // Use Redux auth state for reliable authentication status
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  
+  // Sync from cache on mount only (background sync)
+  useWishlistCount();
+  
+  // Keep local state as fallback for immediate updates
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
   
   // Search state
   const [showSearch, setShowSearch] = useState(false);
@@ -31,106 +44,131 @@ const Navbar = () => {
   const { showNotification } = useNotification();
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Load user and authentication state on mount
+  // Sync Redux auth state with local state - this is the primary source of truth
   useEffect(() => {
-    const loadInitialData = async () => {
+    if (authUser || isAuthenticated) {
+      console.log('Navbar: Syncing from Redux', { authUser, isAuthenticated });
+      setUser(authUser);
+      setAuthenticated(isAuthenticated);
+    } else {
+      // If Redux doesn't have user, try to get from AuthService (fallback)
       const currentUser = AuthService.getCurrentUser();
       const isAuth = AuthService.isAuthenticated();
-      setUser(currentUser);
-      setAuthenticated(isAuth);
-      
-      // Only load cart and wishlist data if user is authenticated
-      if (isAuth) {
+      if (currentUser && isAuth) {
+        console.log('Navbar: Syncing from AuthService fallback', { currentUser, isAuth });
+        setUser(currentUser);
+        setAuthenticated(isAuth);
+      }
+    }
+  }, [authUser, isAuthenticated]);
+
+  // Load profile name for display in user menu
+  useEffect(() => {
+    const shouldLoadProfileName = (authenticated || isAuthenticated) && !profileName;
+    if (!shouldLoadProfileName) return;
+
+    let isCancelled = false;
+
+    const loadProfileName = async () => {
+      try {
+        const profile = await ProfileService.getProfile();
+        const fullName = ProfileService.getFullName(profile);
+        if (isCancelled) return;
+
+        setProfileName(fullName);
+
+        // Also persist the name into stored user data for other parts of the app
         try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to load cart count:', error);
-          setCartCount(0);
+          const storedUserStr = localStorage.getItem('user');
+          if (storedUserStr) {
+            const storedUser = JSON.parse(storedUserStr);
+            if (!storedUser.name || storedUser.name === 'User') {
+              storedUser.name = fullName;
+              localStorage.setItem('user', JSON.stringify(storedUser));
+            }
+          }
+        } catch {
+          // Ignore storage errors
         }
-        
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to load wishlist count:', error);
-          setWishlistCount(0);
-        }
-      } else {
-        // Set counts to 0 for unauthenticated users
-        setCartCount(0);
-        setWishlistCount(0);
+      } catch {
+        // If profile fetch fails, silently ignore and keep existing fallbacks
       }
     };
-    
-    loadInitialData();
-  }, []);
 
-  // Listen to authentication state changes
-  useEffect(() => {
-    const handleUserLogin = (event: CustomEvent) => {
-      const currentUser = AuthService.getCurrentUser();
-    setUser(currentUser);
+    loadProfileName();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [authenticated, isAuthenticated, profileName]);
+
+  // Refresh auth state when user menu is opened
+  const handleUserMenuToggle = () => {
+    // Refresh auth state before showing menu
+    const currentUser = authUser || AuthService.getCurrentUser();
+    const isAuth = isAuthenticated || AuthService.isAuthenticated();
+    
+    if (currentUser) {
+      setUser(currentUser);
       setAuthenticated(true);
+    } else {
+      setUser(null);
+      setAuthenticated(false);
+    }
+    
+    setShowUserMenu(!showUserMenu);
+  };
+
+  // Listen to authentication state changes (backup to Redux)
+  useEffect(() => {
+    const handleUserLogin = (event: Event) => {
+      // Get user from event detail if available, otherwise from AuthService
+      const customEvent = event as CustomEvent<AuthUser>;
+      const eventUser = customEvent.detail;
+      
+      console.log('Navbar: User logged in event received', { eventUser, authUser, isAuthenticated });
+      
+      // Update local state immediately for UI responsiveness
+      const updateAuthState = () => {
+        const currentUser = eventUser || AuthService.getCurrentUser();
+        const isAuth = currentUser ? true : AuthService.isAuthenticated();
+        
+        console.log('Navbar: Updating auth state', { currentUser, isAuth });
+        setUser(currentUser);
+        setAuthenticated(isAuth);
+      };
+      
+      // Update immediately
+      updateAuthState();
+      
+      // Also update after a short delay to catch any async updates
+      setTimeout(updateAuthState, 100);
+      setTimeout(updateAuthState, 500);
     };
 
     const handleUserLogout = () => {
+      console.log('Navbar: User logged out');
       setUser(null);
       setAuthenticated(false);
-      setCartCount(0);
-      setWishlistCount(0);
+      // Wishlist count will be updated automatically by React Query
+      // Navigate to login page if not already there
+      if (location.pathname !== '/login') {
+        navigate('/login', { replace: true });
+      }
     };
 
     // Add event listeners
-    window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
+    window.addEventListener('userLoggedIn', handleUserLogin);
     window.addEventListener('userLoggedOut', handleUserLogout);
 
     // Cleanup
     return () => {
-      window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
+      window.removeEventListener('userLoggedIn', handleUserLogin);
       window.removeEventListener('userLoggedOut', handleUserLogout);
     };
-  }, []);
+  }, [location.pathname, navigate]);
 
-  // Listen for cart and wishlist updates
-  useEffect(() => {
-    const handleCartUpdate = async () => {
-      // Only update cart count if user is authenticated
-      if (AuthService.isAuthenticated()) {
-        try {
-          const cartCount = await CartService.getItemCount();
-          setCartCount(cartCount);
-        } catch (error) {
-          console.error('Failed to update cart count:', error);
-        }
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    const handleWishlistUpdate = async () => {
-      // Only update wishlist count if user is authenticated
-      if (AuthService.isAuthenticated()) {
-        try {
-          const wishlistCount = await WishlistService.getWishlistCount();
-          setWishlistCount(wishlistCount);
-        } catch (error) {
-          console.error('Failed to update wishlist count:', error);
-        }
-      } else {
-        setWishlistCount(0);
-      }
-    };
-
-    // Listen for custom events
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
-
-    return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
-    };
-  }, []);
+  // Wishlist updates are now handled by React Query automatically
 
   useEffect(() => {
     const handleScroll = () => {
@@ -386,32 +424,29 @@ const Navbar = () => {
             </div>
             
             {/* Wishlist */}
-                          <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors relative">
-              <Heart size={20} />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-400 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
+            <Link to="/wishlist" className="p-2 text-russet-700 hover:text-green-600 transition-colors">
+              <div className="relative flex items-center">
+                <Heart size={20} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </div>
             </Link>
             
             {/* Cart */}
             <button 
               onClick={() => setShowCartPopup(true)}
-                              className="p-2 text-russet-700 hover:text-green-600 transition-colors relative"
+              className="p-2 text-russet-700 hover:text-green-600 transition-colors relative"
             >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
+              <CartCount showIcon={true} />
             </button>
             
             {/* User Menu */}
             <div className="relative user-menu">
               <button 
-                onClick={() => setShowUserMenu(!showUserMenu)}
+                onClick={handleUserMenuToggle}
                 className="p-2 text-russet-700 hover:text-green-600 transition-colors"
               >
                 <User size={20} />
@@ -426,11 +461,47 @@ const Navbar = () => {
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-black-200 py-2 z-50"
                   >
-                    {authenticated ? (
+                    {(authenticated || isAuthenticated) ? (
                       <>
                         <div className="px-4 py-2 border-b border-black-200">
-                          <p className="text-sm font-semibold text-black-900">{user?.displayName || 'User'}</p>
-                          <p className="text-xs text-black-600">{user?.email}</p>
+                          <p className="text-sm font-semibold text-black-900">
+                            {(() => {
+                              // Highest priority: profile name loaded from ProfileService
+                              if (profileName) return profileName;
+
+                              const currentUser = user || authUser;
+
+                              // Next: name stored in localStorage user object (e.g., from profile page)
+                              try {
+                                const storedUserStr = localStorage.getItem('user');
+                                if (storedUserStr) {
+                                  const storedUser = JSON.parse(storedUserStr);
+                                  if (storedUser.name) return storedUser.name;
+                                }
+                              } catch {
+                                // Ignore parsing errors
+                              }
+
+                              // Fallbacks: displayName, then generic 'User'
+                              return currentUser?.displayName || 'User';
+                            })()}
+                          </p>
+                          <p className="text-xs text-black-600">
+                            {(() => {
+                              const currentUser = user || authUser;
+                              // Try to get email from stored user object
+                              try {
+                                const storedUserStr = localStorage.getItem('user');
+                                if (storedUserStr) {
+                                  const storedUser = JSON.parse(storedUserStr);
+                                  if (storedUser.email) return storedUser.email;
+                                }
+                              } catch (e) {
+                                // Ignore parsing errors
+                              }
+                              return currentUser?.phoneNumber || '';
+                            })()}
+                          </p>
                         </div>
                         <Link
                           to="/profile"
@@ -449,11 +520,12 @@ const Navbar = () => {
                         </Link>
 
                         <button
-                          onClick={() => {
-                            AuthService.logout();
+                          onClick={async () => {
+                            await AuthService.logout();
                             setUser(null);
                             setAuthenticated(false);
                             setShowUserMenu(false);
+                            navigate('/login', { replace: true });
                           }}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
@@ -494,12 +566,7 @@ const Navbar = () => {
               onClick={() => setShowCartPopup(!showCartPopup)}
               className="relative p-1.5 sm:p-2 text-gray-600 hover:text-green-600 transition-colors"
             >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
+              <CartCount showIcon={true} />
             </button>
             
             {/* Burger Menu Button */}
@@ -675,16 +742,16 @@ const Navbar = () => {
                         className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
                       >
                         <ShoppingCart size={20} />
-                        <span className="text-base">Cart ({cartCount})</span>
+                        <span className="text-base">Cart</span>
                       </button>
                   
                       {/* User Account */}
-                      {authenticated ? (
+                      {(authenticated || isAuthenticated) ? (
                         <>
                           <div className="pt-4 border-t border-gray-200">
                             <div className="px-3 py-3 bg-gray-50 rounded-lg mb-2">
-                              <p className="text-sm font-semibold text-gray-900">{user?.displayName || 'User'}</p>
-                              <p className="text-xs text-gray-600">{user?.email}</p>
+                              <p className="text-sm font-semibold text-gray-900">{(user || authUser)?.displayName || 'User'}</p>
+                              <p className="text-xs text-gray-600">{(user || authUser)?.phoneNumber}</p>
                             </div>
                             
                             <Link 
@@ -706,11 +773,12 @@ const Navbar = () => {
                             </Link>
 
                             <button 
-                              onClick={() => {
-                                  AuthService.logout();
+                              onClick={async () => {
+                                await AuthService.logout();
                                 setUser(null);
                                 setAuthenticated(false);
                                 setIsOpen(false);
+                                navigate('/login', { replace: true });
                               }}
                               className="flex items-center space-x-3 w-full py-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors rounded-lg"
                             >

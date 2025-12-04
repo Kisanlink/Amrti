@@ -62,7 +62,6 @@ const Orders: React.FC = () => {
   useEffect(() => {
     // Check authentication first
     if (!AuthService.isAuthenticated()) {
-      console.log('User not authenticated, redirecting to login');
       navigate('/login', { state: { from: orderId ? `/orders/${orderId}` : '/orders' } });
       return;
     }
@@ -80,20 +79,13 @@ const Orders: React.FC = () => {
     try {
       setOrdersLoading(true);
       setOrdersError(null);
-      console.log('=== FETCHING USER ORDERS ===');
-      console.log('Page:', currentPage);
       
       const response = await OrderService.getUserOrders();
-      console.log('=== ORDERS RESPONSE RECEIVED ===');
-      console.log('Orders:', response);
       
       setOrders(response);
       // Note: The API response structure might need adjustment based on actual API
       // setTotalPages(response.totalPages || 1);
     } catch (err: any) {
-      console.error('=== ERROR FETCHING ORDERS ===');
-      console.error('Error:', err);
-      
       setOrdersError(`Failed to load orders: ${err?.message || 'Unknown error'}`);
       showNotification({
         type: 'error',
@@ -110,25 +102,18 @@ const Orders: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('=== FETCHING ORDER DETAILS ===');
-      console.log('Order ID:', orderId);
       
       const response = await OrderService.getOrderById(orderId);
-      console.log('=== ORDER RESPONSE RECEIVED ===');
-      console.log('Full response:', response);
       
       if (response && response.order) {
         setOrder(response.order);
-        setOrderItems(response.items || []);
-        console.log('Order and items set successfully');
+        // Use order_items from the order object, or fallback to items
+        const items = response.order.order_items || response.order.items || response.items || [];
+        setOrderItems(items);
       } else {
-        console.error('Invalid response format:', response);
         setError('Invalid response format from server');
       }
     } catch (err: any) {
-      console.error('=== ERROR FETCHING ORDER DETAILS ===');
-      console.error('Error:', err);
-      
       setError(`Failed to load order details: ${err?.message || 'Unknown error'}`);
       showNotification({
         type: 'error',
@@ -157,16 +142,13 @@ const Orders: React.FC = () => {
   // Fetch product details for order items
   const fetchProductDetails = async (productId: string) => {
     try {
-      console.log(`Fetching product details for: ${productId}`);
       const product = await ProductService.getProductById(productId);
-      console.log(`Product details received for ${productId}:`, product);
       
       setProductDetails(prev => ({
         ...prev,
         [productId]: product
       }));
     } catch (error) {
-      console.error(`Failed to fetch product ${productId}:`, error);
       // Set a fallback for failed product fetches
       setProductDetails(prev => ({
         ...prev,
@@ -286,12 +268,12 @@ const Orders: React.FC = () => {
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Back to Home
               </Link>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-                <div>
+              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-0">
+                <div className="text-center sm:text-left w-full sm:w-auto">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">My Orders</h1>
                   <p className="text-base sm:text-lg text-gray-600">Track and manage your orders</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                   {/* Sort Dropdown */}
                   <div className="flex items-center gap-2">
                     <label className="text-xs sm:text-sm font-medium text-gray-700">Sort by:</label>
@@ -322,7 +304,7 @@ const Orders: React.FC = () => {
               <div className="space-y-4 sm:space-y-6">
                 {sortedOrders.map((orderItem, index) => (
                   <motion.div
-                    key={orderItem.id}
+                    key={orderItem.id || orderItem.order_id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
@@ -335,7 +317,7 @@ const Orders: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
-                            Order #{orderItem.id}
+                            Order #{orderItem.order_id || orderItem.id}
                           </h3>
                           <p className="text-xs sm:text-sm text-gray-500 flex items-center">
                             <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -353,7 +335,45 @@ const Orders: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+                    {/* Order Items Preview */}
+                    {orderItem.items && orderItem.items.length > 0 && (
+                      <div className="mb-4 sm:mb-6">
+                        <div className="flex items-center space-x-3 overflow-x-auto pb-2">
+                          {orderItem.items.slice(0, 3).map((item, idx) => (
+                            <div key={idx} className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2 flex-shrink-0">
+                              {item.image_url ? (
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.product_name || 'Product'} 
+                                  className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[150px]">
+                                  {item.product_name || `Product ${item.product_id}`}
+                                </p>
+                                <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {orderItem.items.length > 3 && (
+                            <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg text-xs sm:text-sm font-medium text-gray-600 flex-shrink-0">
+                              +{orderItem.items.length - 3}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
                       <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
                         <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
                           <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
@@ -361,30 +381,22 @@ const Orders: React.FC = () => {
                           </div>
                           <span className="text-xs sm:text-sm font-semibold text-gray-700">Payment</span>
                         </div>
-                        <p className="text-xs sm:text-sm font-medium text-gray-900 capitalize">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 capitalize mb-1">
                           {orderItem.payment_method}
                         </p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${OrderService.getPaymentStatusColor(orderItem.payment_status)}`}>
+                          {OrderService.formatStatus(orderItem.payment_status)}
+                        </span>
                       </div>
                       <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
-                        <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
-                          <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
-                            <Truck className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
-                          </div>
-                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Shipping</span>
-                        </div>
-                        <p className="text-xs sm:text-sm font-medium text-gray-900">
-                          {orderItem.shipping_carrier}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100 sm:col-span-2 lg:col-span-1">
                         <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
                           <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg">
                             <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                           </div>
-                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Address</span>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-700">Items</span>
                         </div>
-                        <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                          {orderItem.shipping_address}
+                        <p className="text-xs sm:text-sm font-medium text-gray-900">
+                          {orderItem.item_count || orderItem.items?.length || 0} item(s)
                         </p>
                       </div>
                     </div>
@@ -402,17 +414,10 @@ const Orders: React.FC = () => {
                             Track Package
                           </a>
                         )}
-                        <button
-                          onClick={() => handleInvoiceDownload(orderItem)}
-                          className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                        >
-                          <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                          Invoice
-                        </button>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/orders/${orderItem.id}`}
+                          to={`/orders/${orderItem.order_id || orderItem.id}`}
                           className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                           <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -500,11 +505,7 @@ const Orders: React.FC = () => {
                     <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <div>
                       <p className="text-xs sm:text-sm text-gray-600">Payment Status</p>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        order.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                        order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${OrderService.getPaymentStatusColor(order.payment_status)}`}>
                         {OrderService.formatStatus(order.payment_status)}
                       </span>
                     </div>
@@ -531,7 +532,20 @@ const Orders: React.FC = () => {
                   <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-2" />
                   Shipping Address
                 </h2>
-                <p className="text-gray-700 text-sm sm:text-base">{order.shipping_address}</p>
+                {order.shipping_address_normalized ? (
+                  <div className="text-gray-700 text-sm sm:text-base space-y-1">
+                    <p>{order.shipping_address_normalized.address_line_1}</p>
+                    {order.shipping_address_normalized.address_line_2 && (
+                      <p>{order.shipping_address_normalized.address_line_2}</p>
+                    )}
+                    <p>
+                      {order.shipping_address_normalized.city}, {order.shipping_address_normalized.state} {order.shipping_address_normalized.postal_code}
+                    </p>
+                    <p>{order.shipping_address_normalized.country}</p>
+                  </div>
+                ) : (
+                  <p className="text-gray-700 text-sm sm:text-base">{order.shipping_address || 'Address not provided'}</p>
+                )}
               </motion.div>
 
               {/* Order Tracking Information */}
@@ -559,10 +573,6 @@ const Orders: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-600">Mode:</span>
                           <span className="font-medium text-gray-900">{order.shipping_mode}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Charge:</span>
-                          <span className="font-medium text-gray-900">₹{order.shipping_charge.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -666,37 +676,44 @@ const Orders: React.FC = () => {
                 {orderItems && orderItems.length > 0 ? (
                   <div className="space-y-4">
                     {orderItems.map((item, index) => {
+                      // Get product info from API response first, then from fetched product details
+                      const productFromAPI = item.product;
                       const product = productDetails[item.product_id];
-                      const isLoading = !product;
+                      const isLoading = !product && !productFromAPI;
                       const hasError = product?.error;
                       
+                      // Use image from API response, then from product details, then fallback
+                      const productImage = item.image_url || productFromAPI?.image_url || product?.image_url;
+                      const productName = productFromAPI?.name || item.product_name || product?.name;
+                      
                       return (
-                        <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                            {isLoading ? (
+                        <div key={item.id || index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {isLoading && !productImage ? (
                               <div className="w-8 h-8 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                            ) : product?.image_url ? (
+                            ) : productImage ? (
                               <img 
-                                src={product.image_url} 
-                                alt={product.name || 'Product'} 
+                                src={productImage} 
+                                alt={productName || 'Product'} 
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.classList.remove('hidden');
                                 }}
                               />
                             ) : (
                               <Package className="w-8 h-8 text-gray-400" />
-                                )}
-                            {product?.image_url && (
+                            )}
+                            {productImage && (
                               <Package className="w-8 h-8 text-gray-400 hidden" />
                             )}
                           </div>
                           
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900">
-                              {isLoading ? (
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-gray-900 text-sm sm:text-base">
+                              {isLoading && !productName ? (
                                 <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
                               ) : hasError ? (
                                 <div className="flex items-center space-x-2">
@@ -708,25 +725,29 @@ const Orders: React.FC = () => {
                                     Retry
                                   </button>
                                 </div>
-                              ) : product?.name ? (
-                                product.name
+                              ) : productName ? (
+                                productName
                               ) : (
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-gray-600">Loading product details...</span>
+                                  <span className="text-gray-600">Product {item.product_id}</span>
                                   <button
                                     onClick={() => fetchProductDetails(item.product_id)}
                                     className="text-xs text-blue-600 hover:text-blue-700 underline"
                                   >
-                                    Load
+                                    Load Details
                                   </button>
                                 </div>
                               )}
                             </h3>
                             
-                            <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                            <p className="text-sm text-gray-600 mt-1">Quantity: {item.quantity}</p>
+                            
+                            {productFromAPI?.description && (
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{productFromAPI.description}</p>
+                            )}
                             
                             {!isLoading && !hasError && product?.category && (
-                              <p className="text-xs text-gray-500 capitalize">{product.category}</p>
+                              <p className="text-xs text-gray-500 capitalize mt-1">{product.category}</p>
                             )}
                             
                             {!isLoading && !hasError && product?.rating && (
@@ -740,9 +761,9 @@ const Orders: React.FC = () => {
                             )}
                           </div>
                           
-                          <div className="text-right">
-                            <p className="font-semibold text-green-600">₹{item.total_price.toFixed(2)}</p>
-                            <p className="text-sm text-gray-600">₹{item.unit_price.toFixed(2)} each</p>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-semibold text-green-600 text-sm sm:text-base">₹{item.total_price.toFixed(2)}</p>
+                            <p className="text-xs sm:text-sm text-gray-600">₹{item.unit_price.toFixed(2)} each</p>
                           </div>
                         </div>
                       );
@@ -770,23 +791,40 @@ const Orders: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Order ID</span>
-                    <span className="font-medium text-gray-900">{order.id}</span>
+                    <span className="font-medium text-gray-900">{order.order_id || order.id}</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium text-gray-900">₹{(order.total_amount - order.shipping_charge).toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">₹{(order.subtotal || 0).toFixed(2)}</span>
                   </div>
+                  
+                  {(() => {
+                    const discountAmount = (order as any).discount_amount || order.discount || 0;
+                    return discountAmount > 0 ? (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Discount</span>
+                        <span className="font-medium text-green-600">-₹{discountAmount.toFixed(2)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium text-gray-900">₹{order.shipping_charge.toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">₹{(order.shipping || order.shipping_charge || 0).toFixed(2)}</span>
                   </div>
+                  
+                  {order.tax && order.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tax</span>
+                      <span className="font-medium text-gray-900">₹{order.tax.toFixed(2)}</span>
+                    </div>
+                  )}
                   
                   <div className="border-t pt-3">
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900">Total</span>
-                      <span className="font-bold text-green-600 text-lg">₹{order.total_amount.toFixed(2)}</span>
+                      <span className="font-bold text-green-600 text-lg">₹{(order.grand_total || order.total_amount).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -816,38 +854,6 @@ const Orders: React.FC = () => {
                   >
                     Continue Shopping
                   </Link>
-                </div>
-              </motion.div>
-
-              {/* Additional Info */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Info</h2>
-                
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Razorpay Order ID:</span>
-                    <p className="font-medium text-gray-900">{order.razorpay_order_id}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Razorpay Receipt:</span>
-                    <p className="font-medium text-gray-900">{order.razorpay_receipt}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Payment Amount:</span>
-                    <p className="font-medium text-gray-900">₹{(order.razorpay_amount_paisa / 100).toFixed(2)}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600">Order Notes:</span>
-                    <p className="font-medium text-gray-900 text-xs break-words">{order.notes}</p>
-                  </div>
                 </div>
               </motion.div>
             </div>

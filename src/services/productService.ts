@@ -1,4 +1,4 @@
-import { productsApi, type ProductsResponse, type ProductDetailResponse } from './api';
+import { productsApi, type ProductsResponse, type ProductsApiResponse, type ProductDetailResponse } from './api';
 import type { Product } from '../context/AppContext';
 
 export class ProductService {
@@ -10,51 +10,75 @@ export class ProductService {
    */
   static async getAllProducts(page = 1, perPage = 20): Promise<ProductsResponse> {
     try {
-      const response: any = await productsApi.getProducts(page, perPage);
+      const response: ProductsApiResponse = await productsApi.getProducts(page, perPage);
       
       // Log the response to debug the structure
       console.log('Products API Response:', response);
       
-      // Ensure the response has the expected structure
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('API response does not have expected data structure:', response);
-        // If the response doesn't have the expected structure, try to adapt it
-        if (Array.isArray(response)) {
-          // If the response is directly an array of products
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.length,
-              total: response.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        } else if (response.products && Array.isArray(response.products)) {
-          // If the response has a 'products' property
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response.products,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.products.length,
-              total: response.products.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        }
+      // Handle the new API response structure: response.data.products
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        // Transform products to match expected format
+        const transformedProducts = response.data.products.map((product: any) => ({
+          ...product,
+          // Map primary_image.image_url to image_url for backward compatibility
+          image_url: product.primary_image?.image_url || product.image_url || '',
+          // Map available_stock to stock for backward compatibility
+          stock: product.available_stock !== undefined ? product.available_stock : product.stock,
+        }));
+        
+        // Use pagination from data.pagination or root pagination
+        const pagination = response.data.pagination || response.pagination || {
+          page: 1,
+          per_page: transformedProducts.length,
+          total: transformedProducts.length,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        };
+        
+        return {
+          success: response.success || true,
+          message: response.message || response.data.message || 'Products loaded successfully',
+          data: transformedProducts,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination
+        };
       }
       
-      return response;
+      // Fallback: Handle legacy response structure
+      if (response.data && Array.isArray(response.data)) {
+        return {
+          success: response.success || true,
+          message: response.message || 'Products loaded successfully',
+          data: response.data,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination: response.pagination || {
+            page: 1,
+            per_page: response.data.length,
+            total: response.data.length,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false
+          }
+        };
+      }
+      
+      // Final fallback
+      console.warn('API response does not have expected data structure:', response);
+      return {
+        success: false,
+        message: 'Invalid response structure',
+        data: [],
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: 1,
+          per_page: 0,
+          total: 0,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        }
+      };
     } catch (error) {
       console.error('Failed to fetch products:', error);
       throw new Error('Failed to fetch products. Please try again later.');
@@ -118,51 +142,75 @@ export class ProductService {
         throw new Error(`Invalid category. Must be one of: ${validCategories.join(', ')}`);
       }
       
-      const response: any = await productsApi.getProductsByCategory(category, page, perPage);
+      const response: ProductsApiResponse = await productsApi.getProductsByCategory(category, page, perPage);
       
       // Log the response to debug the structure
       console.log(`Products by Category API Response for ${category}:`, response);
       
-      // Ensure the response has the expected structure
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('API response does not have expected data structure:', response);
-        // If the response doesn't have the expected structure, try to adapt it
-        if (Array.isArray(response)) {
-          // If the response is directly an array of products
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.length,
-              total: response.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        } else if (response.products && Array.isArray(response.products)) {
-          // If the response has a 'products' property
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response.products,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.products.length,
-              total: response.products.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        }
+      // Handle the new API response structure: response.data.products
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        // Transform products to match expected format
+        const transformedProducts = response.data.products.map((product: any) => ({
+          ...product,
+          // Map primary_image.image_url to image_url for backward compatibility
+          image_url: product.primary_image?.image_url || product.image_url || '',
+          // Map available_stock to stock for backward compatibility
+          stock: product.available_stock !== undefined ? product.available_stock : product.stock,
+        }));
+        
+        // Use pagination from data.pagination or root pagination
+        const pagination = response.data.pagination || response.pagination || {
+          page: 1,
+          per_page: transformedProducts.length,
+          total: transformedProducts.length,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        };
+        
+        return {
+          success: response.success || true,
+          message: response.message || response.data.message || 'Products loaded successfully',
+          data: transformedProducts,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination
+        };
       }
       
-      return response;
+      // Fallback: Handle legacy response structure
+      if (response.data && Array.isArray(response.data)) {
+        return {
+          success: response.success || true,
+          message: response.message || 'Products loaded successfully',
+          data: response.data,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination: response.pagination || {
+            page: 1,
+            per_page: response.data.length,
+            total: response.data.length,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false
+          }
+        };
+      }
+      
+      // Final fallback
+      console.warn('API response does not have expected data structure:', response);
+      return {
+        success: false,
+        message: 'Invalid response structure',
+        data: [],
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: 1,
+          per_page: 0,
+          total: 0,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        }
+      };
     } catch (error) {
       console.error(`Failed to fetch products for category ${category}:`, error);
       throw new Error(`Failed to fetch products for ${category}. Please try again later.`);
@@ -186,51 +234,75 @@ export class ProductService {
         throw new Error('Search term is required');
       }
 
-      const response: any = await productsApi.searchProducts(searchTerm, page, perPage);
+      const response: ProductsApiResponse = await productsApi.searchProducts(searchTerm, page, perPage);
       
       // Log the response to debug the structure
       console.log(`Search Products API Response for "${searchTerm}":`, response);
       
-      // Ensure the response has the expected structure
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('API response does not have expected data structure:', response);
-        // If the response doesn't have the expected structure, try to adapt it
-        if (Array.isArray(response)) {
-          // If the response is directly an array of products
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.length,
-              total: response.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        } else if (response.products && Array.isArray(response.products)) {
-          // If the response has a 'products' property
-          return {
-            success: true,
-            message: 'Products loaded successfully',
-            data: response.products,
-            timestamp: new Date().toISOString(),
-            pagination: {
-              page: 1,
-              per_page: response.products.length,
-              total: response.products.length,
-              total_pages: 1,
-              has_next: false,
-              has_prev: false
-            }
-          };
-        }
+      // Handle the new API response structure: response.data.products
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        // Transform products to match expected format
+        const transformedProducts = response.data.products.map((product: any) => ({
+          ...product,
+          // Map primary_image.image_url to image_url for backward compatibility
+          image_url: product.primary_image?.image_url || product.image_url || '',
+          // Map available_stock to stock for backward compatibility
+          stock: product.available_stock !== undefined ? product.available_stock : product.stock,
+        }));
+        
+        // Use pagination from data.pagination or root pagination
+        const pagination = response.data.pagination || response.pagination || {
+          page: 1,
+          per_page: transformedProducts.length,
+          total: transformedProducts.length,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        };
+        
+        return {
+          success: response.success || true,
+          message: response.message || response.data.message || 'Products loaded successfully',
+          data: transformedProducts,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination
+        };
       }
       
-      return response;
+      // Fallback: Handle legacy response structure
+      if (response.data && Array.isArray(response.data)) {
+        return {
+          success: response.success || true,
+          message: response.message || 'Products loaded successfully',
+          data: response.data,
+          timestamp: response.timestamp || new Date().toISOString(),
+          pagination: response.pagination || {
+            page: 1,
+            per_page: response.data.length,
+            total: response.data.length,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false
+          }
+        };
+      }
+      
+      // Final fallback
+      console.warn('API response does not have expected data structure:', response);
+      return {
+        success: false,
+        message: 'Invalid response structure',
+        data: [],
+        timestamp: new Date().toISOString(),
+        pagination: {
+          page: 1,
+          per_page: 0,
+          total: 0,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false
+        }
+      };
     } catch (error) {
       console.error(`Failed to search products for "${searchTerm}":`, error);
       throw new Error('Failed to search products. Please try again later.');
@@ -243,13 +315,23 @@ export class ProductService {
    */
   static async getFeaturedProducts(): Promise<Product[]> {
     try {
-      const response: any = await productsApi.getProducts(1, 8);
+      const response: ProductsApiResponse = await productsApi.getProducts(1, 8);
       
-      // Handle different response structures
+      // Handle the new API response structure: response.data.products
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        // Transform products to match expected format
+        return response.data.products.map((product: any) => ({
+          ...product,
+          // Map primary_image.image_url to image_url for backward compatibility
+          image_url: product.primary_image?.image_url || product.image_url || '',
+          // Map available_stock to stock for backward compatibility
+          stock: product.available_stock !== undefined ? product.available_stock : product.stock,
+        }));
+      }
+      
+      // Fallback: Handle legacy response structure
       if (response.data && Array.isArray(response.data)) {
         return response.data;
-      } else if (response.products && Array.isArray(response.products)) {
-        return response.products;
       } else if (Array.isArray(response)) {
         return response;
       } else {

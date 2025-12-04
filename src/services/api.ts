@@ -9,15 +9,19 @@ interface Address {
   country: string;
 }
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-const API_VERSION = 'v1';
+// API Configuration - Import from config file
+import { API_BASE_URL, API_VERSION } from '../config/apiConfig';
 
 // Request headers
 export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {
   // Import AuthService dynamically to avoid circular dependencies
   const { default: AuthService } = await import('./authService');
   const token = await AuthService.getIdToken();
+  
+  console.log('API Headers - Token available:', !!token);
+  if (token) {
+    console.log('API Headers - Token length:', token.length);
+  }
   
   const headers: HeadersInit = {
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -28,6 +32,7 @@ export const getHeaders = async (isFormData = false): Promise<HeadersInit> => {
     headers['Content-Type'] = 'application/json';
   }
   
+  console.log('API Headers:', headers);
   return headers;
 };
 
@@ -193,6 +198,34 @@ export const recipesApi = {
 
 // ==================== PRODUCTS API ====================
 
+// Raw API response structure
+export interface ProductsApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    products: Product[];
+    pagination: {
+      page: number;
+      per_page: number;
+      total: number;
+      total_pages: number;
+      has_next: boolean;
+      has_prev: boolean;
+    };
+    message?: string;
+  };
+  timestamp: string;
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+// Transformed response structure for internal use
 export interface ProductsResponse {
   success: boolean;
   message: string;
@@ -217,8 +250,8 @@ export interface ProductDetailResponse {
 
 export const productsApi = {
   // Get all products with pagination
-  getProducts: async (page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products?page=${page}&per_page=${per_page}`);
+  getProducts: async (page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products?page=${page}&per_page=${per_page}`);
   },
 
   // Get product by ID
@@ -227,13 +260,13 @@ export const productsApi = {
   },
 
   // Get products by category
-  getProductsByCategory: async (category: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products/category/${category}?page=${page}&per_page=${per_page}`);
+  getProductsByCategory: async (category: string, page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products/category/${category}?page=${page}&per_page=${per_page}`);
   },
 
   // Search products
-  searchProducts: async (search_term: string, page = 1, per_page = 20): Promise<ProductsResponse> => {
-    return apiRequest<ProductsResponse>(`/products/search?q=${encodeURIComponent(search_term)}&page=${page}&per_page=${per_page}`);
+  searchProducts: async (search_term: string, page = 1, per_page = 20): Promise<ProductsApiResponse> => {
+    return apiRequest<ProductsApiResponse>(`/products/search?q=${encodeURIComponent(search_term)}&page=${page}&per_page=${per_page}`);
   },
 };
 
@@ -266,15 +299,13 @@ export interface AuthTokens {
 
 export interface AuthUser {
   created_at: string | number;
-  email: string;
+  phone_number: string;
   id: string;
   is_active: boolean;
   is_verified: boolean;
   name: string;
   uid: string;
-  email_verified?: boolean;
   last_login?: number;
-  phone_number?: string;
 }
 
 export interface AuthResponse {
@@ -487,61 +518,7 @@ export const cartApi = {
 };
 
 // ==================== FAVORITES API ====================
-
-export interface Favorite {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
-  user_id: string;
-  product_id: string;
-  product?: Product;
-}
-
-export interface FavoritesResponse {
-  count: number;
-  favorites: Favorite[];
-  message: string;
-}
-
-export interface FavoriteCheckResponse {
-  is_favorite: boolean;
-  message: string;
-}
-
-export interface AddFavoriteResponse {
-  favorite: Favorite;
-  message: string;
-}
-
-export const favoritesApi = {
-  // Check if product is in favorites
-  checkFavorite: async (productId: string): Promise<FavoriteCheckResponse> => {
-    return apiRequest<FavoriteCheckResponse>(`/favorites/check/${productId}`);
-  },
-
-  // Add to favorites
-  addToFavorites: async (productId: string): Promise<AddFavoriteResponse> => {
-    return apiRequest<AddFavoriteResponse>('/favorites', {
-      method: 'POST',
-      body: JSON.stringify({ product_id: productId }),
-    });
-  },
-
-  // Get user favorites
-  getFavorites: async (): Promise<FavoritesResponse> => {
-    return apiRequest<FavoritesResponse>('/favorites');
-  },
-
-  // Remove from favorites
-  removeFromFavorites: async (productId: string): Promise<{ message: string }> => {
-    return apiRequest<{ message: string }>('/favorites', {
-      method: 'DELETE',
-      body: JSON.stringify({ product_id: productId }),
-    });
-  },
-};
+// Favorites API has been removed as requested
 
 // ==================== ORDERS API ====================
 
@@ -656,13 +633,6 @@ export interface ProfileImageResponse {
 }
 
 export const profileApi = {
-  // Auto-fill profile (first time setup)
-  autoFillProfile: async (): Promise<ProfileResponse> => {
-    return apiRequest<ProfileResponse>('/profiles/auto', {
-      method: 'POST',
-    });
-  },
-
   // Get user profile
   getProfile: async (): Promise<ProfileResponse> => {
     return apiRequest<ProfileResponse>('/profiles');
@@ -800,7 +770,6 @@ export default {
   recipes: recipesApi,
   auth: authApi,
   cart: cartApi,
-  favorites: favoritesApi,
   profile: profileApi,
   orders: ordersApi,
   payment: paymentApi,

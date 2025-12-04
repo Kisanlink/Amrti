@@ -4,12 +4,12 @@ import { Link, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
-import CartService from '../services/cartService';
-import WishlistService from '../services/wishlistService';
 import ReviewService, { type Review } from '../services/reviewService';
 import ReviewCard from '../components/ui/ReviewCard';
 import ReviewForm from '../components/ui/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
+import { useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
+import { useAddToCart } from '../hooks/queries/useCart';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,9 +17,11 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
+  // Use React Query hooks for wishlist
+  const { data: isInWishlist = false, isLoading: isCheckingWishlist } = useIsInWishlist(id || '');
+  const toggleWishlistMutation = useToggleWishlist();
+  // Use React Query hooks for cart
+  const addToCartMutation = useAddToCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     ingredients: true,
@@ -27,6 +29,10 @@ const ProductDetail = () => {
     benefits: false,
     storage: false
   });
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null);
 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -39,33 +45,97 @@ const ProductDetail = () => {
   const handleWishlistToggle = async () => {
     if (!id || !product) return;
     
-    setIsUpdatingWishlist(true);
-    try {
-      if (isInWishlist) {
-        await WishlistService.removeFromWishlist(id);
-        setIsInWishlist(false);
-        showNotification({
-          type: 'success',
-          message: `${product.name} removed from wishlist`
-        });
-      } else {
-        await WishlistService.addToWishlist(id);
-        setIsInWishlist(true);
-        showNotification({
-          type: 'success',
-          message: `${product.name} added to wishlist successfully!`
-        });
+    toggleWishlistMutation.mutate(
+      { productId: id, isInWishlist },
+      {
+        onSuccess: () => {
+          showNotification({
+            type: 'success',
+            message: isInWishlist 
+              ? `${product.name} removed from wishlist`
+              : `${product.name} added to wishlist successfully!`
+          });
+        },
+        onError: () => {
+          showNotification({
+            type: 'error',
+            message: 'Failed to update wishlist'
+          });
+        }
       }
-    } catch (error) {
-      showNotification({
-        type: 'error',
-        message: 'Failed to update wishlist'
-      });
-    } finally {
-      setIsUpdatingWishlist(false);
-    }
+    );
   };
 
+
+  // Helper function to get all image URLs from the product
+  const getAllImageUrls = (product: any): string[] => {
+    if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
+      // Filter out inactive images and ensure image_url exists
+      const activeImages = product.images.filter((img: any) => 
+        img.is_active !== false && img.image_url && img.image_url.trim() !== ''
+      );
+      
+      // Sort images by sort_order, with is_primary first
+      const sortedImages = [...activeImages].sort((a, b) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      
+      const imageUrls = sortedImages.map((img: any) => img.image_url);
+      console.log('All images from API:', {
+        total: product.images.length,
+        active: activeImages.length,
+        rendered: imageUrls.length,
+        urls: imageUrls
+      });
+      
+      return imageUrls;
+    }
+    // Fallback to old structure for backward compatibility
+    const fallbackUrls = [
+      product?.image_url,
+      product?.image_url_1,
+      product?.image_url_2,
+      product?.image_url_3,
+      product?.image_url_4
+    ].filter(url => url && url.trim() !== '');
+    
+    console.log('Using fallback image structure:', fallbackUrls);
+    return fallbackUrls;
+  };
+
+  // Auto-scroll functionality
+  useEffect(() => {
+    if (!product || !isAutoScroll) {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+        setAutoScrollInterval(null);
+      }
+      return;
+    }
+
+    const allImageUrls = getAllImageUrls(product);
+
+    if (allImageUrls.length <= 1) {
+      return; // No need to auto-scroll if there's only one image
+    }
+
+    const interval = setInterval(() => {
+      setSelectedImageIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % allImageUrls.length;
+        console.log('Auto-scrolling to image:', nextIndex);
+        return nextIndex;
+      });
+    }, 3000); // Change image every 3 seconds
+
+    setAutoScrollInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      setAutoScrollInterval(null);
+    };
+  }, [product, isAutoScroll]);
 
   // Load product, reviews, and suggested products on mount
   useEffect(() => {
@@ -83,6 +153,8 @@ const ProductDetail = () => {
           const productData = await ProductService.getProductById(id);
           setProduct(productData);
           setSelectedImageIndex(0); // Reset to first image when loading new product
+          setIsZoomed(false); // Reset zoom state
+          setMousePosition({ x: 50, y: 50 }); // Reset mouse position
         
         // Load reviews
         const reviewsResponse = await Promise.allSettled([
@@ -110,8 +182,7 @@ const ProductDetail = () => {
           }
         }
         
-        // Set default wishlist status (will be updated when user interacts with wishlist)
-        setIsInWishlist(false);
+        // Wishlist status is now handled by React Query hooks
           
           // Get suggested products (same category, excluding current product)
           const allProductsResponse = await ProductService.getAllProducts(1, 100);
@@ -141,6 +212,8 @@ const ProductDetail = () => {
     
     loadProductData();
   }, [id]);
+
+  // Wishlist updates are now handled by React Query automatically
 
   // Handle review like update
   const handleReviewLikeUpdate = (reviewId: string, likesCount: number, hasUserLiked: boolean) => {
@@ -197,8 +270,14 @@ const ProductDetail = () => {
   }
 
   // Fixed 100g variant
-  const currentVariant = { size: '100g', price: product.price, originalPrice: product.originalPrice };
-  const discount = Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100);
+  const currentVariant = { 
+    size: '100g', 
+    price: product.price, 
+    originalPrice: product.actual_price || product.originalPrice || product.price 
+  };
+  const discount = currentVariant.originalPrice > currentVariant.price 
+    ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100)
+    : 0;
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -206,6 +285,62 @@ const ProductDetail = () => {
       [section]: !prev[section as keyof typeof prev]
     }));
   };
+
+  // Handle mouse events for zoom functionality
+  const handleMouseEnter = () => {
+    console.log('Mouse entered - setting zoom to true');
+    setIsZoomed(true);
+    
+    // Pause auto-scroll when hovering for zoom
+    if (isAutoScroll) {
+      setIsAutoScroll(false);
+      console.log('Auto-scroll paused due to hover');
+    }
+  };
+
+  const handleMouseLeave = () => {
+    console.log('Mouse left - setting zoom to false');
+    setIsZoomed(false);
+    // Reset mouse position when leaving
+    setMousePosition({ x: 50, y: 50 });
+    
+    // Resume auto-scroll after a short delay when leaving hover
+    setTimeout(() => {
+      if (!isAutoScroll) {
+        setIsAutoScroll(true);
+        console.log('Auto-scroll resumed after hover');
+      }
+    }, 1000);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      setMousePosition({ x, y });
+      console.log('Mouse move:', { x, y, isZoomed });
+    } catch (error) {
+      console.error('Error in handleMouseMove:', error);
+      // Fallback to center position
+      setMousePosition({ x: 50, y: 50 });
+    }
+  };
+
+  // Reset zoom state when image changes
+  const handleImageChange = (index: number) => {
+    console.log('Changing image to index:', index);
+    setSelectedImageIndex(index);
+    setIsZoomed(false);
+    setMousePosition({ x: 50, y: 50 });
+    
+    // Pause auto-scroll when user manually selects an image
+    if (isAutoScroll) {
+      setIsAutoScroll(false);
+      console.log('Auto-scroll paused due to manual image selection');
+    }
+  };
+
 
   return (
     <>
@@ -222,115 +357,146 @@ const ProductDetail = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-12 items-start">
             {/* Product Images */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6">
-              {/* Thumbnail Gallery - Mobile: Top, Desktop: Left */}
-              <div className="flex sm:flex-col gap-2 sm:gap-3 justify-start sm:justify-between order-2 sm:order-1">
-                {/* Product thumbnails */}
-                <div className="flex sm:flex-col gap-2 sm:gap-3 overflow-x-auto sm:overflow-x-visible">
+            <div className="space-y-4">
+              {/* Main Product Image - Larger size with interactive zoom feature */}
+              <div className="relative">
+                <div 
+                  className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square cursor-zoom-in transition-all duration-300 ease-out"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseMove={handleMouseMove}
+                  style={{
+                    boxShadow: isZoomed ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                {(() => {
+                  // Get all available image URLs
+                  const allImageUrls = getAllImageUrls(product);
+                  
+                  // Ensure we have at least one image
+                  if (allImageUrls.length === 0) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div className="text-center text-gray-500">
+                          <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                            <span className="text-2xl">📦</span>
+                          </div>
+                          <p className="text-sm">No image available</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Get the current image to display
+                  const safeIndex = Math.min(selectedImageIndex, allImageUrls.length - 1);
+                  const currentImage = allImageUrls[safeIndex];
+                  
+                  console.log('Rendering image:', { currentImage, isZoomed, mousePosition, safeIndex });
+                  
+                  return (
+                     <img 
+                       key={`main-image-${safeIndex}`}
+                       src={currentImage} 
+                       alt={product.name} 
+                       className="w-full h-full object-contain p-6 transition-all duration-300 ease-out pointer-events-none"
+                       style={{
+                         transformOrigin: `${mousePosition.x}% ${mousePosition.y}%`,
+                         transform: isZoomed ? `scale(2.2) translate(${(50 - mousePosition.x) * 0.3}%, ${(50 - mousePosition.y) * 0.3}%)` : 'scale(1)',
+                         filter: isZoomed ? 'brightness(1.05)' : 'brightness(1)',
+                         willChange: 'transform'
+                       }}
+                       onError={(e) => {
+                         console.error('Failed to load product image:', currentImage);
+                         // Show fallback content instead of hiding
+                         e.currentTarget.style.display = 'none';
+                         const fallbackDiv = document.createElement('div');
+                         fallbackDiv.className = 'w-full h-full flex items-center justify-center bg-gray-100';
+                         fallbackDiv.innerHTML = `
+                           <div class="text-center text-gray-500">
+                             <div class="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                               <span class="text-2xl">📦</span>
+                             </div>
+                             <p class="text-sm">Image failed to load</p>
+                           </div>
+                         `;
+                         e.currentTarget.parentNode?.appendChild(fallbackDiv);
+                       }}
+                       onLoad={() => {
+                         console.log('Image loaded successfully:', currentImage);
+                       }}
+                     />
+                  );
+                })()}
+                {discount > 0 && (
+                     <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-bold z-10">
+                    {discount}% OFF
+                  </div>
+                )}
+                   {/* Wishlist Icon */}
+                   <div className="absolute top-3 left-3 z-10">
+                     <button 
+                       onClick={handleWishlistToggle}
+                       disabled={toggleWishlistMutation.isPending || isCheckingWishlist}
+                       className={`p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
+                         isInWishlist ? 'text-red-500' : 'text-gray-600'
+                       }`}
+                       title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                     >
+                       {toggleWishlistMutation.isPending || isCheckingWishlist ? (
+                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                       ) : (
+                         <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                       )}
+                     </button>
+                   </div>
+                   {/* Zoom indicator */}
+                   <div className={`absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs transition-all duration-300 z-10 ${
+                     isZoomed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                   }`}>
+                     {isZoomed ? 'Move mouse to explore' : 'Hover to zoom'}
+                   </div>
+                 </div>
+              </div>
+
+              {/* Thumbnail Gallery - Below main image */}
+              <div className="flex justify-center">
+                <div className="flex gap-3 overflow-x-auto pb-2">
                    {/* Create array of all available image URLs */}
-                   {(() => {
-                     const allImageUrls = [
-                       product.image_url,
-                       product.image_url_1,
-                       product.image_url_2,
-                       product.image_url_3,
-                       product.image_url_4
-                     ];
-                     
-                     // Filter out empty URLs but ensure we always have at least the main image
-                     const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '').map(url => {
-                       // Fix URL encoding issues - replace + with %20 for proper space encoding
-                       return url.replace(/\+/g, '%20');
-                     });
-                     
-                     // If we only have one image, show it multiple times for better UX
-                     const fallbackUrl = product.image_url ? product.image_url.replace(/\+/g, '%20') : '';
-                     const imageUrls = validImageUrls.length > 1 
-                       ? validImageUrls 
-                       : [fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl];
-                     
-                     return imageUrls.slice(0, 5).map((imageUrl, index) => (
-                       <div 
-                         key={index}
-                         onClick={() => setSelectedImageIndex(index)}
-                         className={`relative overflow-hidden rounded-lg bg-white p-1 sm:p-2 shadow-sm hover:border-green-600 transition-colors cursor-pointer w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex-shrink-0 ${
-                           index === selectedImageIndex ? 'border-2 border-green-600 shadow-md' : 'border border-gray-200'
-                         }`}
-                       >
+                    {(() => {
+                      const allImageUrls = getAllImageUrls(product);
+                      
+                      // If no images available, don't show thumbnails
+                      if (allImageUrls.length === 0) {
+                        return null;
+                      }
+                      
+                      return allImageUrls.map((imageUrl, index) => (
+                         <div 
+                           key={`thumb-${index}`}
+                           onClick={() => handleImageChange(index)}
+                           className={`relative overflow-hidden rounded-lg bg-white p-2 shadow-sm hover:border-green-600 transition-all duration-300 cursor-pointer w-16 h-16 lg:w-20 lg:h-20 flex-shrink-0 ${
+                             index === selectedImageIndex ? 'border-2 border-green-600 shadow-md scale-105' : 'border border-gray-200 hover:scale-105'
+                           }`}
+                         >
                          <img 
                            src={imageUrl} 
                            alt={`${product.name} - Image ${index + 1}`} 
                            className="w-full h-full object-contain" 
                            onError={(e) => {
                              console.error('Failed to load thumbnail image:', imageUrl);
+                             // Show a placeholder for failed thumbnails
                              e.currentTarget.style.display = 'none';
+                             const placeholder = document.createElement('div');
+                             placeholder.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-xs';
+                             placeholder.textContent = '📦';
+                             e.currentTarget.parentNode?.appendChild(placeholder);
                            }}
                          />
-                       </div>
-                     ));
+                         </div>
+                       ));
                    })()}
                  </div>
                </div>
-               
-              {/* Main Product Image - Mobile: Top, Desktop: Right */}
-              <div className="flex-1 order-1 sm:order-2">
-                <div className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square sm:aspect-square lg:h-full">
-                {(() => {
-                  const allImageUrls = [
-                    product.image_url,
-                    product.image_url_1,
-                    product.image_url_2,
-                    product.image_url_3,
-                    product.image_url_4
-                  ];
-                  
-                  const validImageUrls = allImageUrls.filter(url => url && url.trim() !== '').map(url => {
-                    // Fix URL encoding issues - replace + with %20 for proper space encoding
-                    return url.replace(/\+/g, '%20');
-                  });
-                  const fallbackUrl = product.image_url ? product.image_url.replace(/\+/g, '%20') : '';
-                  const imageUrls = validImageUrls.length > 1 
-                    ? validImageUrls 
-                    : [fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl, fallbackUrl];
-                  
-                  const currentImage = imageUrls[selectedImageIndex] || fallbackUrl;
-                  
-                  return (
-                    <img 
-                      src={currentImage} 
-                      alt={product.name} 
-                      className="w-full h-full object-contain p-4" 
-                      onError={(e) => {
-                        console.error('Failed to load product image:', currentImage);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  );
-                })()}
-                {discount > 0 && (
-                     <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-bold">
-                    {discount}% OFF
-                  </div>
-                )}
-                   {/* Wishlist Icon */}
-                   <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
-                     <button 
-                       onClick={handleWishlistToggle}
-                       disabled={isUpdatingWishlist}
-                       className={`p-1.5 sm:p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
-                         isInWishlist ? 'text-red-500' : 'text-gray-600'
-                       }`}
-                       title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                     >
-                       {isUpdatingWishlist ? (
-                         <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                       ) : (
-                         <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isInWishlist ? 'fill-current' : ''}`} />
-                       )}
-                     </button>
-                   </div>
-                 </div>
-              </div>
             </div>
 
             {/* Product Info */}
@@ -355,7 +521,7 @@ const ProductDetail = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-black-600 text-xs sm:text-sm">({product.reviews} reviews)</span>
+                  <span className="text-black-600 text-xs sm:text-sm">({product.review_count || product.reviews || 0} reviews)</span>
                 </div>
               </div>
 
@@ -403,7 +569,12 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-1 sm:space-y-2">
-                {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                {(() => {
+                  const stockStatus = product.inventory?.stock_status || product.stock_status || 'In Stock';
+                  const availableStock = product.inventory?.available_stock ?? product.inventory?.current_stock ?? product.stock ?? 0;
+                  const isOutOfStock = stockStatus === "Coming Soon" || stockStatus === "Comming Soon" || availableStock === 0;
+                  
+                  return isOutOfStock ? (
                   <button 
                     disabled
                     className="w-full bg-gray-400 text-white font-heading font-semibold py-2.5 sm:py-3 lg:py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 cursor-not-allowed text-sm sm:text-base"
@@ -412,28 +583,29 @@ const ProductDetail = () => {
                   </button>
                 ) : (
                 <button 
-                  onClick={async () => {
-                    setIsAddingToCart(true);
-                    try {
-                      await CartService.addItem(product.id, quantity);
-                      showNotification({
-                        type: 'success',
-                        message: `${product.name} added to cart successfully!`
-                      });
-                    } catch (err) {
-                      console.error('Failed to add to cart:', err);
-                      showNotification({
-                        type: 'error',
-                        message: 'Failed to add item to cart'
-                      });
-                    } finally {
-                      setIsAddingToCart(false);
-                    }
+                  onClick={() => {
+                    addToCartMutation.mutate(
+                      { productId: product.id, quantity },
+                      {
+                        onSuccess: () => {
+                          showNotification({
+                            type: 'success',
+                            message: `${product.name} added to cart successfully!`
+                          });
+                        },
+                        onError: () => {
+                          showNotification({
+                            type: 'error',
+                            message: 'Failed to add item to cart'
+                          });
+                        }
+                      }
+                    );
                   }}
-                  disabled={isAddingToCart}
+                  disabled={addToCartMutation.isPending}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-semibold py-2.5 sm:py-3 lg:py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  {isAddingToCart ? (
+                  {addToCartMutation.isPending ? (
                     <>
                       <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Adding...</span>
@@ -445,7 +617,8 @@ const ProductDetail = () => {
                     </>
                   )}
                 </button>
-                )}
+                );
+                })()}
               </div>
             </div>
           </div>
@@ -640,14 +813,27 @@ const ProductDetail = () => {
                               className="w-full h-32 object-contain group-hover:scale-105 transition-transform duration-300 p-2"
                             onError={(e) => {
                               console.error('Failed to load suggested product image:', suggestedProduct.image_url);
+                              // Show fallback for suggested product images
                               e.currentTarget.style.display = 'none';
+                              const fallbackDiv = document.createElement('div');
+                              fallbackDiv.className = 'w-full h-32 flex items-center justify-center bg-gray-100';
+                              fallbackDiv.innerHTML = `
+                                <div class="text-center text-gray-400">
+                                  <div class="text-2xl mb-1">📦</div>
+                                  <div class="text-xs">No Image</div>
+                                </div>
+                              `;
+                              e.currentTarget.parentNode?.appendChild(fallbackDiv);
                             }}
                           />
-                          {suggestedProduct.originalPrice > suggestedProduct.price && (
+                          {(() => {
+                            const originalPrice = suggestedProduct.actual_price || suggestedProduct.originalPrice || suggestedProduct.price;
+                            return originalPrice > suggestedProduct.price && (
                               <div className="absolute top-2 left-2 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                              {Math.round(((suggestedProduct.originalPrice - suggestedProduct.price) / suggestedProduct.originalPrice) * 100)}% OFF
-                            </div>
-                          )}
+                                {Math.round(((originalPrice - suggestedProduct.price) / originalPrice) * 100)}% OFF
+                              </div>
+                            );
+                          })()}
                             <div className="absolute top-2 right-2 bg-beige-300/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs font-semibold text-black-700">
                             {suggestedProduct.category}
                           </div>
@@ -667,20 +853,26 @@ const ProductDetail = () => {
                                 />
                               ))}
                               </div>
-                              <span className="text-xs text-black-600">({suggestedProduct.reviews})</span>
+                              <span className="text-xs text-black-600">({suggestedProduct.review_count || suggestedProduct.reviews || 0})</span>
                           </div>
 
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-1">
                                 <span className="font-bold text-green-600 text-sm">₹{suggestedProduct.price}</span>
-                              {suggestedProduct.originalPrice > suggestedProduct.price && (
-                                  <span className="text-xs text-black-500 line-through">₹{suggestedProduct.originalPrice}</span>
-                              )}
+                              {(() => {
+                                const originalPrice = suggestedProduct.actual_price || suggestedProduct.originalPrice;
+                                return originalPrice && originalPrice > suggestedProduct.price && (
+                                  <span className="text-xs text-black-500 line-through">₹{originalPrice}</span>
+                                );
+                              })()}
                             </div>
                               <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
-                              suggestedProduct.stock_status === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              (() => {
+                                const stockStatus = suggestedProduct.inventory?.stock_status || suggestedProduct.stock_status || 'In Stock';
+                                return stockStatus === 'In Stock' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                              })()
                             }`}>
-                              {suggestedProduct.stock_status}
+                              {suggestedProduct.inventory?.stock_status || suggestedProduct.stock_status || 'In Stock'}
                             </span>
                           </div>
 
