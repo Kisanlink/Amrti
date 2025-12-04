@@ -30,13 +30,11 @@ export class CartService {
     try {
       const isAuth = this.isAuthenticated();
       if (!isAuth) {
-        console.log('User not authenticated, no migration needed');
         return null;
       }
 
       const guestSessionId = GuestCartService.getCurrentSessionId();
       if (!guestSessionId) {
-        console.log('No guest cart to migrate');
         return null;
       }
 
@@ -46,16 +44,8 @@ export class CartService {
       const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
       
       if (guestTotalItems === 0 || guestItems.length === 0) {
-        console.log('Guest cart is empty, nothing to migrate');
         return null;
       }
-
-      console.log('Migrating guest cart to user account...', {
-        guestSessionId,
-        guestItemsCount: guestItems.length,
-        guestTotalItems,
-        items: guestItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-      });
 
       const token = await AuthService.getIdToken();
       if (!token) {
@@ -70,7 +60,6 @@ export class CartService {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           mergedCart = await GuestCartService.migrateCart(token);
-          console.log(`Cart migration attempt ${attempt + 1} completed:`, mergedCart);
           
           // Verify migration succeeded by checking if merged cart has items
           const mergedItems = mergedCart?.items || [];
@@ -82,18 +71,8 @@ export class CartService {
             
             // CRITICAL: Verify the migrated cart is an authenticated cart (not guest cart)
             if (mergedCartId && mergedCartId.startsWith('guest_')) {
-              console.error('ERROR: Migration returned guest cart ID! This should not happen.');
               throw new Error('Cart migration failed - received guest cart instead of authenticated cart');
             }
-            
-            console.log('Cart migration verified - items in merged cart:', {
-              cartId: mergedCartId,
-              userId: mergedUserId,
-              totalItems: mergedTotalItems,
-              itemsCount: mergedItems.length,
-              isAuthenticatedCart: !mergedCartId?.startsWith('guest_'),
-              items: mergedItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-            });
             
             // Final verification: Fetch the authenticated cart to ensure it has the items
             try {
@@ -104,15 +83,8 @@ export class CartService {
               const verifiedCartId = verifiedCartData?.id || verifiedCartData?.cart_id;
               
               if (verifiedTotalItems > 0 && verifiedItems.length > 0 && verifiedCartId && !verifiedCartId.startsWith('guest_')) {
-                console.log('Final cart verification passed after migration:', {
-                  cartId: verifiedCartId,
-                  userId: verifiedCartData?.user_id,
-                  totalItems: verifiedTotalItems,
-                  itemsCount: verifiedItems.length
-                });
                 return mergedCart;
               } else {
-                console.warn('Cart verification after migration failed - cart may not have items yet');
                 // Wait a bit and retry
                 if (attempt < 2) {
                   await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
@@ -124,7 +96,6 @@ export class CartService {
               return mergedCart;
             }
           } else {
-            console.warn(`Cart migration attempt ${attempt + 1}: Merged cart is empty, retrying...`);
             if (attempt < 2) {
               await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
             }
@@ -163,45 +134,24 @@ export class CartService {
    */
   static async addItem(productId: string, quantity: number): Promise<Cart | GuestCart> {
     try {
-      console.log(`Adding item to cart: ${productId}, quantity: ${quantity}`);
-      
       // CRITICAL: Use synchronous authentication check for immediate response
       const isAuth = this.isAuthenticated();
-      console.log('Authentication status when adding item:', isAuth);
       
       // Double-check: Verify we have auth token if authenticated
       if (isAuth) {
         const token = await AuthService.getIdToken();
         if (!token) {
-          console.warn('User appears authenticated but no token available, falling back to guest cart');
           // Fall back to guest cart if no token
-          const guestCart = await GuestCartService.addItem(productId, quantity);
-          console.log('Guest cart add item response (fallback):', {
-            cartId: guestCart?.id || (guestCart as any)?.cart_id,
-            sessionId: GuestCartService.getCurrentSessionId(),
-            totalItems: guestCart?.total_items || (guestCart as any)?.items_count,
-            itemsCount: guestCart?.items?.length || 0
-          });
-          return guestCart;
+          return await GuestCartService.addItem(productId, quantity);
         }
         
         // User is authenticated with valid token, use regular cart API
-        console.log('Using authenticated cart API to add item');
         const response = await cartApi.addItem(productId, quantity);
         const cartData = response.data;
-        
-        console.log('Add item response (authenticated):', {
-          cartId: cartData?.id || cartData?.cart_id || (cartData as any)?.cartId,
-          userId: cartData?.user_id || (cartData as any)?.userId,
-          totalItems: cartData?.total_items || (cartData as any)?.items_count || 0,
-          itemsCount: cartData?.items?.length || 0,
-          isAuthenticated: true
-        });
         
         // Verify the cart ID is an authenticated cart (not guest cart)
         const cartId = cartData?.id || cartData?.cart_id || (cartData as any)?.cartId;
         if (cartId && cartId.startsWith('guest_')) {
-          console.error('ERROR: Authenticated user got guest cart ID! This should not happen.');
           throw new Error('Cart identification error. Please try again.');
         }
         
@@ -211,24 +161,7 @@ export class CartService {
         return cartData;
       } else {
         // User is not authenticated, use guest cart with session ID
-        console.log('Using guest cart API to add item');
-        const guestCart = await GuestCartService.addItem(productId, quantity);
-        const cartId = guestCart?.id || (guestCart as any)?.cart_id;
-        
-        console.log('Guest cart add item response:', {
-          cartId: cartId,
-          sessionId: GuestCartService.getCurrentSessionId(),
-          totalItems: guestCart?.total_items || (guestCart as any)?.items_count || 0,
-          itemsCount: guestCart?.items?.length || 0,
-          isAuthenticated: false
-        });
-        
-        // Verify the cart ID is a guest cart
-        if (cartId && !cartId.startsWith('guest_')) {
-          console.warn('WARNING: Guest user got non-guest cart ID. This may indicate a migration issue.');
-        }
-        
-        return guestCart;
+        return await GuestCartService.addItem(productId, quantity);
       }
     } catch (error: any) {
       console.error('Failed to add item to cart:', error);
@@ -265,27 +198,14 @@ export class CartService {
             
             // If guest cart has items, migrate it first
             if (guestTotalItems > 0 && guestItems.length > 0) {
-              console.log('Guest cart has items, migrating before retrieving authenticated cart...', {
-                guestItemsCount: guestItems.length,
-                guestTotalItems,
-                items: guestItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-              });
-              
               try {
-                const migratedCart = await this.migrateGuestCart();
-                if (migratedCart) {
-                  console.log('Guest cart migrated successfully, using migrated cart');
-                  // After migration, get the authenticated cart (which should now have the migrated items)
-                  // Fall through to get authenticated cart below
-                }
+                await this.migrateGuestCart();
               } catch (migrationError) {
-                console.error('Failed to migrate guest cart, continuing with authenticated cart:', migrationError);
                 // Continue with authenticated cart even if migration fails
               }
             }
           } catch (guestCartError) {
             // If guest cart doesn't exist or is empty, that's fine - continue with authenticated cart
-            console.log('No guest cart to migrate, using authenticated cart');
           }
         }
         
@@ -305,7 +225,6 @@ export class CartService {
             const guestTotalItems = guestCart?.total_items || (guestCart as any)?.items_count || 0;
             
             if (guestTotalItems > 0 && guestItems.length > 0) {
-              console.warn('Authenticated cart is empty but guest cart has items - attempting migration...');
               try {
                 const migratedCart = await this.migrateGuestCart();
                 if (migratedCart) {
@@ -316,7 +235,6 @@ export class CartService {
                   const retryTotalItems = retryCart.total_items || (retryCart as any)?.items_count || 0;
                   
                   if (retryTotalItems > 0 && retryItems.length > 0) {
-                    console.log('Cart migration successful, using migrated cart');
                     // Use the migrated cart
                     const { default: ProductService } = await import('./productService');
                     const enrichedItems = await Promise.all(
@@ -341,11 +259,11 @@ export class CartService {
                   }
                 }
               } catch (migrationError) {
-                console.error('Migration failed when authenticated cart was empty:', migrationError);
+                // Migration failed, continue with empty cart
               }
             }
           } catch (guestError) {
-            console.log('No guest cart available');
+            // No guest cart available
           }
         }
         
@@ -355,9 +273,7 @@ export class CartService {
         const enrichedItems = await Promise.all(
           items.map(async (item) => {
             try {
-              console.log(`Fetching product details for ${item.product_id}...`);
               const product = await ProductService.getProductById(item.product_id);
-              console.log(`Product details for ${item.product_id}:`, product);
               
               // Ensure product has image_url for backward compatibility
               let enrichedProduct: any = { ...product };
@@ -382,8 +298,6 @@ export class CartService {
           })
         );
         
-        console.log('Enriched cart items:', enrichedItems);
-        
         return {
           ...cart,
           items: enrichedItems
@@ -391,7 +305,6 @@ export class CartService {
       } else {
         // User is not authenticated, use guest cart
         const guestCart = await GuestCartService.getCart();
-        console.log('Guest cart response:', guestCart);
         
         // Fetch product details for each cart item
         const { default: ProductService } = await import('./productService');
@@ -399,22 +312,17 @@ export class CartService {
         const enrichedItems = await Promise.all(
           guestCart.items.map(async (item) => {
             try {
-              console.log(`Fetching product details for ${item.product_id}...`);
               const product = await ProductService.getProductById(item.product_id);
-              console.log(`Product details for ${item.product_id}:`, product);
               return {
                 ...item,
                 product
               };
             } catch (error) {
-              console.error(`Failed to fetch product ${item.product_id}:`, error);
               // Return item without product details if fetch fails
               return item;
             }
           })
         );
-        
-        console.log('Enriched guest cart items:', enrichedItems);
         
         return {
           ...guestCart,
@@ -435,14 +343,11 @@ export class CartService {
    */
   static async updateItemQuantity(productId: string, quantity: number): Promise<Cart | GuestCart> {
     try {
-      console.log(`Updating cart item quantity: ${productId}, quantity: ${quantity}`);
-      
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
-        const response = await cartApi.updateItemQuantity(productId, quantity);
-        console.log('Update item response:', response);
+        await cartApi.updateItemQuantity(productId, quantity);
         
         // Dispatch cart updated event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -451,10 +356,7 @@ export class CartService {
         return await this.getCart();
       } else {
         // User is not authenticated, use guest cart
-        const guestCart = await GuestCartService.updateItemQuantity(productId, quantity);
-        console.log('Guest cart update item response:', guestCart);
-        
-        return guestCart;
+        return await GuestCartService.updateItemQuantity(productId, quantity);
       }
     } catch (error) {
       console.error('Failed to update cart item quantity:', error);
@@ -469,14 +371,11 @@ export class CartService {
    */
   static async removeItem(productId: string): Promise<Cart | GuestCart> {
     try {
-      console.log(`Removing item from cart: ${productId}`);
-      
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
-        const response = await cartApi.removeItem(productId);
-        console.log('Remove item response:', response);
+        await cartApi.removeItem(productId);
         
         // Dispatch cart updated event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -485,10 +384,7 @@ export class CartService {
         return await this.getCart();
       } else {
         // User is not authenticated, use guest cart
-        const guestCart = await GuestCartService.removeItem(productId);
-        console.log('Guest cart remove item response:', guestCart);
-        
-        return guestCart;
+        return await GuestCartService.removeItem(productId);
       }
     } catch (error) {
       console.error('Failed to remove item from cart:', error);
@@ -503,14 +399,11 @@ export class CartService {
    */
   static async incrementItem(productId: string): Promise<Cart | GuestCart> {
     try {
-      console.log(`Incrementing item quantity: ${productId}`);
-      
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
-        const response = await cartApi.incrementItem(productId);
-        console.log('Increment item response:', response);
+        await cartApi.incrementItem(productId);
         
         // Dispatch cart updated event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -521,10 +414,7 @@ export class CartService {
         // User is not authenticated, use guest cart
         const currentQuantity = await GuestCartService.getProductQuantity(productId);
         const newQuantity = currentQuantity + 1;
-        const guestCart = await GuestCartService.updateItemQuantity(productId, newQuantity);
-        console.log('Guest cart increment item response:', guestCart);
-        
-        return guestCart;
+        return await GuestCartService.updateItemQuantity(productId, newQuantity);
       }
     } catch (error) {
       console.error('Failed to increment item quantity:', error);
@@ -539,14 +429,11 @@ export class CartService {
    */
   static async decrementItem(productId: string): Promise<Cart | GuestCart> {
     try {
-      console.log(`Decrementing item quantity: ${productId}`);
-      
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
-        const response = await cartApi.decrementItem(productId);
-        console.log('Decrement item response:', response);
+        await cartApi.decrementItem(productId);
         
         // Dispatch cart updated event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -560,13 +447,9 @@ export class CartService {
         
         if (newQuantity === 0) {
           // Remove item if quantity becomes 0
-          const guestCart = await GuestCartService.removeItem(productId);
-          console.log('Guest cart remove item response (decrement to 0):', guestCart);
-          return guestCart;
+          return await GuestCartService.removeItem(productId);
         } else {
-          const guestCart = await GuestCartService.updateItemQuantity(productId, newQuantity);
-          console.log('Guest cart decrement item response:', guestCart);
-          return guestCart;
+          return await GuestCartService.updateItemQuantity(productId, newQuantity);
         }
       }
     } catch (error) {
@@ -581,7 +464,7 @@ export class CartService {
    */
   static async getSummary(): Promise<CartSummaryResponse['data'] | GuestCartSummaryResponse['data']> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -604,7 +487,7 @@ export class CartService {
    */
   static async getItemCount(): Promise<number> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -641,7 +524,7 @@ export class CartService {
    */
   static async isCartEmpty(): Promise<boolean> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -664,7 +547,7 @@ export class CartService {
    */
   static async getCartTotal(): Promise<number> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -739,7 +622,7 @@ export class CartService {
    */
   static async getCartItems(): Promise<CartItem[] | GuestCartItem[]> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -763,7 +646,7 @@ export class CartService {
    */
   static async getCartItem(productId: string): Promise<CartItem | GuestCartItem | null> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -787,7 +670,7 @@ export class CartService {
    */
   static async isProductInCart(productId: string): Promise<boolean> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -811,7 +694,7 @@ export class CartService {
    */
   static async getProductQuantity(productId: string): Promise<number> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -834,7 +717,7 @@ export class CartService {
    */
   static async clearCart(): Promise<Cart | GuestCart> {
     try {
-      const isAuth = await this.isAuthenticated();
+      const isAuth = this.isAuthenticated();
       
       if (isAuth) {
         // User is authenticated, use regular cart API
@@ -914,11 +797,9 @@ export class CartService {
    */
   static async applyCoupon(couponCode: string): Promise<Cart> {
     try {
-      console.log(`Applying coupon: ${couponCode}`);
       const isAuth = await this.isAuthenticated();
       if (isAuth) {
         const response = await cartApi.applyCoupon(couponCode);
-        console.log('Apply coupon response:', response);
         const updatedCart = {
           ...response.data.cart,
           discount_amount: response.data.discount_amount,
@@ -945,11 +826,9 @@ export class CartService {
    */
   static async removeCoupon(): Promise<Cart> {
     try {
-      console.log('Removing coupon from cart');
       const isAuth = await this.isAuthenticated();
       if (isAuth) {
         const response = await cartApi.removeCoupon();
-        console.log('Remove coupon response:', response);
         const updatedCart = {
           ...response.data.cart,
           discount_amount: 0,

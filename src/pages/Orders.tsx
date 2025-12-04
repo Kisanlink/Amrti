@@ -62,7 +62,6 @@ const Orders: React.FC = () => {
   useEffect(() => {
     // Check authentication first
     if (!AuthService.isAuthenticated()) {
-      console.log('User not authenticated, redirecting to login');
       navigate('/login', { state: { from: orderId ? `/orders/${orderId}` : '/orders' } });
       return;
     }
@@ -80,20 +79,13 @@ const Orders: React.FC = () => {
     try {
       setOrdersLoading(true);
       setOrdersError(null);
-      console.log('=== FETCHING USER ORDERS ===');
-      console.log('Page:', currentPage);
       
       const response = await OrderService.getUserOrders();
-      console.log('=== ORDERS RESPONSE RECEIVED ===');
-      console.log('Orders:', response);
       
       setOrders(response);
       // Note: The API response structure might need adjustment based on actual API
       // setTotalPages(response.totalPages || 1);
     } catch (err: any) {
-      console.error('=== ERROR FETCHING ORDERS ===');
-      console.error('Error:', err);
-      
       setOrdersError(`Failed to load orders: ${err?.message || 'Unknown error'}`);
       showNotification({
         type: 'error',
@@ -110,27 +102,18 @@ const Orders: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('=== FETCHING ORDER DETAILS ===');
-      console.log('Order ID:', orderId);
       
       const response = await OrderService.getOrderById(orderId);
-      console.log('=== ORDER RESPONSE RECEIVED ===');
-      console.log('Full response:', response);
       
       if (response && response.order) {
         setOrder(response.order);
         // Use order_items from the order object, or fallback to items
         const items = response.order.order_items || response.order.items || response.items || [];
         setOrderItems(items);
-        console.log('Order and items set successfully', { order: response.order, items });
       } else {
-        console.error('Invalid response format:', response);
         setError('Invalid response format from server');
       }
     } catch (err: any) {
-      console.error('=== ERROR FETCHING ORDER DETAILS ===');
-      console.error('Error:', err);
-      
       setError(`Failed to load order details: ${err?.message || 'Unknown error'}`);
       showNotification({
         type: 'error',
@@ -159,16 +142,13 @@ const Orders: React.FC = () => {
   // Fetch product details for order items
   const fetchProductDetails = async (productId: string) => {
     try {
-      console.log(`Fetching product details for: ${productId}`);
       const product = await ProductService.getProductById(productId);
-      console.log(`Product details received for ${productId}:`, product);
       
       setProductDetails(prev => ({
         ...prev,
         [productId]: product
       }));
     } catch (error) {
-      console.error(`Failed to fetch product ${productId}:`, error);
       // Set a fallback for failed product fetches
       setProductDetails(prev => ({
         ...prev,

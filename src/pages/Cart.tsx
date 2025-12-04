@@ -28,24 +28,6 @@ const Cart = () => {
   
   const error = cartError ? 'Failed to load cart' : null;
   
-  // Debug: Log when cartData changes
-  useEffect(() => {
-    if (cartData) {
-      console.log('Cart page - Received cart data:', cartData);
-    }
-  }, [cartData]);
-  
-  // Debug: Log cart data when it changes
-  useEffect(() => {
-    console.log('Cart page - Cart data updated:', { 
-      hasCart: !!cart,
-      cart, 
-      totalItems, 
-      cartItemsLength: cartItems.length,
-      items: cartItems 
-    });
-  }, [cart, totalItems, cartItems.length, cartItems]);
-
   // Cart page automatically polls every 1 second - no need for event listeners
 
   const handleQuantityChange = async (productId: string, newQuantity: number) => {

@@ -144,8 +144,6 @@ export const checkoutApi = {
       }
     };
     
-    console.log('Estimating shipping with payload:', payload); // Debug log
-    
     return apiRequest<ShippingEstimateResponse>('/cart/checkout/estimate-shipping', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -161,18 +159,14 @@ export const checkoutApi = {
       mobile: shippingAddress.mobile,
       shipping_address_id: addressId
     };
-    
-    console.log('Creating order with payload:', payload); // Debug log
       
       try {
         const response = await apiRequest<CreateOrderResponse>('/payments/create-order', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-      console.log('Order created successfully:', response);
         return response;
       } catch (error: any) {
-      console.error('Failed to create order:', error);
           throw error;
     }
   },
@@ -190,8 +184,6 @@ export const checkoutApi = {
     // Get session ID for guest checkout if not authenticated
     const { default: AuthService } = await import('./authService');
     const isAuthenticated = AuthService.isAuthenticated();
-    
-    console.log('Creating Magic Checkout order, authenticated:', isAuthenticated);
     
     // CRITICAL: Ensure cart consistency before checkout
     // This ensures we're using the same cart that was used when adding items
@@ -218,17 +210,15 @@ export const checkoutApi = {
             try {
               const migratedCart = await CartService.migrateGuestCart();
               if (migratedCart) {
-                console.log('Guest cart migrated successfully before checkout');
                 // Wait a moment for backend to process migration
                 await new Promise(resolve => setTimeout(resolve, 500));
               }
             } catch (migrationError) {
-              console.error('Failed to migrate guest cart before checkout:', migrationError);
               // Continue anyway - the getCart() method will also try to migrate
             }
           }
         } catch (guestError) {
-          console.log('No guest cart to migrate');
+          // No guest cart to migrate
         }
       }
     }
@@ -246,35 +236,15 @@ export const checkoutApi = {
         const items = verifiedCart?.items || [];
         
         if (verifiedCart && totalItems > 0 && items.length > 0) {
-          const cartId = verifiedCart.id || (verifiedCart as any)?.cart_id || (verifiedCart as any)?.cartId;
-          const userId = verifiedCart.user_id || (verifiedCart as any)?.user_id;
-          console.log(`Cart verified before API call (attempt ${attempt + 1}):`, { 
-            totalItems, 
-            itemsCount: items.length,
-            cartId: cartId,
-            userId: userId,
-            isAuthenticated: isAuthenticated,
-            items: items.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-          });
           cartVerified = true;
           break;
         } else {
-          console.warn(`Cart verification attempt ${attempt + 1}: Cart exists but empty`, {
-            totalItems,
-            itemsCount: items.length,
-            cart: verifiedCart,
-            cartId: verifiedCart?.id || (verifiedCart as any)?.cart_id,
-            userId: verifiedCart?.user_id || (verifiedCart as any)?.user_id
-          });
-          
           // If this is the last attempt and cart is still empty, throw error
           if (attempt === 4) {
             throw new Error('Cart is empty. Please add items to cart.');
           }
         }
       } catch (error: any) {
-        console.warn(`Cart verification attempt ${attempt + 1} failed:`, error);
-        
         // If it's the last attempt, throw the error
         if (attempt === 4) {
           if (error.message && (error.message.includes('empty') || error.message.includes('Cart is empty'))) {
@@ -291,7 +261,6 @@ export const checkoutApi = {
     }
     
     if (!cartVerified || !verifiedCart) {
-      console.error('Cart verification failed after all attempts');
       throw new Error('Cart is empty. Please add items to cart.');
     }
     
@@ -304,13 +273,11 @@ export const checkoutApi = {
     
     // CRITICAL: Validate cart on server one more time RIGHT before API call
     // This ensures the server has the cart at the exact moment we make the request
-    console.log('Performing final server-side cart validation...');
     try {
       const { cartApi } = await import('./api');
       
       // Call the cart validation endpoint to ensure server has the cart
       const validationResponse = await cartApi.validate();
-      console.log('Server cart validation response:', validationResponse);
       
       if (!validationResponse.success) {
         throw new Error('Server cart validation failed. Cart may be empty on server.');
@@ -322,38 +289,21 @@ export const checkoutApi = {
       const serverItems = serverCart?.items || [];
       
       if (serverTotalItems === 0 || serverItems.length === 0) {
-        console.error('Server cart is empty even after validation:', serverCart);
         throw new Error('Cart is empty on server. Please refresh the page and try again.');
       }
       
       const serverCartId = serverCart.id || (serverCart as any)?.cart_id || (serverCart as any)?.cartId;
-      const serverUserId = serverCart.user_id || (serverCart as any)?.user_id;
-      console.log('Server cart validation passed:', {
-        totalItems: serverTotalItems,
-        itemsCount: serverItems.length,
-        cartId: serverCartId,
-        userId: serverUserId,
-        isAuthenticated: isAuthenticated,
-        items: serverItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-      });
       
       // CRITICAL: Verify cart IDs match (if both are available)
       // This ensures we're using the same cart that was verified
       if (verifiedCart && serverCart) {
         const verifiedCartId = verifiedCart.id || (verifiedCart as any)?.cart_id || (verifiedCart as any)?.cartId;
         if (verifiedCartId && serverCartId && verifiedCartId !== serverCartId) {
-          console.warn('Cart ID mismatch detected:', {
-            verifiedCartId,
-            serverCartId,
-            verifiedUserId: verifiedCart.user_id || (verifiedCart as any)?.user_id,
-            serverUserId
-          });
           // This might indicate a cart migration happened - use the server cart
           verifiedCart = serverCart;
         }
       }
     } catch (validationError: any) {
-      console.error('Server cart validation failed:', validationError);
       if (validationError.message && validationError.message.includes('empty')) {
         throw new Error('Cart is empty on server. Please refresh the page, add items to cart, and try again.');
       }
@@ -368,7 +318,6 @@ export const checkoutApi = {
       const token = await AuthService.getIdToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('Using auth token for Magic Checkout');
       } else {
         throw new Error('Authentication token not available. Please login again.');
       }
@@ -378,7 +327,6 @@ export const checkoutApi = {
       const sessionId = GuestCartService.getCurrentSessionId();
       if (sessionId) {
         headers['X-Session-ID'] = sessionId;
-        console.log('Using session ID for guest checkout:', sessionId);
       } else {
         throw new Error('Please login or provide session ID for guest checkout');
       }
@@ -389,37 +337,15 @@ export const checkoutApi = {
     // Use raw cartApi.getCart() for speed (no product enrichment)
     try {
       const { cartApi } = await import('./api');
-      console.log('Making final cart API call to ensure server has cart in session...');
       const cartResponse = await cartApi.getCart();
       const finalServerCart = cartResponse.data.cart;
       const finalServerItems = finalServerCart?.items || [];
       const finalServerTotal = finalServerCart?.total_items || (finalServerCart as any)?.items_count || 0;
       
       if (finalServerTotal === 0 || finalServerItems.length === 0) {
-        console.error('Cart is empty on server right before API call:', {
-          cart: finalServerCart,
-          response: cartResponse,
-          fullResponse: JSON.stringify(cartResponse, null, 2)
-        });
-        
-        // Clear client cache since server cart is empty
-        // Note: We can't clear cache here as this is not a React component
-        // The cache will be cleared by the component that handles this error
-        console.warn('Server cart is empty - client cache should be cleared by component');
-        
         throw new Error('Cart is empty on server. The items may not have been saved. Please add items to cart again and try checkout.');
       }
-      
-      const finalCartId = finalServerCart.id || (finalServerCart as any)?.cart_id || (finalServerCart as any)?.cartId;
-      console.log('Server cart confirmed before API call:', {
-        totalItems: finalServerTotal,
-        itemsCount: finalServerItems.length,
-        cartId: finalCartId,
-        userId: finalServerCart.user_id || (finalServerCart as any)?.user_id,
-        items: finalServerItems.map((item: any) => ({ product_id: item.product_id, quantity: item.quantity }))
-      });
     } catch (cartError: any) {
-      console.error('Failed to verify cart on server before API call:', cartError);
       if (cartError.message && cartError.message.includes('empty')) {
         throw cartError; // Re-throw the error with the message about clearing cache
       }
@@ -429,17 +355,13 @@ export const checkoutApi = {
     // Small delay to ensure server has processed any cart updates
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    console.log('Calling Magic Checkout create-order API...');
     const response = await fetch(buildApiUrl('/payments/magic-checkout/create-order'), {
       method: 'POST',
       headers,
     });
     
-    console.log('Magic Checkout API response status:', response.status);
-    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
-      console.error('Magic Checkout API error:', errorData);
       const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
       
       // Provide more helpful error message for empty cart
@@ -451,7 +373,6 @@ export const checkoutApi = {
     }
     
     const orderData = await response.json();
-    console.log('Magic Checkout order created:', orderData);
     return orderData;
   },
 };
