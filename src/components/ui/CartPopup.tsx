@@ -1,9 +1,11 @@
-import { X, Trash2, Plus, Minus } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
-import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem } from '../../hooks/queries/useCart';
+import { useNavigate, Link } from 'react-router-dom';
+import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useAddToCart } from '../../hooks/queries/useCart';
+import { useAllProducts } from '../../hooks/queries/useProducts';
 import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
+import { useMemo } from 'react';
 
 interface CartPopupProps {
   isOpen: boolean;
@@ -20,6 +22,39 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
   const removeFromCart = useRemoveFromCart();
   const incrementCartItem = useIncrementCartItem();
   const decrementCartItem = useDecrementCartItem();
+  const addToCartMutation = useAddToCart();
+  
+  // Fetch products for suggestions
+  const { data: productsResponse } = useAllProducts();
+  
+  // Get suggested products (exclude products already in cart)
+  const suggestedProducts = useMemo(() => {
+    if (!productsResponse?.data || !cart?.items) return [];
+    
+    const cartProductIds = cart.items.map((item: any) => item.product_id);
+    const allProducts = productsResponse.data || [];
+    
+    // Filter out products already in cart and take first 6
+    return allProducts
+      .filter((product: any) => !cartProductIds.includes(product.id))
+      .slice(0, 6);
+  }, [productsResponse?.data, cart?.items]);
+  
+  // Handle add to cart from suggested products
+  const handleSuggestedProductAddToCart = async (productId: string) => {
+    try {
+      await addToCartMutation.mutateAsync({ productId, quantity: 1 });
+      showNotification({
+        type: 'success',
+        message: 'Product added to cart!'
+      });
+    } catch (error) {
+      showNotification({
+        type: 'error',
+        message: 'Failed to add product to cart'
+      });
+    }
+  };
 
   // Handle quantity update
   const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
@@ -261,6 +296,77 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
               );
             })}
                    </div>
+                   
+            {/* Suggested Products Section */}
+            {suggestedProducts.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">You might also like</h3>
+                <div className="overflow-x-auto -mx-4 px-4">
+                  <div className="flex space-x-3 min-w-max pb-2">
+                    {suggestedProducts.map((product: any) => {
+                      // Get product image
+                      const productImage = product.image_url || 
+                        product.primary_image?.image_url || 
+                        (product.images && product.images.length > 0 
+                          ? (product.images.find((img: any) => img.is_primary) || product.images[0])?.image_url 
+                          : null) || 
+                        null;
+                      
+                      return (
+                        <div
+                          key={product.id}
+                          className="flex-shrink-0 w-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                        >
+                          <Link 
+                            to={`/product/${product.id}`}
+                            onClick={onClose}
+                            className="block"
+                          >
+                            <div className="w-full h-24 bg-gray-100 overflow-hidden">
+                              {productImage ? (
+                                <img
+                                  src={productImage}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                  <span className="text-xs text-gray-400">📦</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2">
+                              <h4 className="text-xs font-medium text-gray-900 truncate mb-1">
+                                {product.name}
+                              </h4>
+                              <p className="text-xs font-semibold text-green-600 mb-2">
+                                ₹{product.price || product.selling_price || 0}
+                              </p>
+                            </div>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSuggestedProductAddToCart(product.id);
+                            }}
+                            disabled={addToCartMutation.isPending}
+                            className="w-full px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
                  </div>
 
         {/* Summary */}

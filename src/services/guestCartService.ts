@@ -86,7 +86,9 @@ export class GuestCartService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `http://localhost:8082/api/v1${endpoint}`;
+    // Import API config dynamically to avoid circular dependencies
+    const { buildApiUrl } = await import('../config/apiConfig');
+    const url = buildApiUrl(endpoint);
     
     try {
       const response = await fetch(url, {
@@ -439,7 +441,9 @@ export class GuestCartService {
       
       console.log('Migrating guest cart to user account...');
       
-      const response = await fetch('http://localhost:8082/api/v1/cart/migrate', {
+      // Import API config dynamically to avoid circular dependencies
+      const { buildApiUrl } = await import('../config/apiConfig');
+      const response = await fetch(buildApiUrl('/cart/migrate'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,

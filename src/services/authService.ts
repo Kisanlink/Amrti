@@ -134,7 +134,8 @@ export class AuthService {
         throw new Error(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
       }
 
-      const API_BASE_URL = 'http://localhost:8082';
+      // Import API config dynamically to avoid circular dependencies
+      const { buildApiUrl } = await import('../config/apiConfig');
       const requestBody = {
         phone_number: phoneNumber,
         recaptcha_token: recaptchaToken
@@ -142,7 +143,7 @@ export class AuthService {
       
       console.log('Sending phone code request:', requestBody);
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/phone/send-code`, {
+      const response = await fetch(buildApiUrl('/auth/phone/send-code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,8 +190,9 @@ export class AuthService {
         throw new Error('Phone number, code, and session info are required');
       }
 
-      const API_BASE_URL = 'http://localhost:8082';
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/phone/verify-code`, {
+      // Import API config dynamically to avoid circular dependencies
+      const { buildApiUrl } = await import('../config/apiConfig');
+      const response = await fetch(buildApiUrl('/auth/phone/verify-code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,18 +268,20 @@ export class AuthService {
         }
       } as any; // Type assertion for compatibility
       
-      // Dispatch login event to notify other components
-      console.log('Dispatching userLoggedIn event with user:', authUser);
-      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
-      
-      // Migrate guest cart to user account
+      // Migrate guest cart to user account BEFORE dispatching login event
+      // This ensures the cart is migrated before any components react to the login
       try {
         const { CartService } = await import('./cartService');
-        await CartService.migrateGuestCart();
+        const migratedCart = await CartService.migrateGuestCart();
+        console.log('Cart migration completed before login event:', migratedCart);
       } catch (error) {
         console.error('Failed to migrate guest cart:', error);
         // Don't throw error as this shouldn't block the login process
       }
+      
+      // Dispatch login event to notify other components AFTER cart migration
+      console.log('Dispatching userLoggedIn event with user:', authUser);
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
       
       console.log('Phone authentication successful, user stored:', authUser);
       
@@ -329,14 +333,19 @@ export class AuthService {
         console.warn('Failed to store auth token:', error);
       }
       
-      // Migrate guest cart to user account
+      // Migrate guest cart to user account BEFORE dispatching login event
+      // This ensures the cart is migrated before any components react to the login
       try {
         const { CartService } = await import('./cartService');
-        await CartService.migrateGuestCart();
+        const migratedCart = await CartService.migrateGuestCart();
+        console.log('Cart migration completed before login event:', migratedCart);
       } catch (error) {
         console.error('Failed to migrate guest cart:', error);
         // Don't throw error as this shouldn't block the login process
       }
+      
+      // Dispatch login event AFTER cart migration
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
       
       return authUser;
     } catch (error) {
@@ -441,21 +450,23 @@ export class AuthService {
       
       this.currentUser = authUser as any;
 
-      // Dispatch login event with role information
-      window.dispatchEvent(new CustomEvent('userLoggedIn', { 
-        detail: { ...authUser, role: userRole } 
-      }));
-
-      // Migrate guest cart to user account (only for non-admin users)
+      // Migrate guest cart to user account BEFORE dispatching login event (only for non-admin users)
+      // This ensures the cart is migrated before any components react to the login
       if (userRole !== 'Admin') {
         try {
           const { CartService } = await import('./cartService');
-          await CartService.migrateGuestCart();
+          const migratedCart = await CartService.migrateGuestCart();
+          console.log('Cart migration completed before login event:', migratedCart);
         } catch (error) {
           console.error('Failed to migrate guest cart:', error);
           // Don't throw error as this shouldn't block the login process
         }
       }
+
+      // Dispatch login event with role information AFTER cart migration
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+        detail: { ...authUser, role: userRole } 
+      }));
 
       // Return auth user with role
       return { ...authUser, role: userRole } as any;
@@ -470,25 +481,70 @@ export class AuthService {
    */
   static async logout(): Promise<void> {
     try {
-      // Call the logout API endpoint
-      const API_BASE_URL = 'http://localhost:8082';
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      // Import API config dynamically to avoid circular dependencies
+      const { buildApiUrl } = await import('../config/apiConfig');
+      
+      // Try to get a valid Firebase ID token for logout
+      // First try to get from Firebase if user is signed in
+      let token: string | null = null;
+      try {
+        if (this.currentUser && typeof this.currentUser.getIdToken === 'function') {
+          token = await this.currentUser.getIdToken();
+        } else {
+          // Fallback to stored token, but only if it looks like a Firebase ID token
+          const storedToken = localStorage.getItem('authToken');
+          // Firebase ID tokens are JWT with 3 segments (header.payload.signature)
+          if (storedToken && storedToken.split('.').length === 3) {
+            token = storedToken;
+          }
         }
-      });
+      } catch (tokenError) {
+        console.warn('Could not get valid token for logout:', tokenError);
+        // Continue with logout even without token
+      }
+      
+      // Call the logout API endpoint only if we have a valid token
+      if (token) {
+        try {
+          const response = await fetch(buildApiUrl('/auth/logout'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn('Logout API call failed, but continuing with local logout:', errorData);
+          }
+        } catch (apiError) {
+          console.warn('Logout API call error, but continuing with local logout:', apiError);
+          // Continue with local logout even if API call fails
+        }
+      } else {
+        console.warn('No valid token available for logout API call, proceeding with local logout only');
+      }
 
-      // Firebase signout
-      const auth = await getAuth();
-      await auth.signOut();
+      // Firebase signout (this might fail if user wasn't signed in via Firebase)
+      try {
+        const auth = await getAuth();
+        await auth.signOut();
+      } catch (firebaseError) {
+        console.warn('Firebase signout failed (user might not be signed in via Firebase):', firebaseError);
+        // Continue with logout even if Firebase signout fails
+      }
       
       // Clear all stored data
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
+      
+      // Reset current user
+      this.currentUser = null;
       
       // Dispatch logout event with counter reset
       window.dispatchEvent(new CustomEvent('userLoggedOut', { 
@@ -499,10 +555,13 @@ export class AuthService {
       // Still clear local data even if API call or Firebase logout fails
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
       localStorage.removeItem('cart');
       localStorage.removeItem('favorites');
+      this.currentUser = null;
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
-      throw error;
+      // Don't throw error - logout should always succeed locally
     }
   }
 
@@ -667,9 +726,11 @@ export class AuthService {
       console.log('Token preview:', token.substring(0, 50) + '...');
     }
     
+    // Import API config dynamically to avoid circular dependencies
+    const { buildApiUrl } = await import('../config/apiConfig');
     // Test API call
     try {
-      const response = await fetch('http://localhost:8082/api/v1/favorites', {
+      const response = await fetch(buildApiUrl('/favorites'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

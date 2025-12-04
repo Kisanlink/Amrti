@@ -3,165 +3,9 @@ import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, Rota
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
-import { useCartWithPolling, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useApplyCoupon, useRemoveCoupon, useClearCart } from '../hooks/queries/useCart';
+import { useCartWithPolling, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useClearCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
 
-// Coupon Section Component
-const CouponSection = ({ 
-  cart, 
-  onCouponApplied,
-  applyCouponMutation,
-  removeCouponMutation
-}: { 
-  cart: any; 
-  onCouponApplied: () => void;
-  applyCouponMutation: ReturnType<typeof useApplyCoupon>;
-  removeCouponMutation: ReturnType<typeof useRemoveCoupon>;
-}) => {
-  const [couponCode, setCouponCode] = useState('');
-  const [isApplying, setIsApplying] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const { showNotification } = useNotification();
-
-  // Available coupons
-const availableCoupons = [
-    { code: 'DEAL5', discount: '5%', description: 'Get 5% off on your order' },
-    { code: 'SAVE10', discount: '10%', description: 'Get 10% off on your order' }
-  ];
-
-  const handleApplyCoupon = async (code?: string) => {
-    const couponToApply = code || couponCode.trim();
-    
-    if (!couponToApply) {
-      showNotification({
-        type: 'error',
-        message: 'Please enter a coupon code'
-      });
-      return;
-    }
-
-    try {
-      setIsApplying(true);
-      await applyCouponMutation.mutateAsync(couponToApply);
-      setAppliedCoupon(couponToApply);
-      setCouponCode('');
-      onCouponApplied();
-      showNotification({
-        type: 'success',
-        message: 'Coupon applied successfully!'
-      });
-    } catch (error: any) {
-      showNotification({
-        type: 'error',
-        message: error.message || 'Failed to apply coupon'
-      });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  // Remove coupon function
-  const handleRemoveCoupon = async () => {
-    try {
-      setIsApplying(true);
-      await removeCouponMutation.mutateAsync();
-      setAppliedCoupon(null);
-      onCouponApplied();
-      showNotification({
-        type: 'success',
-        message: 'Coupon removed successfully!'
-      });
-    } catch (error: any) {
-      showNotification({
-        type: 'error',
-        message: error.message || 'Failed to remove coupon'
-      });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  return (
-    <div className="mb-4 sm:mb-6">
-      <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
-        <h3 className="text-sm sm:text-base font-semibold text-black-900 mb-2 sm:mb-3">
-          Have a coupon code?
-        </h3>
-        
-        {appliedCoupon || cart.discount_amount > 0 ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm sm:text-base text-green-700 font-medium">
-                  Coupon "{appliedCoupon || 'Applied'}" applied
-                </span>
-              </div>
-              <span className="text-sm sm:text-base font-semibold text-green-600">
-                -₹{cart.discount_amount}
-              </span>
-            </div>
-            <button
-              onClick={handleRemoveCoupon}
-              disabled={isApplying}
-              className="mt-2 text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
-            >
-              Remove coupon
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Available Coupons */}
-            <div className="mb-3 sm:mb-4">
-              <p className="text-xs sm:text-sm text-gray-600 mb-2">Available coupons:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {availableCoupons.map((coupon) => (
-                  <button
-                    key={coupon.code}
-                    onClick={() => handleApplyCoupon(coupon.code)}
-                    disabled={isApplying}
-                    className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 hover:bg-green-50 border border-gray-200 hover:border-green-300 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div>
-                      <div className="text-sm sm:text-base font-semibold text-gray-900">
-                        {coupon.code}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-600">
-                        {coupon.description}
-                      </div>
-                    </div>
-                    <div className="text-sm sm:text-base font-bold text-green-600">
-                      {coupon.discount}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Manual Coupon Input */}
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="Enter coupon code"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
-                disabled={isApplying}
-              />
-              <button
-                onClick={() => handleApplyCoupon()}
-                disabled={isApplying || !couponCode.trim()}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors text-sm sm:text-base"
-              >
-                {isApplying ? 'Applying...' : 'Apply'}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -173,12 +17,16 @@ const Cart = () => {
   const removeFromCartMutation = useRemoveFromCart();
   const incrementMutation = useIncrementCartItem();
   const decrementMutation = useDecrementCartItem();
-  const applyCouponMutation = useApplyCoupon();
-  const removeCouponMutation = useRemoveCoupon();
   const clearCartMutation = useClearCart();
 
   // Normalize cart data for component use - ensure we always have valid data
   const cart = cartData || null;
+  
+  // Handle both Cart and GuestCart types - ensure we check data properly
+  const totalItems = cart ? (cart.total_items || (cart as any)?.items_count || 0) : 0;
+  const cartItems = cart ? (cart.items || []) : [];
+  
+  const error = cartError ? 'Failed to load cart' : null;
   
   // Debug: Log when cartData changes
   useEffect(() => {
@@ -186,25 +34,32 @@ const Cart = () => {
       console.log('Cart page - Received cart data:', cartData);
     }
   }, [cartData]);
-
-  const error = cartError ? 'Failed to load cart' : null;
+  
+  // Debug: Log cart data when it changes
+  useEffect(() => {
+    console.log('Cart page - Cart data updated:', { 
+      hasCart: !!cart,
+      cart, 
+      totalItems, 
+      cartItemsLength: cartItems.length,
+      items: cartItems 
+    });
+  }, [cart, totalItems, cartItems.length, cartItems]);
 
   // Cart page automatically polls every 1 second - no need for event listeners
 
   const handleQuantityChange = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
+    if (!cart || !cartItems.length) return;
     
     setIsUpdating(productId);
     try {
-      // Use update mutation
-      const updateMutation = incrementMutation.isPending || decrementMutation.isPending 
-        ? (newQuantity > (cart.items.find((item: any) => item.product_id === productId)?.quantity || 0))
-          ? incrementMutation
-          : decrementMutation
-        : null;
+      // Find current quantity
+      const currentItem = cartItems.find((item: any) => item.product_id === productId);
+      const currentQuantity = currentItem?.quantity || 0;
       
-      // For now, use increment/decrement mutations
-      if (newQuantity > (cart.items.find((item: any) => item.product_id === productId)?.quantity || 0)) {
+      // Use increment or decrement mutation based on new quantity
+      if (newQuantity > currentQuantity) {
         await incrementMutation.mutateAsync(productId);
       } else {
         await decrementMutation.mutateAsync(productId);
@@ -258,8 +113,8 @@ const Cart = () => {
   const shippingCost = 0;
   
   // Calculate total - use discounted_total if available, otherwise calculate manually
-  const total = ('discounted_total' in cart ? cart.discounted_total : null) 
-    || ((cart as any).final_price || cart.total_price + shippingCost - (cart.discount_amount || 0));
+  const total = cart && ('discounted_total' in cart ? cart.discounted_total : null) 
+    || (cart ? ((cart as any).final_price || cart.total_price + shippingCost - (cart.discount_amount || 0)) : 0);
 
   if (loading) {
     return (
@@ -329,21 +184,6 @@ const Cart = () => {
     );
   }
 
-  // Handle both Cart and GuestCart types - ensure we check data properly
-  const totalItems = cart ? (cart.total_items || (cart as any)?.items_count || 0) : 0;
-  const cartItems = cart ? (cart.items || []) : [];
-  
-  // Debug: Log cart data when it changes
-  useEffect(() => {
-    console.log('Cart page - Cart data updated:', { 
-      hasCart: !!cart,
-      cart, 
-      totalItems, 
-      cartItemsLength: cartItems.length,
-      items: cartItems 
-    });
-  }, [cart, totalItems, cartItems.length, cartItems]);
-  
   if (!cart || totalItems === 0 || cartItems.length === 0) {
     return (
       <>
@@ -466,15 +306,6 @@ const Cart = () => {
                         {item.product?.category || 'Category'} | {item.product?.description?.substring(0, 50) || 'Description'}...
                         {!item.product && <span className="text-red-500"> (Product details not loaded)</span>}
                       </p>
-                      
-                      {/* Debug info - remove this later */}
-                      <div className="text-xs text-gray-500 mb-2">
-                        <p>Product ID: {item.product_id}</p>
-                        <p>Has product object: {item.product ? 'Yes' : 'No'}</p>
-                        {item.product && (
-                          <p>Product name: {item.product.name}</p>
-                        )}
-                      </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div className="flex items-center space-x-2">
@@ -540,14 +371,14 @@ const Cart = () => {
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex justify-between">
                   <span className="text-black-700 text-sm sm:text-base">Subtotal ({totalItems} items)</span>
-                  <span className="font-semibold text-sm sm:text-base">₹{cart.total_price || (cart as any)?.final_price || 0}</span>
+                  <span className="font-semibold text-sm sm:text-base">₹{cart?.total_price || (cart as any)?.final_price || 0}</span>
                 </div>
                 
 
-                {((cart.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
+                {((cart?.discount_amount && cart.discount_amount > 0) || ((cart as any)?.discount_amount && (cart as any).discount_amount > 0)) && (
                   <div className="flex justify-between text-green-600">
                     <span className="text-sm sm:text-base">Discount</span>
-                    <span className="font-semibold text-sm sm:text-base">-₹{cart.discount_amount || (cart as any)?.discount_amount || 0}</span>
+                    <span className="font-semibold text-sm sm:text-base">-₹{cart?.discount_amount || (cart as any)?.discount_amount || 0}</span>
                   </div>
                 )}
                 
@@ -558,14 +389,6 @@ const Cart = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Coupon Section */}
-              <CouponSection 
-                cart={cart} 
-                onCouponApplied={() => {}} 
-                applyCouponMutation={applyCouponMutation}
-                removeCouponMutation={removeCouponMutation}
-              />
 
               {/* Checkout Button */}
               <button 

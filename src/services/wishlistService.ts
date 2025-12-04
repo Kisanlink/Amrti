@@ -41,10 +41,15 @@ export interface AddFavoriteResponse {
 
 export class WishlistService {
   private static readonly SESSION_KEY = 'guest_cart_session_id';
-  private static API_BASE = 'http://localhost:8082/api/v1';
   private static cachedIds: Set<string> | null = null;
   private static cacheTimestamp = 0;
   private static CACHE_TTL = 30 * 1000; // 30s
+  
+  // Get API base path dynamically
+  private static async getApiBase(): Promise<string> {
+    const { API_BASE_PATH } = await import('../config/apiConfig');
+    return API_BASE_PATH;
+  }
 
   private static getOrCreateSessionId(): string {
     let sessionId = localStorage.getItem(this.SESSION_KEY);
@@ -63,7 +68,8 @@ export class WishlistService {
   }
 
   private static async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${this.API_BASE}${path}`, {
+    const apiBase = await this.getApiBase();
+    const res = await fetch(`${apiBase}${path}`, {
       headers: this.getHeaders(),
       ...init,
     });

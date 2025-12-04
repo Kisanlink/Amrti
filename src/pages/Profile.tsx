@@ -25,17 +25,44 @@ const Profile: React.FC = () => {
     
     // Check if user is authenticated
     const currentUser = AuthService.getCurrentUser();
+    const isAuth = AuthService.isAuthenticated();
+    
+    console.log('Auth check:', { currentUser, isAuth });
+    
     if (currentUser && !user) {
       setUser(currentUser);
     }
     
     // Only load profile if user is authenticated
-    if (AuthService.isAuthenticated()) {
+    if (isAuth) {
       loadProfile();
     } else {
       setLoading(false);
     }
   }, [user]);
+
+  // Listen for user login events
+  useEffect(() => {
+    const handleUserLogin = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const loggedInUser = customEvent.detail;
+      console.log('User logged in event received:', loggedInUser);
+      
+      // Update user state
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        // Load profile - the loadProfile function will check if already loading
+        loadProfile();
+      }
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLogin);
+
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLogin);
+    };
+  }, []); // Empty deps - loadProfile is stable
 
   const loadProfile = async () => {
     try {
@@ -49,10 +76,21 @@ const Profile: React.FC = () => {
         return;
       }
       
+      // Update user state if needed
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser && !user) {
+        setUser(currentUser);
+      }
+      
       const profileData = await ProfileService.getProfile();
       console.log('Profile data loaded:', profileData); // Debug log
       
       setProfile(profileData);
+      
+      // If user state is still null but profile loaded successfully, update it
+      if (!user && currentUser) {
+        setUser(currentUser);
+      }
       
       const initialFormData = {
         first_name: profileData.first_name || '',
@@ -167,7 +205,9 @@ const Profile: React.FC = () => {
     );
   }
 
-  if (!user) {
+  // Check authentication - if profile is loaded, user must be authenticated
+  // Only show login prompt if we're sure user is not authenticated AND no profile is loaded
+  if (!AuthService.isAuthenticated() && !profile && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -184,7 +224,7 @@ const Profile: React.FC = () => {
     );
   }
 
-  if (!profile) {
+  if (!profile && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

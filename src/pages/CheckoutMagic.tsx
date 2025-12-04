@@ -1,64 +1,147 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft,
   Loader2,
   AlertCircle,
-  ShoppingCart,
-  CheckCircle
+  ShoppingCart
 } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 import LoginRequiredModal from '../components/ui/LoginRequiredModal';
 import AuthService from '../services/authService';
 import { 
   useCheckoutState, 
-  usePrepareCheckout, 
-  useCreateMagicCheckoutOrder,
-  useCheckoutActions 
+  useCreateMagicCheckoutOrder
 } from '../hooks/queries/useCheckout';
 import CartService from '../services/cartService';
+import { queryKeys } from '../lib/queryClient';
+import { useQuery } from '@tanstack/react-query';
 
 const CheckoutMagic: React.FC = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const queryClient = useQueryClient();
   
   // Redux state
   const checkoutState = useCheckoutState();
-  const { setStep, clearCheckout } = useCheckoutActions();
   
   // React Query hooks
-  const { refetch: prepareCheckout, isLoading: isPreparing } = usePrepareCheckout();
   const createOrderMutation = useCreateMagicCheckoutOrder();
   
+  // Fetch cart data directly - use the same query key as the main cart query
+  // IMPORTANT: Keep query enabled when authenticated to ensure cart is always available
+  const isAuthenticated = AuthService.isAuthenticated();
+  const { data: cart, isLoading: isLoadingCart, refetch: refetchCart } = useQuery({
+    queryKey: queryKeys.cart.all,
+    queryFn: async () => {
+      const cartData = await CartService.getCart();
+      console.log('Cart fetched for checkout:', cartData);
+      return cartData;
+    },
+    enabled: isAuthenticated, // Only fetch when authenticated
+    retry: 3, // Increased retries
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+  });
+  
   // Local state
-  const [showLoginModal, setShowLoginModal] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isWaitingForCart, setIsWaitingForCart] = useState(false);
 
-  // Initialize checkout on mount
+  // Check authentication on mount
   useEffect(() => {
-    const initializeCheckout = async () => {
-      // Check authentication
-      if (!AuthService.isAuthenticated()) {
-        setShowLoginModal(true);
-        return;
-      }
-
-      try {
-        // Prepare checkout to validate cart
-        await prepareCheckout();
-      } catch (err: any) {
-        setError(err.message || 'Failed to prepare checkout');
-      }
-    };
-
-    initializeCheckout();
-
-    // Cleanup on unmount
-    return () => {
-      clearCheckout();
-    };
+    if (!AuthService.isAuthenticated()) {
+      setShowLoginModal(true);
+    }
   }, []);
+
+  // Ensure cart query is active when authenticated - MUST be before any conditional returns
+  useEffect(() => {
+    if (isAuthenticated && !isLoadingCart && !cart) {
+      console.log('Cart data missing for authenticated user, refetching...');
+      refetchCart();
+    }
+  }, [isAuthenticated, isLoadingCart, cart, refetchCart]);
+
+  // Listen for user login events to refresh cart
+  useEffect(() => {
+    const handleUserLogin = async () => {
+      setIsWaitingForCart(true);
+      setShowLoginModal(false);
+      
+      // Wait for cart migration to complete (migration happens before event is dispatched, but give extra time)
+      setTimeout(async () => {
+        try {
+          // Invalidate and refetch cart multiple times to ensure we get the migrated cart
+          queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+          
+          // Retry fetching cart up to 5 times with increasing delays
+          let cartFetched = false;
+          let cartData: any = null;
+          
+          for (let i = 0; i < 5; i++) {
+            try {
+              const cartResult = await refetchCart();
+              cartData = cartResult.data as any;
+              
+              // Check if cart has items
+              const totalItems = cartData?.total_items || (cartData as any)?.items_count || 0;
+              const items = cartData?.items || [];
+              
+              if (cartData && totalItems > 0 && items.length > 0) {
+                console.log(`Cart successfully loaded after login (attempt ${i + 1}):`, cartData);
+                cartFetched = true;
+                break;
+              } else {
+                console.log(`Cart fetch attempt ${i + 1}: Cart exists but empty or no items`, cartData);
+              }
+            } catch (err) {
+              console.warn(`Cart fetch attempt ${i + 1} failed:`, err);
+            }
+            
+            // Wait before next retry (increasing delay)
+            await new Promise(resolve => setTimeout(resolve, 1000 + (i * 500)));
+          }
+          
+          setIsWaitingForCart(false);
+          
+          if (!cartFetched) {
+            console.warn('Cart still empty after login, user may need to refresh');
+            setError('Cart migration may still be in progress. Please wait a moment and try again, or refresh the page.');
+            showNotification({
+              type: 'error',
+              message: 'Cart migration is taking longer than expected. Please refresh the page.',
+            });
+          } else {
+            setError(null);
+            console.log('Cart migration complete, ready for checkout');
+          }
+        } catch (err: any) {
+          setIsWaitingForCart(false);
+          console.error('Failed to refresh cart after login:', err);
+          setError('Failed to load cart after login. Please refresh the page.');
+        }
+      }, 2000); // Increased initial wait time to 2 seconds
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
+
+    // Also check if user becomes authenticated while on this page
+    const checkAuthInterval = setInterval(() => {
+      if (AuthService.isAuthenticated() && showLoginModal) {
+        handleUserLogin();
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
+      clearInterval(checkAuthInterval);
+    };
+  }, [showLoginModal, refetchCart, queryClient]);
 
   // Handle Magic Checkout button click
   const handleMagicCheckout = async () => {
@@ -68,39 +151,112 @@ const CheckoutMagic: React.FC = () => {
       return;
     }
 
-    // Validate cart
-    if (!checkoutState.checkoutData?.cart || checkoutState.checkoutData.cart.total_items === 0) {
-      setError('Your cart is empty. Please add items to cart.');
+    // Check if we're still waiting for cart migration
+    if (isWaitingForCart) {
       showNotification({
-        type: 'error',
-        message: 'Your cart is empty. Please add items to cart.',
+        type: 'info',
+        message: 'Please wait for cart to load after login...',
       });
-      navigate('/cart');
       return;
     }
 
-    // Show validation warnings if any
-    if (checkoutState.checkoutData.validation_issues && checkoutState.checkoutData.validation_issues.length > 0) {
-      const warnings = checkoutState.checkoutData.validation_issues
-        .map(issue => `${issue.product_id}: ${issue.issue}`)
-        .join(', ');
-      showNotification({
-        type: 'info',
-        message: `Some items have been updated: ${warnings}`,
-      });
-    }
-
+    // Validate cart - refresh first to ensure we have latest data
     try {
       setError(null);
+      
+      // First, ensure cart query is enabled and fetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+      
+      // Fetch cart directly from service with retries
+      let directCart: any = null;
+      let retryCount = 0;
+      const maxRetries = 8; // Increased retries
+      
+      while (retryCount < maxRetries) {
+        try {
+          directCart = await CartService.getCart();
+          console.log(`Direct cart fetch (attempt ${retryCount + 1}):`, directCart);
+          
+          // Check if cart has items
+          const totalItems = directCart?.total_items || (directCart as any)?.items_count || 0;
+          const items = directCart?.items || [];
+          
+          if (directCart && totalItems > 0 && items.length > 0) {
+            console.log('Cart validated with items:', totalItems, 'items');
+            break; // Cart is valid, exit retry loop
+          } else {
+            console.log(`Cart fetch attempt ${retryCount + 1}: Cart exists but empty (items: ${items.length}, totalItems: ${totalItems})`);
+          }
+        } catch (err) {
+          console.warn(`Cart fetch attempt ${retryCount + 1} failed:`, err);
+        }
+        
+        retryCount++;
+        
+        // Wait before next retry (increasing delay)
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 + (retryCount * 300)));
+        }
+      }
+      
+      // Final validation
+      const totalItems = directCart?.total_items || (directCart as any)?.items_count || 0;
+      const items = directCart?.items || [];
+      
+      if (!directCart || totalItems === 0 || items.length === 0) {
+        const errorMsg = 'Your cart appears to be empty. This may happen if cart migration is still in progress. Please wait a moment and try again, or refresh the page.';
+        setError(errorMsg);
+        showNotification({
+          type: 'error',
+          message: errorMsg,
+        });
+        return;
+      }
+      
+      console.log('Cart validated, proceeding with checkout. Items:', totalItems);
+
+      // CRITICAL: Final verification - ensure cart data is still valid and update cache
+      // This prevents race conditions where cart might be cleared between validation and API call
+      queryClient.setQueryData(queryKeys.cart.all, directCart);
+      
+      // One more direct fetch right before API call to ensure backend has the cart
+      try {
+        const finalCartCheck = await CartService.getCart();
+        const finalTotalItems = finalCartCheck?.total_items || (finalCartCheck as any)?.items_count || 0;
+        const finalItems = finalCartCheck?.items || [];
+        
+        if (!finalCartCheck || finalTotalItems === 0 || finalItems.length === 0) {
+          console.error('Final cart check failed - cart is empty on backend');
+          throw new Error('Cart appears to be empty on the server. Please refresh the page and try again.');
+        }
+        
+        console.log('Final cart verification passed:', { totalItems: finalTotalItems, itemsCount: finalItems.length });
+        
+        // Update cache with final cart data
+        queryClient.setQueryData(queryKeys.cart.all, finalCartCheck);
+      } catch (finalCheckError: any) {
+        console.error('Final cart verification failed:', finalCheckError);
+        throw new Error(finalCheckError.message || 'Cart verification failed. Please refresh and try again.');
+      }
+
       // Create Magic Checkout order - this will automatically open the modal
       await createOrderMutation.mutateAsync();
     } catch (err: any) {
+      console.error('Checkout error:', err);
       const errorMessage = err.message || 'Failed to start checkout. Please try again.';
       setError(errorMessage);
       showNotification({
         type: 'error',
         message: errorMessage,
       });
+      
+      // If error is about empty cart, suggest refresh
+      if (errorMessage.includes('empty') || errorMessage.includes('Cart is empty')) {
+        showNotification({
+          type: 'error',
+          message: 'Cart appears empty. This may be due to migration delay. Please refresh the page and try again.',
+        });
+      }
     }
   };
 
@@ -171,40 +327,29 @@ const CheckoutMagic: React.FC = () => {
     );
   }
 
-  // Loading state
-  if (isPreparing) {
+  // Loading state - show loading if cart is loading OR if we're waiting for cart after login
+  if (isLoadingCart || isWaitingForCart) {
     return (
       <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-green-600 mx-auto mb-4" />
-          <p className="text-gray-600">Preparing checkout...</p>
+          <p className="text-gray-600">
+            {isWaitingForCart ? 'Migrating your cart after login...' : 'Loading cart...'}
+          </p>
+          {isWaitingForCart && (
+            <p className="text-sm text-gray-500 mt-2">Please wait, this may take a few seconds</p>
+          )}
         </div>
       </div>
     );
   }
 
-  // Error state
-  if (error && !checkoutState.checkoutData) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/cart')}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Back to Cart
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const cart = checkoutState.checkoutData?.cart;
-  const cartTotal = cart?.total_price || 0;
-  const discountAmount = cart?.discount_amount || 0;
+  const cartData = cart as any;
+  const cartTotal = cartData?.total_price || 0;
+  const discountAmount = cartData?.discount_amount || 0;
   const finalTotal = cartTotal - discountAmount;
+  const cartItems = cartData?.items || [];
+  const cartTotalItems = cartData?.total_items || (cartData as any)?.items_count || 0;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 pb-6 sm:pb-8">
@@ -253,28 +398,6 @@ const CheckoutMagic: React.FC = () => {
           </div>
         )}
 
-        {/* Validation Warnings */}
-        {checkoutState.checkoutData?.validation_issues && 
-         checkoutState.checkoutData.validation_issues.length > 0 && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-yellow-800 mb-2">
-                  Cart Updated
-                </h3>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  {checkoutState.checkoutData.validation_issues.map((issue, index) => (
-                    <li key={index}>
-                      • {issue.issue} {issue.new_price && `(New price: ₹${issue.new_price})`}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
@@ -289,30 +412,85 @@ const CheckoutMagic: React.FC = () => {
               </h2>
 
               {/* Cart Items */}
-              {cart?.items && cart.items.length > 0 ? (
+              {cartData && cartData.total_items > 0 && cartItems.length > 0 ? (
                 <div className="space-y-4 mb-6">
-                  {cart.items.map((item: any) => (
-                    <div key={item.id} className="flex items-center space-x-4 pb-4 border-b">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.product_name || 'Product'}</p>
-                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                  {cartItems.map((item: any) => {
+                    // Get product name from various possible sources
+                    const productName = item.product_name || 
+                                      item.product?.name || 
+                                      item.name ||
+                                      `Product ${item.product_id?.slice(-4) || item.id?.slice(-4) || ''}`;
+                    
+                    // Get product image - handle both new (images array) and old (image_url) structures
+                    let productImage: string | null = null;
+                    if (item.product?.image_url) {
+                      productImage = item.product.image_url;
+                    } else if (item.product?.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
+                      const primaryImage = item.product.images.find((img: any) => img.is_primary) || item.product.images[0];
+                      productImage = primaryImage?.image_url || primaryImage?.url || null;
+                    } else if (item.image_url) {
+                      productImage = item.image_url;
+                    }
+                    
+                    return (
+                      <div key={item.id || item.product_id} className="flex items-center space-x-4 pb-4 border-b">
+                        {/* Product Image */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                          {productImage ? (
+                            <img
+                              src={productImage}
+                              alt={productName}
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                // Fallback to placeholder if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector('.placeholder')) {
+                                  const placeholder = document.createElement('div');
+                                  placeholder.className = 'placeholder w-full h-full bg-gray-200 rounded-lg flex items-center justify-center';
+                                  placeholder.innerHTML = '<span class="text-xs text-gray-400">📦</span>';
+                                  parent.appendChild(placeholder);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                              <span className="text-xs text-gray-400">📦</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900">{productName}</p>
+                          <p className="text-sm text-gray-600">Quantity: {item.quantity || 0}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">₹{item.total_price || 0}</p>
+                          <p className="text-sm text-gray-600">₹{item.unit_price || 0} each</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">₹{item.total_price}</p>
-                        <p className="text-sm text-gray-600">₹{item.unit_price} each</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No items in cart</p>
-                  <button
-                    onClick={() => navigate('/products')}
-                    className="mt-4 text-green-600 hover:text-green-700"
-                  >
-                    Continue Shopping
-                  </button>
+                  <p className="text-gray-600 mb-4">No items in cart</p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <button
+                      onClick={() => refetchCart()}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      Refresh Cart
+                    </button>
+                    <button
+                      onClick={() => navigate('/products')}
+                      className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm"
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -350,7 +528,7 @@ const CheckoutMagic: React.FC = () => {
               <div className="mb-6 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Items:</span>
-                  <span className="text-gray-900">{cart?.total_items || 0}</span>
+                  <span className="text-gray-900">{cartData?.total_items || 0}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                   <span className="text-gray-900">Total:</span>
@@ -362,9 +540,12 @@ const CheckoutMagic: React.FC = () => {
                 onClick={handleMagicCheckout}
                 disabled={
                   createOrderMutation.isPending || 
-                  !AuthService.isAuthenticated() ||
-                  !cart ||
-                  cart.total_items === 0
+                  !isAuthenticated ||
+                  !cartData ||
+                  cartTotalItems === 0 ||
+                  cartItems.length === 0 ||
+                  isWaitingForCart ||
+                  isLoadingCart
                 }
                 className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
@@ -403,4 +584,3 @@ const CheckoutMagic: React.FC = () => {
 };
 
 export default CheckoutMagic;
-

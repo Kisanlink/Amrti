@@ -1,5 +1,6 @@
 import { getHeaders, apiRequest } from './api';
 import AuthService from './authService';
+import { buildApiUrl } from '../config/apiConfig';
 
 // Types
 export interface RecipeImageUploadResponse {
@@ -120,9 +121,8 @@ class RecipeSubmissionService {
     // Get headers with FormData flag
     const headers = await getHeaders(true);
 
-    // Make request
-    const API_BASE_URL = 'http://localhost:8082';
-    const response = await fetch(`${API_BASE_URL}/api/v1/recipes/images/upload`, {
+    // Make request using configurable API URL
+    const response = await fetch(buildApiUrl('/recipes/images/upload'), {
       method: 'POST',
       headers,
       body: formData,

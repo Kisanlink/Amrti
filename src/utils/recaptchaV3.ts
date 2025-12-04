@@ -63,7 +63,9 @@ export const executeRecaptchaV3 = async (action: string = 'login'): Promise<stri
 // Verify reCAPTCHA v3 token with backend
 export const verifyRecaptchaV3Token = async (token: string): Promise<boolean> => {
   try {
-    const response = await fetch('http://localhost:8082/api/v1/auth/verify-recaptcha', {
+    // Import API config dynamically
+    const { buildApiUrl } = await import('../config/apiConfig');
+    const response = await fetch(buildApiUrl('/auth/verify-recaptcha'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

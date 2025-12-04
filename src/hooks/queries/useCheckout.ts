@@ -162,7 +162,17 @@ const openMagicCheckoutModal = async (
           }),
         });
 
+        console.log('Payment verification response status:', verifyResponse.status);
+        
         const verifyResult = await verifyResponse.json();
+        console.log('Payment verification response:', verifyResult);
+        
+        // Check if response is not OK
+        if (!verifyResponse.ok) {
+          const errorMessage = verifyResult.error || verifyResult.message || `HTTP ${verifyResponse.status}: Payment verification failed`;
+          console.error('Payment verification API error:', errorMessage);
+          throw new Error(errorMessage);
+        }
         
         if (verifyResult.success) {
           dispatch(setPaymentSuccess({ success: true, orderId: verifyResult.order_id }));
@@ -185,18 +195,40 @@ const openMagicCheckoutModal = async (
           // Redirect to success page
           navigate(`/order-success?order_id=${verifyResult.order_id}`);
         } else {
-          throw new Error(verifyResult.message || 'Payment verification failed');
+          // Extract error message from response
+          const errorMessage = verifyResult.error || verifyResult.message || 'Payment verification failed';
+          console.error('Payment verification failed:', errorMessage, verifyResult);
+          throw new Error(errorMessage);
         }
       } catch (error: any) {
         console.error('Payment verification error:', error);
         dispatch(setPaymentSuccess({ success: false, orderId: null }));
+        
+        // Extract error message
+        let errorMessage = 'Payment verification failed. Please contact support.';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.error) {
+          errorMessage = error.error;
+        }
+        
         // Show error notification
         window.dispatchEvent(new CustomEvent('showNotification', {
           detail: {
             type: 'error',
-            message: error.message || 'Payment verification failed. Please contact support.',
+            message: errorMessage,
           },
         }));
+        
+        // If payment was verified but order creation failed, show a more helpful message
+        if (errorMessage.includes('failed to create order')) {
+          window.dispatchEvent(new CustomEvent('showNotification', {
+            detail: {
+              type: 'error',
+              message: 'Payment was successful but order creation failed. Please contact support with your payment ID.',
+            },
+          }));
+        }
       } finally {
         // Clear verifying state
         dispatch(setVerifyingPayment(false));

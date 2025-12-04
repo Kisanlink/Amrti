@@ -5,16 +5,21 @@ import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
 import { useWishlistWithPolling, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
+import { useAddToCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../lib/queryClient';
 
 const Wishlist = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const { showNotification } = useNotification();
+  const queryClient = useQueryClient();
 
   // Use React Query hooks for wishlist data - ALWAYS fetches fresh on mount
   const { data: wishlist = [], isLoading: loading, error } = useWishlistWithPolling();
   const removeFromWishlistMutation = useRemoveFromWishlist();
   const clearWishlistMutation = useClearWishlist();
+  const addToCartMutation = useAddToCart();
 
   // Debug: Log wishlist data when it changes
   useEffect(() => {
@@ -48,10 +53,13 @@ const Wishlist = () => {
   const handleMoveToCart = async (productId: string) => {
     setIsProcessing(productId);
     try {
-      // Add to cart
-      await CartService.addItem(productId, 1);
+      // Add to cart using mutation hook - this will update cart queries automatically
+      await addToCartMutation.mutateAsync({ productId, quantity: 1 });
       
-      // Remove from wishlist
+      // Invalidate cart queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
+      
+      // Remove from wishlist after successful add to cart
       removeFromWishlistMutation.mutate(productId, {
         onSuccess: () => {
           showNotification({
@@ -62,7 +70,7 @@ const Wishlist = () => {
         onError: () => {
           showNotification({
             type: 'error',
-            message: 'Failed to move to cart'
+            message: 'Product added to cart, but failed to remove from wishlist'
           });
         }
       });
@@ -100,10 +108,13 @@ const Wishlist = () => {
     try {
       setIsProcessing('all');
       
-      // Add all wishlist items to cart
+      // Add all wishlist items to cart using mutation hook
       for (const item of wishlist) {
-        await CartService.addItem(item.product_id, 1);
+        await addToCartMutation.mutateAsync({ productId: item.product_id, quantity: 1 });
       }
+      
+      // Invalidate cart queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
       
       // Clear wishlist
       clearWishlistMutation.mutate(undefined, {
@@ -116,7 +127,7 @@ const Wishlist = () => {
         onError: () => {
           showNotification({
             type: 'error',
-            message: 'Failed to add all items to cart'
+            message: 'Items added to cart, but failed to clear wishlist'
           });
         }
       });

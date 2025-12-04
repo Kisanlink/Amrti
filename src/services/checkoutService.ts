@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import type { RazorpayResponse } from '../types/razorpay';
+import { buildApiUrl } from '../config/apiConfig';
 
 // ==================== CHECKOUT INTERFACES ====================
 
@@ -190,8 +191,63 @@ export const checkoutApi = {
     const { default: AuthService } = await import('./authService');
     const isAuthenticated = AuthService.isAuthenticated();
     
-    // Use the same API base URL as apiRequest
-    const API_BASE_URL = 'http://localhost:8082';
+    console.log('Creating Magic Checkout order, authenticated:', isAuthenticated);
+    
+    // CRITICAL: Verify cart exists on backend before making API call
+    // This is especially important for logged-in users to ensure cart wasn't cleared
+    if (isAuthenticated) {
+      const { default: CartService } = await import('./cartService');
+      
+      // Retry cart verification up to 3 times with delays
+      let cartVerified = false;
+      let verifiedCart: any = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          // Fetch cart directly from backend to ensure it exists
+          verifiedCart = await CartService.getCart();
+          const totalItems = verifiedCart?.total_items || (verifiedCart as any)?.items_count || 0;
+          const items = verifiedCart?.items || [];
+          
+          if (verifiedCart && totalItems > 0 && items.length > 0) {
+            console.log(`Cart verified before API call (attempt ${attempt + 1}):`, { 
+              totalItems, 
+              itemsCount: items.length,
+              cartId: verifiedCart.id 
+            });
+            cartVerified = true;
+            break;
+          } else {
+            console.warn(`Cart verification attempt ${attempt + 1}: Cart exists but empty`, {
+              totalItems,
+              itemsCount: items.length,
+              cart: verifiedCart
+            });
+          }
+        } catch (error: any) {
+          console.warn(`Cart verification attempt ${attempt + 1} failed:`, error);
+          
+          // If it's the last attempt, throw the error
+          if (attempt === 2) {
+            if (error.message && error.message.includes('empty')) {
+              throw new Error('Cart appears to be empty on the server. Please refresh the page, add items to cart, and try again.');
+            }
+            throw error;
+          }
+        }
+        
+        // Wait before next retry (only if not last attempt)
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      if (!cartVerified || !verifiedCart) {
+        console.error('Cart verification failed after all attempts');
+        throw new Error('Unable to verify cart on server. Please refresh the page, ensure your cart has items, and try again.');
+      }
+    }
+    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -200,31 +256,46 @@ export const checkoutApi = {
       const token = await AuthService.getIdToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('Using auth token for Magic Checkout');
       } else {
         throw new Error('Authentication token not available. Please login again.');
       }
     } else {
-      // For guest checkout, use session ID
-      const sessionId = localStorage.getItem('sessionId') || sessionStorage.getItem('sessionId');
+      // For guest checkout, use session ID from guest cart service
+      const { GuestCartService } = await import('./guestCartService');
+      const sessionId = GuestCartService.getCurrentSessionId();
       if (sessionId) {
         headers['X-Session-ID'] = sessionId;
+        console.log('Using session ID for guest checkout:', sessionId);
       } else {
         throw new Error('Please login or provide session ID for guest checkout');
       }
     }
     
-    const response = await fetch(`${API_BASE_URL}/api/v1/payments/magic-checkout/create-order`, {
+    console.log('Calling Magic Checkout create-order API...');
+    const response = await fetch(buildApiUrl('/payments/magic-checkout/create-order'), {
       method: 'POST',
       headers,
     });
     
+    console.log('Magic Checkout API response status:', response.status);
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+      console.error('Magic Checkout API error:', errorData);
       const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+      
+      // Provide more helpful error message for empty cart
+      if (errorMessage.includes('empty') || errorMessage.includes('Cart is empty')) {
+        throw new Error('Cart is empty on the server. This may happen if cart migration is still in progress. Please wait a moment, refresh the page, and try again.');
+      }
+      
       throw new Error(errorMessage);
     }
     
-    return response.json();
+    const orderData = await response.json();
+    console.log('Magic Checkout order created:', orderData);
+    return orderData;
   },
 };
 
