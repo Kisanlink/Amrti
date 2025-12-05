@@ -16,8 +16,6 @@ export const queryClient = new QueryClient({
         refetchOnWindowFocus: false,
         // Refetch on reconnect
         refetchOnReconnect: true,
-        // Keep previous data while fetching new data
-        keepPreviousData: true,
         // Don't refetch on mount if data is fresh
         refetchOnMount: false,
     },
@@ -114,8 +112,15 @@ export const handleQueryError = (error: any) => {
   
   // Handle different types of errors
   if (error?.response?.status === 401) {
-    // Unauthorized - redirect to login
-    window.dispatchEvent(new CustomEvent('loginRequired'));
+    // Unauthorized - redirect to login (but not on public routes like product/moringa)
+    const currentPath = window.location.pathname;
+    const isPublicRoute = currentPath.includes('/login') || 
+                         currentPath.includes('/signup') || 
+                         currentPath.includes('/product/moringa/');
+    
+    if (!isPublicRoute) {
+      window.dispatchEvent(new CustomEvent('loginRequired'));
+    }
   } else if (error?.response?.status === 403) {
     // Forbidden
     return 'You do not have permission to access this resource';

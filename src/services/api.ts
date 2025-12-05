@@ -97,8 +97,15 @@ export const apiRequest = async <T>(
       
       // Handle different HTTP status codes
       if (response.status === 401) {
-        // Only show login modal if user is not already on login/signup pages
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        const currentPath = window.location.pathname;
+        const isPublicRoute = currentPath === '/' ||
+                             currentPath === '/home' ||
+                             currentPath.includes('/login') || 
+                             currentPath.includes('/signup') || 
+                             currentPath.includes('/product/moringa/');
+        
+        if (!isPublicRoute) {
           // Check if we've already shown a login modal recently to prevent spam
           const lastLoginModal = localStorage.getItem('lastLoginModal');
           const now = Date.now();
@@ -113,8 +120,15 @@ export const apiRequest = async <T>(
           }
         }
       } else if (response.status === 403) {
-        // Only show login modal if user is not already on login/signup pages
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        const currentPath = window.location.pathname;
+        const isPublicRoute = currentPath === '/' ||
+                             currentPath === '/home' ||
+                             currentPath.includes('/login') || 
+                             currentPath.includes('/signup') || 
+                             currentPath.includes('/product/moringa/');
+        
+        if (!isPublicRoute) {
           const lastLoginModal = localStorage.getItem('lastLoginModal');
           const now = Date.now();
           if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {
@@ -128,8 +142,15 @@ export const apiRequest = async <T>(
           }
         }
       } else if (response.status === 419) {
-        // Only show login modal if user is not already on login/signup pages
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        const currentPath = window.location.pathname;
+        const isPublicRoute = currentPath === '/' ||
+                             currentPath === '/home' ||
+                             currentPath.includes('/login') || 
+                             currentPath.includes('/signup') || 
+                             currentPath.includes('/product/moringa/');
+        
+        if (!isPublicRoute) {
           const lastLoginModal = localStorage.getItem('lastLoginModal');
           const now = Date.now();
           if (!lastLoginModal || (now - parseInt(lastLoginModal)) > 5000) {

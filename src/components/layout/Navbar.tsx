@@ -151,9 +151,22 @@ const Navbar = () => {
       setUser(null);
       setAuthenticated(false);
       // Wishlist count will be updated automatically by React Query
-      // Navigate to login page if not already there
-      if (location.pathname !== '/login') {
-        navigate('/login', { replace: true });
+      // Don't redirect on logout - let users stay on the current page (especially home page)
+      // Only redirect if they're on a protected route that requires authentication
+      const isPublicRoute = location.pathname === '/' ||
+                           location.pathname === '/home' ||
+                           location.pathname.includes('/login') || 
+                           location.pathname.includes('/signup') || 
+                           location.pathname.includes('/product/moringa/') ||
+                           location.pathname.includes('/products') ||
+                           location.pathname.includes('/about') ||
+                           location.pathname.includes('/recipes') ||
+                           location.pathname.includes('/contact') ||
+                           location.pathname.includes('/faq');
+      // Only redirect from protected routes, not from public routes like home
+      if (!isPublicRoute && !location.pathname.startsWith('/admin')) {
+        // Only redirect if not on a public route
+        navigate('/', { replace: true });
       }
     };
 
