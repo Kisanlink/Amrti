@@ -285,7 +285,7 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
                 onLoadedData={() => setIsVideoLoaded(true)}
                 onCanPlay={() => setIsVideoLoaded(true)}
               >
-                <source src="https://amrti.s3.ap-south-1.amazonaws.com/videos/product-demo/moringa+powder+updated.mp4" type="video/mp4" />
+                <source src="https://pub-42e16192aacd44e69c7165782661e5d6.r2.dev/product_images/Moringa/moringa%20new%20video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>

@@ -112,6 +112,18 @@ function AppContent() {
   // Listen for login required events
   useEffect(() => {
     const handleLoginRequired = (event: CustomEvent) => {
+      // Don't show login modal on public routes like home, product/moringa, login/signup
+      const currentPath = window.location.pathname;
+      const isPublicRoute = currentPath === '/' ||
+                           currentPath === '/home' ||
+                           currentPath.includes('/login') || 
+                           currentPath.includes('/signup') || 
+                           currentPath.includes('/product/moringa/');
+      
+      if (isPublicRoute) {
+        return; // Don't show modal on public routes
+      }
+      
       setLoginModalData({
         message: event.detail.message || 'Please login to continue',
         redirectUrl: event.detail.redirectUrl || window.location.pathname
