@@ -596,7 +596,6 @@ export class AuthService {
     try {
       // First try to get from Firebase
       if (this.currentUser) {
-        console.log('Getting user from Firebase currentUser:', this.currentUser);
         return this.firebaseUserToAuthUser(this.currentUser);
       }
       
@@ -604,7 +603,6 @@ export class AuthService {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
-        console.log('Getting user from localStorage:', user);
         // If we have a stored user but no Firebase user, 
         // it means the page was refreshed and Firebase needs to re-authenticate
         if (user && user.uid) {
@@ -612,7 +610,6 @@ export class AuthService {
         }
       }
       
-      console.log('No user found');
       return null;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -626,7 +623,6 @@ export class AuthService {
   static isAuthenticated(): boolean {
     // Check Firebase current user first
     if (this.currentUser !== null) {
-      console.log('User authenticated via Firebase currentUser');
       return true;
     }
     
@@ -637,18 +633,13 @@ export class AuthService {
     if (storedUser && storedToken) {
       try {
         const user = JSON.parse(storedUser);
-        const isAuth = !!(user && user.uid && storedToken);
-        console.log('User authentication check via localStorage:', isAuth, 'User:', user, 'Token:', !!storedToken);
-        return isAuth;
+        return !!(user && user.uid && storedToken);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         return false;
       }
     }
     
-    console.log('User not authenticated - missing user data or token');
-    console.log('Stored user:', !!storedUser);
-    console.log('Stored token:', !!storedToken);
     return false;
   }
 
@@ -659,9 +650,7 @@ export class AuthService {
     try {
       // First, try to get the stored token (works for phone auth)
       const storedToken = localStorage.getItem('authToken');
-      console.log('getIdToken called - stored token available:', !!storedToken);
       if (storedToken) {
-        console.log('Using stored auth token for API calls, length:', storedToken.length);
         return storedToken;
       }
       
@@ -675,7 +664,6 @@ export class AuthService {
         return token;
       }
       
-      console.log('No auth token available - checking localStorage keys:', Object.keys(localStorage));
       return null;
     } catch (error) {
       console.error('Error getting ID token:', error);
@@ -700,17 +688,12 @@ export class AuthService {
    * Force refresh authentication state from localStorage
    */
   static refreshAuthState(): void {
-    console.log('=== REFRESHING AUTH STATE ===');
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('authToken');
-    
-    console.log('Stored user exists:', !!storedUser);
-    console.log('Stored token exists:', !!storedToken);
     
     if (storedUser && storedToken) {
       try {
         const user = JSON.parse(storedUser);
-        console.log('Parsed user:', user);
         
         this.currentUser = {
           uid: user.uid,
@@ -724,15 +707,9 @@ export class AuthService {
             lastSignInTime: user.lastLoginAt
           }
         } as any;
-        
-        console.log('Authentication state refreshed from localStorage');
-        console.log('Current user set to:', this.currentUser);
-        this.debugAuthState();
       } catch (error) {
         console.error('Error refreshing auth state:', error);
       }
-    } else {
-      console.log('No stored user or token found, cannot refresh auth state');
     }
   }
 

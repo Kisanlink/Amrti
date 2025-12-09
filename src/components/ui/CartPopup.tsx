@@ -6,9 +6,11 @@ import { useCart, useUpdateCartItem, useRemoveFromCart, useIncrementCartItem, us
 import { useAllProducts } from '../../hooks/queries/useProducts';
 import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { queryKeys } from '../../lib/queryClient';
 import { getProductThumbnail } from './ProductMedia';
+import ProductService from '../../services/productService';
+import type { Product } from '../../context/AppContext';
 
 interface CartPopupProps {
   isOpen: boolean;
@@ -19,6 +21,7 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [productDetails, setProductDetails] = useState<Record<string, Product>>({});
 
   // TanStack Query hooks
   const { data: cart, isLoading, error, isFetching } = useCart();
@@ -37,6 +40,150 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
       lastCartRef.current = cart;
     }
   }, [cart]);
+
+  // Preserve product data when cart updates - merge product data from previous cart items
+  useEffect(() => {
+    if (!cart?.items) return;
+    
+    setProductDetails(prevDetails => {
+      const newDetails = { ...prevDetails };
+      
+      // Preserve product data from cart items
+      cart.items.forEach((item: any) => {
+        if (item.product && item.product_id) {
+          // Check if we have cached product data
+          try {
+            const cachedData = localStorage.getItem(`product_${item.product_id}`);
+            if (cachedData) {
+              const parsed = JSON.parse(cachedData);
+              const cacheAge = Date.now() - (parsed.timestamp || 0);
+              if (cacheAge < 24 * 60 * 60 * 1000 && parsed.data) {
+                newDetails[item.product_id] = parsed.data;
+                return;
+              }
+            }
+          } catch (err) {
+            // Ignore cache errors
+          }
+          
+          // Use product from cart item if available
+          if (item.product && (item.product.image_url || (item.product.images && Array.isArray(item.product.images)))) {
+            newDetails[item.product_id] = item.product;
+            
+            // Cache it
+            try {
+              localStorage.setItem(`product_${item.product_id}`, JSON.stringify({
+                data: item.product,
+                timestamp: Date.now()
+              }));
+            } catch (cacheErr) {
+              // Ignore cache errors
+            }
+          }
+        }
+      });
+      
+      return newDetails;
+    });
+  }, [cart?.items]);
+
+  // Fetch missing product details for cart items
+  useEffect(() => {
+    if (!cart?.items || cart.items.length === 0) return;
+    
+    const fetchMissingProducts = async () => {
+      const missingProductIds = cart.items
+        .filter((item: any) => {
+          const hasProductData = item.product && (
+            item.product.image_url || 
+            (item.product.images && Array.isArray(item.product.images) && item.product.images.length > 0)
+          );
+          return !hasProductData && !productDetails[item.product_id];
+        })
+        .map((item: any) => item.product_id);
+
+      if (missingProductIds.length === 0) return;
+
+      try {
+        const productPromises = missingProductIds.map(async (productId: string) => {
+          try {
+            // Check cache first
+            const cachedData = localStorage.getItem(`product_${productId}`);
+            if (cachedData) {
+              const parsed = JSON.parse(cachedData);
+              const cacheAge = Date.now() - (parsed.timestamp || 0);
+              if (cacheAge < 24 * 60 * 60 * 1000) {
+                return { productId, product: parsed.data };
+              }
+            }
+
+            // Fetch from API
+            const product = await ProductService.getProductById(productId);
+            
+            // Cache it
+            try {
+              localStorage.setItem(`product_${productId}`, JSON.stringify({
+                data: product,
+                timestamp: Date.now()
+              }));
+            } catch (cacheErr) {
+              // Ignore
+            }
+
+            return { productId, product };
+          } catch (err) {
+            console.error(`Failed to fetch product ${productId}:`, err);
+            return { productId, product: null };
+          }
+        });
+
+        const results = await Promise.all(productPromises);
+        
+        setProductDetails(prev => {
+          const updated = { ...prev };
+          results.forEach(({ productId, product }) => {
+            if (product) {
+              updated[productId] = product;
+            }
+          });
+          return updated;
+        });
+      } catch (err) {
+        console.error('Failed to fetch product details:', err);
+      }
+    };
+
+    fetchMissingProducts();
+  }, [cart?.items]);
+
+  // Helper to get product data with fallback to cache
+  const getProductData = (item: any): Partial<Product> => {
+    // First try cached product details
+    if (productDetails[item.product_id]) {
+      return productDetails[item.product_id];
+    }
+    
+    // Then try item's embedded product
+    if (item.product) {
+      return item.product;
+    }
+    
+    // Try localStorage cache
+    try {
+      const cachedData = localStorage.getItem(`product_${item.product_id}`);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const cacheAge = Date.now() - (parsed.timestamp || 0);
+        if (cacheAge < 24 * 60 * 60 * 1000 && parsed.data) {
+          return parsed.data;
+        }
+      }
+    } catch (err) {
+      // Ignore
+    }
+    
+    return {};
+  };
   
   // Get cached cart data as fallback (more reliable than ref during refetches)
   const getCachedCart = () => {
@@ -252,9 +399,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             {cartItems.map((item: any) => {
-              // Get product image using the standard helper
-              const productImage = item.product ? getProductThumbnail(item.product).url : null;
-              const productName = item.product?.name || 'Product';
+              // Get product data with fallback to cache
+              const product = getProductData(item);
+              const productImage = product ? getProductThumbnail(product).url : null;
+              const productName = product?.name || item.product?.name || 'Product';
               
               return (
               <div key={item.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
@@ -345,6 +493,14 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                       // Get product image using the standard helper
                       const productImage = getProductThumbnail(product).url;
                       
+                      // Check if product is out of stock
+                      const stockStatus = product.inventory?.stock_status || product.stock_status || 'In Stock';
+                      const availableStock = product.inventory?.available_stock ?? product.inventory?.current_stock ?? product.stock ?? 0;
+                      const isOutOfStock = stockStatus === "Coming Soon" || 
+                                          stockStatus === "Comming Soon" || 
+                                          availableStock === 0 ||
+                                          stockStatus === "Out of Stock";
+                       
                       return (
                         <div
                           key={product.id}
@@ -381,18 +537,27 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                               </p>
                             </div>
                           </Link>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSuggestedProductAddToCart(product.id);
-                            }}
-                            disabled={addToCartMutation.isPending}
-                            className="w-full px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            <span>Add</span>
-                          </button>
+                          {isOutOfStock ? (
+                            <button
+                              disabled
+                              className="w-full px-2 py-1.5 bg-gray-400 text-white text-xs font-medium rounded cursor-not-allowed flex items-center justify-center space-x-1"
+                            >
+                              <span>Out of Stock</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSuggestedProductAddToCart(product.id);
+                              }}
+                              disabled={addToCartMutation.isPending}
+                              className="w-full px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
+                            >
+                              <ShoppingCart className="w-3 h-3" />
+                              <span>Add</span>
+                            </button>
+                          )}
                         </div>
                       );
                     })}
