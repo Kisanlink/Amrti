@@ -1,6 +1,24 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
 // Types
+// Image types supported by the product API
+export type ProductImageType = 'product' | 'thumbnail' | 'gallery' | 'banner' | 'category' | 'video';
+
+export interface ProductImage {
+  id: string;
+  image_url: string;
+  image_type: ProductImageType;
+  alt_text: string;
+  caption: string;
+  sort_order: number;
+  is_primary: boolean;
+  is_active: boolean;
+  file_size?: number;
+  width?: number;
+  height?: number;
+  mime_type?: string;
+}
+
 export interface Product {
   id: string;
   created_at: string;
@@ -14,6 +32,7 @@ export interface Product {
   actual_price: number;
   discount_percent: number;
   image_url: string;
+  images?: ProductImage[];
   stock: number;
   stock_status: string;
   review_count: number;

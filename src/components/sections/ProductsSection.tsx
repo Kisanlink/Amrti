@@ -1,12 +1,48 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Star, ShoppingCart, Heart } from 'lucide-react';
+import { ArrowRight, Star, ShoppingCart, Heart, Play } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAllProducts } from '../../hooks/queries/useProducts';
 import { useWishlist, useToggleWishlist } from '../../hooks/queries/useWishlist';
 import { useAddToCart } from '../../hooks/queries/useCart';
-import type { Product } from '../../context/AppContext';
+import type { Product, ProductImage } from '../../context/AppContext';
 import { useNotification } from '../../context/NotificationContext';
+
+// Helper to get the best thumbnail for product cards (prefers images over videos)
+const getProductThumbnail = (product: any): { url: string; isVideo: boolean } => {
+  // If product has images array, find the best thumbnail
+  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+    const activeMedia = product.images.filter((img: ProductImage) =>
+      img.is_active !== false && img.image_url && img.image_url.trim() !== ''
+    );
+
+    // First, try to find an image (not video)
+    const images = activeMedia.filter((img: ProductImage) => img.image_type !== 'video');
+    if (images.length > 0) {
+      // Sort by is_primary first, then by sort_order
+      const sortedImages = [...images].sort((a: ProductImage, b: ProductImage) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      return { url: sortedImages[0].image_url, isVideo: false };
+    }
+
+    // If only videos exist, use the first video as thumbnail
+    const videos = activeMedia.filter((img: ProductImage) => img.image_type === 'video');
+    if (videos.length > 0) {
+      const sortedVideos = [...videos].sort((a: ProductImage, b: ProductImage) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      return { url: sortedVideos[0].image_url, isVideo: true };
+    }
+  }
+
+  // Fallback to legacy image_url field
+  return { url: product.image_url || '', isVideo: false };
+};
 
 // ProductCard component defined outside to avoid hooks order issues
 interface ProductCardProps {
@@ -45,31 +81,55 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-200/50 shadow-elegant hover:shadow-premium transition-all duration-300 h-full flex flex-col">
         <div className="relative overflow-hidden flex-shrink-0">
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
-            style={{ maxHeight: '200px' }}
-          />
+          {(() => {
+            const thumbnail = getProductThumbnail(product);
+            if (thumbnail.isVideo) {
+              // Video thumbnail with play icon overlay
+              return (
+                <div className="relative w-full" style={{ maxHeight: '200px' }}>
+                  <video
+                    src={thumbnail.url}
+                    className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
+                    style={{ maxHeight: '200px' }}
+                    muted
+                    preload="metadata"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                      <Play className="w-6 h-6 text-green-600 ml-1" fill="currentColor" />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <img
+                src={thumbnail.url}
+                alt={product.name}
+                className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-300"
+                style={{ maxHeight: '200px' }}
+              />
+            );
+          })()}
 
           {/* Stock Status Label */}
           <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-semibold ${
-            product.stock === 0 || product.stock_status === "Comming Soon" 
-              ? 'bg-orange-500 text-white' 
+            product.stock === 0 || product.stock_status === "Comming Soon"
+              ? 'bg-orange-500 text-white'
               : 'bg-green-600 text-white'
           }`}>
-            {product.stock === 0 || product.stock_status === "Comming Soon" 
-              ? product.stock_status || "Out of Stock" 
+            {product.stock === 0 || product.stock_status === "Comming Soon"
+              ? product.stock_status || "Out of Stock"
               : "In Stock"}
           </div>
-          
+
           {/* Featured Label for Moringa Products */}
           {(product.name.toLowerCase().includes('moringa') || product.category.toLowerCase().includes('moringa')) && (
             <div className="absolute top-3 right-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
               Featured
             </div>
           )}
-          
+
           {discount > 0 && (
             <div className="absolute bottom-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
               {discount}% OFF

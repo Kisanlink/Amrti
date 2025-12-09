@@ -1,13 +1,49 @@
 import { motion } from 'framer-motion';
-import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filter, X, Sliders } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Leaf, Award, Truck, Shield, RotateCcw, Filter, X, Sliders, Play } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import { useAllProducts } from '../hooks/queries/useProducts';
 import { useWishlist, useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
 import { useAddToCart } from '../hooks/queries/useCart';
-import type { Product } from '../context/AppContext';
+import type { Product, ProductImage } from '../context/AppContext';
 import { useNotification } from '../context/NotificationContext';
+
+// Helper to get the best thumbnail for product cards (prefers images over videos)
+const getProductThumbnail = (product: Product): { url: string; isVideo: boolean } => {
+  // If product has images array, find the best thumbnail
+  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+    const activeMedia = product.images.filter((img: ProductImage) =>
+      img.is_active !== false && img.image_url && img.image_url.trim() !== ''
+    );
+
+    // First, try to find an image (not video)
+    const images = activeMedia.filter((img: ProductImage) => img.image_type !== 'video');
+    if (images.length > 0) {
+      // Sort by is_primary first, then by sort_order
+      const sortedImages = [...images].sort((a, b) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      return { url: sortedImages[0].image_url, isVideo: false };
+    }
+
+    // If only videos exist, use the first video as thumbnail
+    const videos = activeMedia.filter((img: ProductImage) => img.image_type === 'video');
+    if (videos.length > 0) {
+      const sortedVideos = [...videos].sort((a, b) => {
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      return { url: sortedVideos[0].image_url, isVideo: true };
+    }
+  }
+
+  // Fallback to legacy image_url field
+  return { url: product.image_url || '', isVideo: false };
+};
 
 const Products = () => {
   const navigate = useNavigate();
@@ -436,20 +472,41 @@ const Products = () => {
                 >
                   <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                        style={{ maxHeight: '200px' }}
-                      />
-                      {/* <div className="absolute top-3 right-3 bg-beige-300/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-black-700">
-                        {product.category}
-                      </div> */}
-                                  {product.actual_price > product.price && (
-              <div className="absolute top-3 left-3 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold ">
-                {Math.round(((product.actual_price - product.price) / product.actual_price) * 100)}% OFF
-              </div>
-            )}
+                      {(() => {
+                        const thumbnail = getProductThumbnail(product);
+                        if (thumbnail.isVideo) {
+                          // Video thumbnail with play icon overlay
+                          return (
+                            <div className="relative w-full" style={{ maxHeight: '200px' }}>
+                              <video
+                                src={thumbnail.url}
+                                className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                                style={{ maxHeight: '200px' }}
+                                muted
+                                preload="metadata"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                  <Play className="w-6 h-6 text-green-600 ml-1" fill="currentColor" />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <img
+                            src={thumbnail.url}
+                            alt={product.name}
+                            className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                            style={{ maxHeight: '200px' }}
+                          />
+                        );
+                      })()}
+                      {product.actual_price > product.price && (
+                        <div className="absolute top-3 left-3 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                          {Math.round(((product.actual_price - product.price) / product.actual_price) * 100)}% OFF
+                        </div>
+                      )}
                     </div>
                     
                     <div className="p-3 sm:p-4 lg:p-5 flex flex-col flex-grow">
