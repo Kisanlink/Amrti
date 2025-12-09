@@ -1,17 +1,22 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trash2, Heart, ShoppingCart, Plus, Star, Truck, Shield, RotateCcw, Award } from 'lucide-react';
+import { ArrowLeft, Trash2, Heart, ShoppingCart, Plus, Star, Truck, Shield, RotateCcw, Award, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
+import ProductService from '../services/productService';
 import { useWishlistWithPolling, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
 import { useAddToCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
+import type { Product } from '../context/AppContext';
+import { getProductThumbnail } from '../components/ui/ProductMedia';
 
 const Wishlist = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [productDetails, setProductDetails] = useState<Record<string, Product>>({});
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const { showNotification } = useNotification();
   const queryClient = useQueryClient();
 
@@ -21,17 +26,149 @@ const Wishlist = () => {
   const clearWishlistMutation = useClearWishlist();
   const addToCartMutation = useAddToCart();
 
+  // Load cached product data from localStorage on mount
+  useEffect(() => {
+    try {
+      const cachedData = localStorage.getItem('wishlist_product_cache');
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        // Check if cache is still valid (24 hours)
+        const cacheAge = Date.now() - (parsed.timestamp || 0);
+        if (cacheAge < 24 * 60 * 60 * 1000) {
+          setProductDetails(parsed.data || {});
+        } else {
+          // Clear expired cache
+          localStorage.removeItem('wishlist_product_cache');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load cached product data:', err);
+    }
+  }, []);
+
+  // Fetch product details for wishlist items that don't have product data
+  useEffect(() => {
+    const fetchMissingProductDetails = async () => {
+      if (!wishlist || wishlist.length === 0) return;
+
+      // Find items that need product details
+      // Check if product has image_url OR images array with valid images
+      const missingProductIds = wishlist
+        .filter(item => {
+          const hasImage = item.product?.image_url || 
+                         (item.product?.images && Array.isArray(item.product.images) && 
+                          item.product.images.some((img: any) => img.image_url && img.is_active !== false));
+          return !hasImage && !productDetails[item.product_id];
+        })
+        .map(item => item.product_id);
+
+      if (missingProductIds.length === 0) return;
+
+      setLoadingProducts(true);
+      console.log('Fetching missing product details for:', missingProductIds);
+
+      try {
+        // Fetch product details in parallel
+        const productPromises = missingProductIds.map(async (productId) => {
+          try {
+            // Check cache first
+            const cachedData = localStorage.getItem(`product_${productId}`);
+            if (cachedData) {
+              const parsed = JSON.parse(cachedData);
+              const cacheAge = Date.now() - (parsed.timestamp || 0);
+              if (cacheAge < 24 * 60 * 60 * 1000) {
+                return { productId, product: parsed.data };
+              }
+            }
+
+            // Fetch from API
+            const product = await ProductService.getProductById(productId);
+            
+            // Cache the product data
+            try {
+              localStorage.setItem(`product_${productId}`, JSON.stringify({
+                data: product,
+                timestamp: Date.now()
+              }));
+            } catch (cacheErr) {
+              console.warn('Failed to cache product:', cacheErr);
+            }
+
+            return { productId, product };
+          } catch (err) {
+            console.error(`Failed to fetch product ${productId}:`, err);
+            return { productId, product: null };
+          }
+        });
+
+        const results = await Promise.all(productPromises);
+
+        // Update state with fetched products
+        const newProductDetails: Record<string, Product> = { ...productDetails };
+        results.forEach(({ productId, product }) => {
+          if (product) {
+            newProductDetails[productId] = product;
+          }
+        });
+
+        setProductDetails(newProductDetails);
+        
+        // Update localStorage cache
+        try {
+          localStorage.setItem('wishlist_product_cache', JSON.stringify({
+            data: newProductDetails,
+            timestamp: Date.now()
+          }));
+        } catch (cacheErr) {
+          console.warn('Failed to update product cache:', cacheErr);
+        }
+
+        console.log('Product details fetched:', newProductDetails);
+      } catch (err) {
+        console.error('Failed to fetch product details:', err);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchMissingProductDetails();
+  }, [wishlist]);
+
+  // Helper to get product data - either from wishlist item or from fetched details
+  const getProductData = (item: WishlistItem): Partial<Product> => {
+    // First try fetched product details (most complete)
+    if (productDetails[item.product_id]) {
+      return productDetails[item.product_id];
+    }
+    // Then try the item's embedded product data
+    if (item.product) {
+      return item.product;
+    }
+    // Return empty object as fallback
+    return {};
+  };
+
+  // Helper to get product image URL using the same logic as other pages
+  const getProductImageUrl = (product: Partial<Product>): string => {
+    if (!product) return '';
+    
+    // Use the getProductThumbnail helper to get the correct image
+    const thumbnail = getProductThumbnail(product);
+    return thumbnail.url;
+  };
+
   // Debug: Log wishlist data when it changes
   useEffect(() => {
-    console.log('Wishlist page - Data:', { 
-      wishlist, 
+    console.log('Wishlist page - Data:', {
+      wishlist,
       length: wishlist.length,
       loading,
       error,
       items: wishlist,
-      isArray: Array.isArray(wishlist)
+      isArray: Array.isArray(wishlist),
+      productDetails
     });
-  }, [wishlist, loading, error]);
+  }, [wishlist, loading, error, productDetails]);
 
   const handleRemoveFromWishlist = (productId: string) => {
     removeFromWishlistMutation.mutate(productId, {
@@ -267,7 +404,12 @@ const Wishlist = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishlist.map((item) => (
+                {wishlist.map((item) => {
+                  const product = getProductData(item);
+                  const imageUrl = getProductImageUrl(product);
+                  const isLoadingThisProduct = loadingProducts && !imageUrl;
+
+                  return (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -276,44 +418,70 @@ const Wishlist = () => {
                   >
                     {/* Product Image */}
                     <div className="relative">
-                      <img
-                        src={item.product?.image_url || '/placeholder-product.jpg'}
-                        alt={item.product?.name || 'Product'}
-                        className="w-full h-48 object-contain bg-beige-100"
-                      />
-                      <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        {item.product?.category || 'Category'}
+                      {isLoadingThisProduct ? (
+                        <div className="w-full h-48 bg-beige-100 flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.name || 'Product'}
+                          className="w-full h-48 object-contain bg-beige-100 p-4"
+                          onError={(e) => {
+                            // Hide broken image and show fallback
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                          onLoad={() => {
+                            // Hide fallback when image loads successfully
+                            const fallback = (e.currentTarget.nextElementSibling as HTMLElement);
+                            if (fallback) fallback.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      {/* Fallback placeholder - shown when no image or image fails to load */}
+                      <div
+                        className={`w-full h-48 bg-beige-100 items-center justify-center ${imageUrl && !isLoadingThisProduct ? 'hidden' : 'flex'}`}
+                      >
+                        <div className="text-center text-gray-400">
+                          <Package className="w-12 h-12 mx-auto mb-2" />
+                          <p className="text-sm">No image</p>
+                        </div>
                       </div>
-                                              <button
-                          onClick={() => handleRemoveFromWishlist(item.product_id)}
-                          className="absolute top-3 left-3 p-2 bg-red-500 text-white-50 rounded-full hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                        {product.category || 'Product'}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFromWishlist(item.product_id)}
+                        className="absolute top-3 left-3 p-2 bg-red-500 text-white-50 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
 
                     {/* Product Info */}
                     <div className="p-4">
                       <h3 className="font-heading font-semibold text-black-900 mb-2 truncate">
-                        {item.product?.name || 'Product Name'}
+                        {product.name || 'Loading...'}
                       </h3>
-                      
+
                       <div className="flex items-center space-x-2 mb-3">
                         <div className="flex items-center">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-3 h-3 ${i < 4 ? 'text-green-500 fill-current' : 'text-black-300'}`}
+                              className={`w-3 h-3 ${i < Math.floor(product.rating || 4) ? 'text-green-500 fill-current' : 'text-black-300'}`}
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-black-600">(4.8)</span>
+                        <span className="text-xs text-black-600">({product.review_count || 0})</span>
                       </div>
 
                       <div className="flex items-center space-x-2 mb-4">
-                        <span className="font-bold text-green-600">₹{item.product?.price || 0}</span>
-                        {item.product?.actual_price && item.product?.actual_price > (item.product?.price || 0) && (
-                          <span className="text-sm text-black-500 line-through">₹{item.product.actual_price}</span>
+                        <span className="font-bold text-green-600">₹{product.price || 0}</span>
+                        {product.actual_price && product.actual_price > (product.price || 0) && (
+                          <span className="text-sm text-black-500 line-through">₹{product.actual_price}</span>
                         )}
                       </div>
 
@@ -347,7 +515,8 @@ const Wishlist = () => {
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -368,7 +537,10 @@ const Wishlist = () => {
                 <div className="flex justify-between">
                   <span className="text-black-700">Total Value</span>
                   <span className="font-semibold">
-                    ₹{wishlist.reduce((sum, item) => sum + (item.product?.price || 0), 0)}
+                    ₹{wishlist.reduce((sum, item) => {
+                      const product = getProductData(item);
+                      return sum + (product.price || 0);
+                    }, 0)}
                   </span>
                 </div>
               </div>
