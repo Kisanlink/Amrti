@@ -91,7 +91,7 @@ const ForgotPassword = () => {
           <p className="text-black-700">
             Don't have an account?{' '}
             <Link
-              to="/signup"
+              to="/login"
               className="font-heading font-semibold text-green-600 hover:text-green-700 transition-colors"
             >
               Sign up here

@@ -102,6 +102,15 @@ const Login = () => {
   // Get redirect URL from location state or default to home
   const from = (location.state as any)?.from || '/';
 
+  // Check if user accessed from /signup route and show signup form
+  useEffect(() => {
+    if (location.pathname === '/signup') {
+      setIsSignup(true);
+      setSignupStep('email');
+      setStep('email');
+    }
+  }, [location.pathname]);
+
   // Cleanup reCAPTCHA on component unmount (like HTML)
   useEffect(() => {
     return () => {

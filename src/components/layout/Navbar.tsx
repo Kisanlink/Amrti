@@ -156,7 +156,6 @@ const Navbar = () => {
       const isPublicRoute = location.pathname === '/' ||
                            location.pathname === '/home' ||
                            location.pathname.includes('/login') || 
-                           location.pathname.includes('/signup') || 
                            location.pathname.includes('/product/moringa/') ||
                            location.pathname.includes('/products') ||
                            location.pathname.includes('/about') ||
@@ -558,7 +557,7 @@ const Navbar = () => {
                           Sign In
                         </Link>
                         <Link
-                          to="/signup"
+                          to="/login"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >
@@ -811,7 +810,7 @@ const Navbar = () => {
                             <span className="text-base">Sign In</span>
                           </Link>
                           <Link 
-                            to="/signup" 
+                            to="/login" 
                             onClick={() => setIsOpen(false)}
                             className="flex items-center space-x-3 w-full py-3 px-3 text-gray-600 hover:text-green-600 hover:bg-gray-50 transition-colors rounded-lg"
                           >
