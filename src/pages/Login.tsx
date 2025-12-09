@@ -80,8 +80,7 @@ const Login = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'email' | 'phone' | 'verify' | 'admin'>('email');
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [step, setStep] = useState<'email' | 'phone' | 'verify'>('email');
   const [sessionInfo, setSessionInfo] = useState<string>('');
   const [lastPhoneNumber, setLastPhoneNumber] = useState<string>('');
   const [isSignup, setIsSignup] = useState(false);
@@ -719,39 +718,6 @@ const Login = () => {
     }
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Call admin login API
-      const user = await AuthService.adminLogin(formData.email, formData.password);
-      
-      // Check if user is Admin and redirect to admin portal (case-insensitive check)
-      const userRole = (user as any)?.role || localStorage.getItem('userRole') || '';
-      
-      if (userRole && userRole.toLowerCase() === 'admin') {
-        // Redirect to admin portal/dashboard
-        navigate('/admin/portal', { replace: true });
-      } else {
-        // Regular user - navigate to original destination or home
-        const fromPath = from || '/';
-        navigate(fromPath, { replace: true });
-      }
-    } catch (error: any) {
-      console.error('Admin login error:', error);
-      setError(error.message || 'Failed to login. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Email/Password signup handler
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -1257,85 +1223,6 @@ const Login = () => {
                   )}
                 </button>
               </form>
-            ) : step === 'admin' ? (
-              <form onSubmit={handleAdminLogin} className="space-y-6">
-                {/* Back to Email Login */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAdminLogin(false);
-                    setStep('email');
-                    setError(null);
-                  }}
-                  className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Email Login</span>
-                </button>
-
-                {/* Email Field */}
-                <div>
-                  <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-black-400" />
-                    </div>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                      placeholder="admin@example.com"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div>
-                  <label htmlFor="password" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-black-400" />
-                    </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading || !formData.email || !formData.password}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Logging in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-5 h-5" />
-                      <span>Login as Admin</span>
-                    </>
-                  )}
-                </button>
-              </form>
             ) : (
               <form onSubmit={handleVerifySubmit} className="space-y-6">
                 {/* Verification Code Field */}
@@ -1805,17 +1692,6 @@ const Login = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="text-center mt-4 space-y-2"
         >
-          {!isSignup && step !== 'admin' && (
-            <button
-              onClick={() => {
-                setShowAdminLogin(true);
-                setStep('admin');
-              }}
-              className="text-sm text-gray-700 hover:text-green-600 transition-colors duration-300 underline"
-            >
-              Login as Admin
-            </button>
-          )}
           <p className="text-gray-700">
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
             <button
