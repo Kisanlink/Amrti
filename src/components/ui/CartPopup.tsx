@@ -8,6 +8,7 @@ import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useMemo, useRef, useEffect } from 'react';
 import { queryKeys } from '../../lib/queryClient';
+import { getProductThumbnail } from './ProductMedia';
 
 interface CartPopupProps {
   isOpen: boolean;
@@ -251,22 +252,8 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             {cartItems.map((item: any) => {
-              // Get product image - handle both new (images array) and old (image_url) structures
-              const getProductImage = () => {
-                if (!item.product) return null;
-                
-                // Check for images array (new structure)
-                if (item.product.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
-                  // Get primary image or first image
-                  const primaryImage = item.product.images.find((img: any) => img.is_primary) || item.product.images[0];
-                  return primaryImage?.image_url || null;
-                }
-                
-                // Fallback to image_url (old structure)
-                return item.product.image_url || item.product.primary_image?.image_url || null;
-              };
-              
-              const productImage = getProductImage();
+              // Get product image using the standard helper
+              const productImage = item.product ? getProductThumbnail(item.product).url : null;
               const productName = item.product?.name || 'Product';
               
               return (
@@ -355,13 +342,8 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                 <div className="overflow-x-auto -mx-4 px-4">
                   <div className="flex space-x-3 min-w-max pb-2">
                     {suggestedProducts.map((product: any) => {
-                      // Get product image
-                      const productImage = product.image_url || 
-                        product.primary_image?.image_url || 
-                        (product.images && product.images.length > 0 
-                          ? (product.images.find((img: any) => img.is_primary) || product.images[0])?.image_url 
-                          : null) || 
-                        null;
+                      // Get product image using the standard helper
+                      const productImage = getProductThumbnail(product).url;
                       
                       return (
                         <div

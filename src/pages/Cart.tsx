@@ -1,16 +1,21 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, RotateCcw, Award } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, RotateCcw, Award, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import { useCartWithPolling, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useClearCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
+import ProductService from '../services/productService';
+import { getProductThumbnail } from '../components/ui/ProductMedia';
+import type { Product } from '../context/AppContext';
 
 
 const Cart = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [productDetails, setProductDetails] = useState<Record<string, Product>>({});
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Use React Query hooks for cart data - updates via cache invalidation from mutations
   const { data: cartData, isLoading: loading, error: cartError } = useCartWithPolling();
@@ -27,6 +32,138 @@ const Cart = () => {
   const cartItems = cart ? (cart.items || []) : [];
   
   const error = cartError ? 'Failed to load cart' : null;
+  
+  // Load cached product data from localStorage on mount
+  useEffect(() => {
+    try {
+      const cachedData = localStorage.getItem('cart_product_cache');
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        // Check if cache is still valid (24 hours)
+        const cacheAge = Date.now() - (parsed.timestamp || 0);
+        if (cacheAge < 24 * 60 * 60 * 1000) {
+          setProductDetails(parsed.data || {});
+        } else {
+          // Clear expired cache
+          localStorage.removeItem('cart_product_cache');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load cached product data:', err);
+    }
+  }, []);
+
+  // Fetch product details for cart items that don't have complete product data
+  useEffect(() => {
+    const fetchMissingProductDetails = async () => {
+      if (!cartItems || cartItems.length === 0) return;
+
+      // Find items that need product details
+      // Check if product has image_url OR images array with valid images
+      const missingProductIds = cartItems
+        .filter((item: any) => {
+          const product = item.product;
+          const hasImage = product?.image_url || 
+                         (product?.images && Array.isArray(product.images) && 
+                          product.images.some((img: any) => img.image_url && img.is_active !== false));
+          return !hasImage && !productDetails[item.product_id];
+        })
+        .map((item: any) => item.product_id);
+
+      if (missingProductIds.length === 0) return;
+
+      setLoadingProducts(true);
+      console.log('Fetching missing product details for cart items:', missingProductIds);
+
+      try {
+        // Fetch product details in parallel
+        const productPromises = missingProductIds.map(async (productId: string) => {
+          try {
+            // Check cache first
+            const cachedData = localStorage.getItem(`product_${productId}`);
+            if (cachedData) {
+              const parsed = JSON.parse(cachedData);
+              const cacheAge = Date.now() - (parsed.timestamp || 0);
+              if (cacheAge < 24 * 60 * 60 * 1000) {
+                return { productId, product: parsed.data };
+              }
+            }
+
+            // Fetch from API
+            const product = await ProductService.getProductById(productId);
+            
+            // Cache the product data
+            try {
+              localStorage.setItem(`product_${productId}`, JSON.stringify({
+                data: product,
+                timestamp: Date.now()
+              }));
+            } catch (cacheErr) {
+              console.warn('Failed to cache product:', cacheErr);
+            }
+
+            return { productId, product };
+          } catch (err) {
+            console.error(`Failed to fetch product ${productId}:`, err);
+            return { productId, product: null };
+          }
+        });
+
+        const results = await Promise.all(productPromises);
+
+        // Update state with fetched products
+        const newProductDetails: Record<string, Product> = { ...productDetails };
+        results.forEach(({ productId, product }) => {
+          if (product) {
+            newProductDetails[productId] = product;
+          }
+        });
+
+        setProductDetails(newProductDetails);
+        
+        // Update localStorage cache
+        try {
+          localStorage.setItem('cart_product_cache', JSON.stringify({
+            data: newProductDetails,
+            timestamp: Date.now()
+          }));
+        } catch (cacheErr) {
+          console.warn('Failed to update product cache:', cacheErr);
+        }
+
+        console.log('Product details fetched for cart:', newProductDetails);
+      } catch (err) {
+        console.error('Failed to fetch product details:', err);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchMissingProductDetails();
+  }, [cartItems]);
+
+  // Helper to get product data - either from cart item or from fetched details
+  const getProductData = (item: any): Partial<Product> => {
+    // First try fetched product details (most complete)
+    if (productDetails[item.product_id]) {
+      return productDetails[item.product_id];
+    }
+    // Then try the item's embedded product data
+    if (item.product) {
+      return item.product;
+    }
+    // Return empty object as fallback
+    return {};
+  };
+
+  // Helper to get product image URL using the same logic as other pages
+  const getProductImageUrl = (product: Partial<Product>): string => {
+    if (!product) return '';
+    
+    // Use the getProductThumbnail helper to get the correct image
+    const thumbnail = getProductThumbnail(product);
+    return thumbnail.url;
+  };
   
   // Cart page automatically polls every 1 second - no need for event listeners
 
@@ -262,7 +399,12 @@ const Cart = () => {
               </h2>
 
               <div className="space-y-4 sm:space-y-6">
-                {cartItems.map((item: any) => (
+                {cartItems.map((item: any) => {
+                  const product = getProductData(item);
+                  const imageUrl = getProductImageUrl(product);
+                  const isLoadingThisProduct = loadingProducts && !imageUrl;
+
+                  return (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -270,23 +412,49 @@ const Cart = () => {
                     className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg"
                   >
                     {/* Product Image */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 flex-shrink-0 mx-auto sm:mx-0">
-                      <img
-                        src={item.product?.image_url || '/placeholder-product.jpg'}
-                        alt={item.product?.name || 'Product'}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 flex-shrink-0 mx-auto sm:mx-0 relative bg-beige-100 rounded-lg overflow-hidden">
+                      {isLoadingThisProduct ? (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.name || item.product?.name || 'Product'}
+                          className="w-full h-full object-contain p-2"
+                          onError={(e) => {
+                            // Hide broken image and show fallback
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                          onLoad={(e) => {
+                            // Hide fallback when image loads successfully
+                            const fallback = (e.currentTarget.nextElementSibling as HTMLElement);
+                            if (fallback) fallback.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      {/* Fallback placeholder - shown when no image or image fails to load */}
+                      <div
+                        className={`w-full h-full items-center justify-center ${imageUrl && !isLoadingThisProduct ? 'hidden' : 'flex'}`}
+                      >
+                        <div className="text-center text-gray-400">
+                          <Package className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1" />
+                          <p className="text-xs">No image</p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-heading font-semibold text-black-900 mb-1 sm:mb-2 truncate text-sm sm:text-base">
-                        {item.product?.name || `Product ${item.product_id}`}
+                        {product.name || item.product?.name || `Product ${item.product_id}`}
                       </h3>
                       
                       <p className="text-xs sm:text-sm text-black-600 mb-2 sm:mb-3">
-                        {item.product?.category || 'Category'} | {item.product?.description?.substring(0, 50) || 'Description'}...
-                        {!item.product && <span className="text-red-500"> (Product details not loaded)</span>}
+                        {product.category || item.product?.category || 'Category'} | {(product.description || item.product?.description || 'Description')?.substring(0, 50)}...
+                        {!product.name && !item.product?.name && <span className="text-gray-400 text-xs"> (Loading...)</span>}
                       </p>
 
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
@@ -327,7 +495,8 @@ const Cart = () => {
                       <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Clear Cart Button */}
