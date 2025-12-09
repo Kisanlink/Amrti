@@ -538,7 +538,7 @@ const Navbar = () => {
                             setUser(null);
                             setAuthenticated(false);
                             setShowUserMenu(false);
-                            navigate('/login', { replace: true });
+                            navigate('/', { replace: true });
                           }}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
@@ -791,7 +791,7 @@ const Navbar = () => {
                                 setUser(null);
                                 setAuthenticated(false);
                                 setIsOpen(false);
-                                navigate('/login', { replace: true });
+                                navigate('/', { replace: true });
                               }}
                               className="flex items-center space-x-3 w-full py-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors rounded-lg"
                             >
