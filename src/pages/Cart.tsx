@@ -1,21 +1,19 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Heart, Truck, Shield, RotateCcw, Award, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import { useCartWithPolling, useRemoveFromCart, useIncrementCartItem, useDecrementCartItem, useClearCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
-import ProductService from '../services/productService';
 import { getProductThumbnail } from '../components/ui/ProductMedia';
 import type { Product } from '../context/AppContext';
+import { useProductDetailsCache } from '../hooks/useProductDetailsCache';
 
 
 const Cart = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [productDetails, setProductDetails] = useState<Record<string, Product>>({});
-  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Use React Query hooks for cart data - updates via cache invalidation from mutations
   const { data: cartData, isLoading: loading, error: cartError } = useCartWithPolling();
@@ -33,114 +31,12 @@ const Cart = () => {
   
   const error = cartError ? 'Failed to load cart' : null;
   
-  // Load cached product data from localStorage on mount
-  useEffect(() => {
-    try {
-      const cachedData = localStorage.getItem('cart_product_cache');
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        // Check if cache is still valid (24 hours)
-        const cacheAge = Date.now() - (parsed.timestamp || 0);
-        if (cacheAge < 24 * 60 * 60 * 1000) {
-          setProductDetails(parsed.data || {});
-        } else {
-          // Clear expired cache
-          localStorage.removeItem('cart_product_cache');
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load cached product data:', err);
-    }
-  }, []);
-
-  // Fetch product details for cart items that don't have complete product data
-  useEffect(() => {
-    const fetchMissingProductDetails = async () => {
-      if (!cartItems || cartItems.length === 0) return;
-
-      // Find items that need product details
-      // Check if product has image_url OR images array with valid images
-      const missingProductIds = cartItems
-        .filter((item: any) => {
-          const product = item.product;
-          const hasImage = product?.image_url || 
-                         (product?.images && Array.isArray(product.images) && 
-                          product.images.some((img: any) => img.image_url && img.is_active !== false));
-          return !hasImage && !productDetails[item.product_id];
-        })
-        .map((item: any) => item.product_id);
-
-      if (missingProductIds.length === 0) return;
-
-      setLoadingProducts(true);
-      console.log('Fetching missing product details for cart items:', missingProductIds);
-
-      try {
-        // Fetch product details in parallel
-        const productPromises = missingProductIds.map(async (productId: string) => {
-          try {
-            // Check cache first
-            const cachedData = localStorage.getItem(`product_${productId}`);
-            if (cachedData) {
-              const parsed = JSON.parse(cachedData);
-              const cacheAge = Date.now() - (parsed.timestamp || 0);
-              if (cacheAge < 24 * 60 * 60 * 1000) {
-                return { productId, product: parsed.data };
-              }
-            }
-
-            // Fetch from API
-            const product = await ProductService.getProductById(productId);
-            
-            // Cache the product data
-            try {
-              localStorage.setItem(`product_${productId}`, JSON.stringify({
-                data: product,
-                timestamp: Date.now()
-              }));
-            } catch (cacheErr) {
-              console.warn('Failed to cache product:', cacheErr);
-            }
-
-            return { productId, product };
-          } catch (err) {
-            console.error(`Failed to fetch product ${productId}:`, err);
-            return { productId, product: null };
-          }
-        });
-
-        const results = await Promise.all(productPromises);
-
-        // Update state with fetched products
-        const newProductDetails: Record<string, Product> = { ...productDetails };
-        results.forEach(({ productId, product }) => {
-          if (product) {
-            newProductDetails[productId] = product;
-          }
-        });
-
-        setProductDetails(newProductDetails);
-        
-        // Update localStorage cache
-        try {
-          localStorage.setItem('cart_product_cache', JSON.stringify({
-            data: newProductDetails,
-            timestamp: Date.now()
-          }));
-        } catch (cacheErr) {
-          console.warn('Failed to update product cache:', cacheErr);
-        }
-
-        console.log('Product details fetched for cart:', newProductDetails);
-      } catch (err) {
-        console.error('Failed to fetch product details:', err);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-
-    fetchMissingProductDetails();
-  }, [cartItems]);
+  // Use shared hook for product details caching and fetching
+  const { productDetails, loading: loadingProducts } = useProductDetailsCache({
+    items: cartItems.map((item: any) => ({ product_id: item.product_id, product: item.product })),
+    cacheKey: 'cart_product_cache',
+    enabled: !!cartItems && cartItems.length > 0
+  });
 
   // Helper to get product data - either from cart item or from fetched details
   const getProductData = (item: any): Partial<Product> => {

@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import CartService from '../services/cartService';
-import ProductService from '../services/productService';
 import { useWishlistWithPolling, useRemoveFromWishlist, useClearWishlist, type WishlistItem } from '../hooks/queries/useWishlist';
 import { useAddToCart } from '../hooks/queries/useCart';
 import { useNotification } from '../context/NotificationContext';
@@ -12,11 +11,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import type { Product } from '../context/AppContext';
 import { getProductThumbnail } from '../components/ui/ProductMedia';
+import { useProductDetailsCache } from '../hooks/useProductDetailsCache';
 
 const Wishlist = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
-  const [productDetails, setProductDetails] = useState<Record<string, Product>>({});
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const { showNotification } = useNotification();
   const queryClient = useQueryClient();
 
@@ -26,113 +24,12 @@ const Wishlist = () => {
   const clearWishlistMutation = useClearWishlist();
   const addToCartMutation = useAddToCart();
 
-  // Load cached product data from localStorage on mount
-  useEffect(() => {
-    try {
-      const cachedData = localStorage.getItem('wishlist_product_cache');
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        // Check if cache is still valid (24 hours)
-        const cacheAge = Date.now() - (parsed.timestamp || 0);
-        if (cacheAge < 24 * 60 * 60 * 1000) {
-          setProductDetails(parsed.data || {});
-        } else {
-          // Clear expired cache
-          localStorage.removeItem('wishlist_product_cache');
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load cached product data:', err);
-    }
-  }, []);
-
-  // Fetch product details for wishlist items that don't have product data
-  useEffect(() => {
-    const fetchMissingProductDetails = async () => {
-      if (!wishlist || wishlist.length === 0) return;
-
-      // Find items that need product details
-      // Check if product has image_url OR images array with valid images
-      const missingProductIds = wishlist
-        .filter(item => {
-          const hasImage = item.product?.image_url || 
-                         (item.product?.images && Array.isArray(item.product.images) && 
-                          item.product.images.some((img: any) => img.image_url && img.is_active !== false));
-          return !hasImage && !productDetails[item.product_id];
-        })
-        .map(item => item.product_id);
-
-      if (missingProductIds.length === 0) return;
-
-      setLoadingProducts(true);
-      console.log('Fetching missing product details for:', missingProductIds);
-
-      try {
-        // Fetch product details in parallel
-        const productPromises = missingProductIds.map(async (productId) => {
-          try {
-            // Check cache first
-            const cachedData = localStorage.getItem(`product_${productId}`);
-            if (cachedData) {
-              const parsed = JSON.parse(cachedData);
-              const cacheAge = Date.now() - (parsed.timestamp || 0);
-              if (cacheAge < 24 * 60 * 60 * 1000) {
-                return { productId, product: parsed.data };
-              }
-            }
-
-            // Fetch from API
-            const product = await ProductService.getProductById(productId);
-            
-            // Cache the product data
-            try {
-              localStorage.setItem(`product_${productId}`, JSON.stringify({
-                data: product,
-                timestamp: Date.now()
-              }));
-            } catch (cacheErr) {
-              console.warn('Failed to cache product:', cacheErr);
-            }
-
-            return { productId, product };
-          } catch (err) {
-            console.error(`Failed to fetch product ${productId}:`, err);
-            return { productId, product: null };
-          }
-        });
-
-        const results = await Promise.all(productPromises);
-
-        // Update state with fetched products
-        const newProductDetails: Record<string, Product> = { ...productDetails };
-        results.forEach(({ productId, product }) => {
-          if (product) {
-            newProductDetails[productId] = product;
-          }
-        });
-
-        setProductDetails(newProductDetails);
-        
-        // Update localStorage cache
-        try {
-          localStorage.setItem('wishlist_product_cache', JSON.stringify({
-            data: newProductDetails,
-            timestamp: Date.now()
-          }));
-        } catch (cacheErr) {
-          console.warn('Failed to update product cache:', cacheErr);
-        }
-
-        console.log('Product details fetched:', newProductDetails);
-      } catch (err) {
-        console.error('Failed to fetch product details:', err);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-
-    fetchMissingProductDetails();
-  }, [wishlist]);
+  // Use shared hook for product details caching and fetching
+  const { productDetails, loading: loadingProducts } = useProductDetailsCache({
+    items: wishlist.map(item => ({ product_id: item.product_id, product: item.product })),
+    cacheKey: 'wishlist_product_cache',
+    enabled: !!wishlist && wishlist.length > 0
+  });
 
   // Helper to get product data - either from wishlist item or from fetched details
   const getProductData = (item: WishlistItem): Partial<Product> => {
@@ -433,10 +330,12 @@ const Wishlist = () => {
                             const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                             if (fallback) fallback.style.display = 'flex';
                           }}
-                          onLoad={() => {
+                          onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
                             // Hide fallback when image loads successfully
-                            const fallback = (e.currentTarget.nextElementSibling as HTMLElement);
-                            if (fallback) fallback.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling;
+                            if (fallback) {
+                              (fallback as HTMLElement).style.display = 'none';
+                            }
                           }}
                         />
                       ) : null}

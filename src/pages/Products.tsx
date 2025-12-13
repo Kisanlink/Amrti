@@ -8,42 +8,7 @@ import { useWishlist, useIsInWishlist, useToggleWishlist } from '../hooks/querie
 import { useAddToCart } from '../hooks/queries/useCart';
 import type { Product, ProductImage } from '../context/AppContext';
 import { useNotification } from '../context/NotificationContext';
-
-// Helper to get the best thumbnail for product cards (prefers images over videos)
-const getProductThumbnail = (product: Product): { url: string; isVideo: boolean } => {
-  // If product has images array, find the best thumbnail
-  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-    const activeMedia = product.images.filter((img: ProductImage) =>
-      img.is_active !== false && img.image_url && img.image_url.trim() !== ''
-    );
-
-    // First, try to find an image (not video)
-    const images = activeMedia.filter((img: ProductImage) => img.image_type !== 'video');
-    if (images.length > 0) {
-      // Sort by is_primary first, then by sort_order
-      const sortedImages = [...images].sort((a, b) => {
-        if (a.is_primary && !b.is_primary) return -1;
-        if (!a.is_primary && b.is_primary) return 1;
-        return (a.sort_order || 0) - (b.sort_order || 0);
-      });
-      return { url: sortedImages[0].image_url, isVideo: false };
-    }
-
-    // If only videos exist, use the first video as thumbnail
-    const videos = activeMedia.filter((img: ProductImage) => img.image_type === 'video');
-    if (videos.length > 0) {
-      const sortedVideos = [...videos].sort((a, b) => {
-        if (a.is_primary && !b.is_primary) return -1;
-        if (!a.is_primary && b.is_primary) return 1;
-        return (a.sort_order || 0) - (b.sort_order || 0);
-      });
-      return { url: sortedVideos[0].image_url, isVideo: true };
-    }
-  }
-
-  // Fallback to legacy image_url field
-  return { url: product.image_url || '', isVideo: false };
-};
+import { getProductThumbnail } from '../components/ui/ProductMedia';
 
 const Products = () => {
   const navigate = useNavigate();

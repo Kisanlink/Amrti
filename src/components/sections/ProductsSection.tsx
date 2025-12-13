@@ -114,11 +114,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Stock Status Label */}
           <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-semibold ${
-            product.stock === 0 || product.stock_status === "Comming Soon"
+            product.stock === 0 || product.stock_status === "Coming Soon"
               ? 'bg-orange-500 text-white'
               : 'bg-green-600 text-white'
           }`}>
-            {product.stock === 0 || product.stock_status === "Comming Soon"
+            {product.stock === 0 || product.stock_status === "Coming Soon"
               ? product.stock_status || "Out of Stock"
               : "In Stock"}
           </div>
@@ -182,7 +182,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </button>
             
             {/* Add to Cart Button */}
-            {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+            {product.stock === 0 || product.stock_status === "coming Soon" ? (
               <button
                 onClick={handleButtonClick}
                 disabled
