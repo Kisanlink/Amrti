@@ -113,7 +113,7 @@ const AdminPortal: React.FC = () => {
 
   const handleLogout = async () => {
     await AuthService.logout();
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const handleViewReview = (reviewId: string) => {

@@ -8,6 +8,9 @@ import type { Cart } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useMemo, useRef, useEffect } from 'react';
 import { queryKeys } from '../../lib/queryClient';
+import { getProductThumbnail } from './ProductMedia';
+import type { Product } from '../../context/AppContext';
+import { useProductDetailsCache } from '../../hooks/useProductDetailsCache';
 
 interface CartPopupProps {
   isOpen: boolean;
@@ -36,6 +39,42 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
       lastCartRef.current = cart;
     }
   }, [cart]);
+
+  // Use shared hook for product details caching and fetching
+  const { productDetails } = useProductDetailsCache({
+    items: cart?.items?.map((item: any) => ({ product_id: item.product_id, product: item.product })) || [],
+    cacheKey: 'cart_popup_product_cache',
+    enabled: !!cart?.items && cart.items.length > 0
+  });
+
+  // Helper to get product data with fallback to cache
+  const getProductData = (item: any): Partial<Product> => {
+    // First try cached product details
+    if (productDetails[item.product_id]) {
+      return productDetails[item.product_id];
+    }
+    
+    // Then try item's embedded product
+    if (item.product) {
+      return item.product;
+    }
+    
+    // Try localStorage cache
+    try {
+      const cachedData = localStorage.getItem(`product_${item.product_id}`);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const cacheAge = Date.now() - (parsed.timestamp || 0);
+        if (cacheAge < 24 * 60 * 60 * 1000 && parsed.data) {
+          return parsed.data;
+        }
+      }
+    } catch (err) {
+      // Ignore
+    }
+    
+    return {};
+  };
   
   // Get cached cart data as fallback (more reliable than ref during refetches)
   const getCachedCart = () => {
@@ -251,23 +290,10 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             {cartItems.map((item: any) => {
-              // Get product image - handle both new (images array) and old (image_url) structures
-              const getProductImage = () => {
-                if (!item.product) return null;
-                
-                // Check for images array (new structure)
-                if (item.product.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
-                  // Get primary image or first image
-                  const primaryImage = item.product.images.find((img: any) => img.is_primary) || item.product.images[0];
-                  return primaryImage?.image_url || null;
-                }
-                
-                // Fallback to image_url (old structure)
-                return item.product.image_url || item.product.primary_image?.image_url || null;
-              };
-              
-              const productImage = getProductImage();
-              const productName = item.product?.name || 'Product';
+              // Get product data with fallback to cache
+              const product = getProductData(item);
+              const productImage = product ? getProductThumbnail(product).url : null;
+              const productName = product?.name || item.product?.name || 'Product';
               
               return (
               <div key={item.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
@@ -355,14 +381,17 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                 <div className="overflow-x-auto -mx-4 px-4">
                   <div className="flex space-x-3 min-w-max pb-2">
                     {suggestedProducts.map((product: any) => {
-                      // Get product image
-                      const productImage = product.image_url || 
-                        product.primary_image?.image_url || 
-                        (product.images && product.images.length > 0 
-                          ? (product.images.find((img: any) => img.is_primary) || product.images[0])?.image_url 
-                          : null) || 
-                        null;
+                      // Get product image using the standard helper
+                      const productImage = getProductThumbnail(product).url;
                       
+                      // Check if product is out of stock
+                      const stockStatus = product.inventory?.stock_status || product.stock_status || 'In Stock';
+                      const availableStock = product.inventory?.available_stock ?? product.inventory?.current_stock ?? product.stock ?? 0;
+                      const isOutOfStock = stockStatus === "Coming Soon" || 
+                                          stockStatus === "Comming Soon" || 
+                                          availableStock === 0 ||
+                                          stockStatus === "Out of Stock";
+                       
                       return (
                         <div
                           key={product.id}
@@ -399,18 +428,27 @@ const CartPopup = ({ isOpen, onClose }: CartPopupProps) => {
                               </p>
                             </div>
                           </Link>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSuggestedProductAddToCart(product.id);
-                            }}
-                            disabled={addToCartMutation.isPending}
-                            className="w-full px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            <span>Add</span>
-                          </button>
+                          {isOutOfStock ? (
+                            <button
+                              disabled
+                              className="w-full px-2 py-1.5 bg-gray-400 text-white text-xs font-medium rounded cursor-not-allowed flex items-center justify-center space-x-1"
+                            >
+                              <span>Out of Stock</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSuggestedProductAddToCart(product.id);
+                              }}
+                              disabled={addToCartMutation.isPending}
+                              className="w-full px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
+                            >
+                              <ShoppingCart className="w-3 h-3" />
+                              <span>Add</span>
+                            </button>
+                          )}
                         </div>
                       );
                     })}

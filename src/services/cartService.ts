@@ -26,7 +26,7 @@ export class CartService {
    * Returns the merged cart from the API response
    * CRITICAL: This must succeed or items will be lost
    */
-  static async migrateGuestCart(): Promise<any> {
+  static async migrateGuestCart(userId?: string): Promise<any> {
     try {
       const isAuth = this.isAuthenticated();
       if (!isAuth) {
@@ -53,13 +53,24 @@ export class CartService {
         throw new Error('Authentication token not available for cart migration');
       }
 
+      // Get the actual user_id from the stored user data if not provided
+      const actualUserId = userId || AuthService.getStoredUser()?.id;
+      
+      if (!actualUserId) {
+        console.error('No actual user_id found for cart migration, falling back to Firebase UID if available.');
+      } else {
+        console.log('Migrating cart with user_id:', actualUserId);
+      }
+
       // Retry migration up to 3 times to ensure it succeeds
       let mergedCart: any = null;
       let lastError: any = null;
+      let lastSeenVerifiedUserId: string | null = null;
       
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          mergedCart = await GuestCartService.migrateCart(token);
+          // Pass user_id to migration to ensure backend uses correct user_id
+          mergedCart = await GuestCartService.migrateCart(token, actualUserId || undefined);
           
           // Verify migration succeeded by checking if merged cart has items
           const mergedItems = mergedCart?.items || [];
@@ -74,30 +85,88 @@ export class CartService {
               throw new Error('Cart migration failed - received guest cart instead of authenticated cart');
             }
             
+            // CRITICAL: Verify the migrated cart has the correct user_id (for Google OAuth)
+            // The backend should use the actual user_id (USER444866) not Firebase UID
+            if (actualUserId && mergedUserId && mergedUserId !== actualUserId) {
+              console.error('WARNING: Cart migration used wrong user_id!', {
+                expected_user_id: actualUserId,
+                migrated_user_id: mergedUserId,
+                cart_id: mergedCartId
+              });
+              // Don't throw error here, but log it - the backend should handle this correctly
+            } else if (actualUserId && mergedUserId === actualUserId) {
+              console.log('Cart migration verified with correct user_id:', {
+                user_id: mergedUserId,
+                cart_id: mergedCartId,
+                items_count: mergedItems.length
+              });
+            }
+            
             // Final verification: Fetch the authenticated cart to ensure it has the items
             try {
               const verifiedCart = await cartApi.getCart();
               const verifiedCartData = verifiedCart.data.cart;
               const verifiedItems = verifiedCartData?.items || [];
               const verifiedTotalItems = verifiedCartData?.total_items || (verifiedCartData as any)?.items_count || 0;
-              const verifiedCartId = verifiedCartData?.id || verifiedCartData?.cart_id;
+              const verifiedCartId = verifiedCartData?.id || (verifiedCartData as any)?.cart_id;
+              const verifiedUserId = verifiedCartData?.user_id || (verifiedCartData as any)?.userId;
+              
+              // Track the verified user_id on each attempt
+              if (verifiedUserId) {
+                lastSeenVerifiedUserId = verifiedUserId;
+              }
+              
+              // Verify the retrieved cart has the correct user_id
+              if (actualUserId && verifiedUserId && verifiedUserId !== actualUserId) {
+                console.error('ERROR: Retrieved cart has wrong user_id after migration!', {
+                  expected_user_id: actualUserId,
+                  retrieved_user_id: verifiedUserId,
+                  cart_id: verifiedCartId,
+                  attempt: attempt + 1
+                });
+                // Wait a bit and retry
+                if (attempt < 2) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+                  continue;
+                }
+                // If this is the last attempt and user_id still doesn't match, we'll check after the loop
+              }
               
               if (verifiedTotalItems > 0 && verifiedItems.length > 0 && verifiedCartId && !verifiedCartId.startsWith('guest_')) {
-                return mergedCart;
+                // Verify user_id matches - only return if it matches (or actualUserId is falsy)
+                if (actualUserId && verifiedUserId === actualUserId) {
+                  return mergedCart;
+                } else if (!actualUserId) {
+                  // If no user_id was provided, just check that cart has items
+                  return mergedCart;
+                } else {
+                  // User_id mismatch - wait and retry
+                  if (attempt < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+                    continue;
+                  }
+                  // If this is the last attempt, we'll check after the loop
+                }
               } else {
                 // Wait a bit and retry
                 if (attempt < 2) {
                   await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+                  continue;
                 }
               }
             } catch (verifyError) {
               console.error('Failed to verify cart after migration:', verifyError);
-              // Continue with merged cart anyway
-              return mergedCart;
+              lastError = verifyError;
+              // Don't return mergedCart here - let it retry or fail after all attempts
+              if (attempt < 2) {
+                await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+                continue;
+              }
             }
           } else {
             if (attempt < 2) {
               await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500)));
+              continue;
             }
           }
         } catch (error: any) {
@@ -109,10 +178,36 @@ export class CartService {
         }
       }
       
+      // Final check after exhausting all retries
+      if (actualUserId && lastSeenVerifiedUserId && lastSeenVerifiedUserId !== actualUserId) {
+        console.error('CRITICAL: Cart migration failed - persistent user_id mismatch after all retries!', {
+          expected_user_id: actualUserId,
+          last_seen_verified_user_id: lastSeenVerifiedUserId,
+          merged_cart: mergedCart ? {
+            id: mergedCart?.id || mergedCart?.cart_id,
+            user_id: mergedCart?.user_id || (mergedCart as any)?.userId,
+            items_count: mergedCart?.items?.length || 0
+          } : null
+        });
+        throw new Error(`Cart migration failed: Cart belongs to user ${lastSeenVerifiedUserId} but expected user ${actualUserId}. Items may have been migrated to the wrong account.`);
+      }
+      
       // If all retries failed, throw error
       if (!mergedCart || (mergedCart?.items || []).length === 0) {
         console.error('Cart migration failed after all retries. Guest cart items may be lost.');
         throw new Error(lastError?.message || 'Cart migration failed. Guest cart items were not migrated.');
+      }
+      
+      // If we have actualUserId but no verifiedUserId was seen, that's also a problem
+      if (actualUserId && !lastSeenVerifiedUserId) {
+        console.error('CRITICAL: Cart migration completed but could not verify user_id!', {
+          expected_user_id: actualUserId,
+          merged_cart: mergedCart ? {
+            id: mergedCart?.id || mergedCart?.cart_id,
+            user_id: mergedCart?.user_id || (mergedCart as any)?.userId
+          } : null
+        });
+        throw new Error('Cart migration completed but user_id verification failed. Cart may belong to wrong user.');
       }
       
       return mergedCart;
@@ -150,7 +245,7 @@ export class CartService {
         const cartData = response.data;
         
         // Verify the cart ID is an authenticated cart (not guest cart)
-        const cartId = cartData?.id || cartData?.cart_id || (cartData as any)?.cartId;
+        const cartId = (cartData as any)?.id || (cartData as any)?.cart_id || (cartData as any)?.cartId;
         if (cartId && cartId.startsWith('guest_')) {
           throw new Error('Cart identification error. Please try again.');
         }
