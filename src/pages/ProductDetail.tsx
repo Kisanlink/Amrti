@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Heart, Leaf, Shield, Truck, RotateCcw, Award, Plus, Minus, ShoppingCart, ChevronDown, ChevronUp, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Star, Heart, Leaf, Shield, Truck, RotateCcw, Award, Plus, Minus, ShoppingCart, ChevronDown, ChevronUp, ChevronRight, X, Play } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import ProductService from '../services/productService';
 import ReviewService, { type Review } from '../services/reviewService';
@@ -10,6 +10,18 @@ import ReviewForm from '../components/ui/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
 import { useIsInWishlist, useToggleWishlist } from '../hooks/queries/useWishlist';
 import { useAddToCart } from '../hooks/queries/useCart';
+import { ProductImage } from '../context/AppContext';
+
+// Media item interface for unified handling of images and videos
+interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+  alt_text?: string;
+  caption?: string;
+  is_primary?: boolean;
+  sort_order?: number;
+  mime_type?: string;
+}
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -33,6 +45,8 @@ const ProductDetail = () => {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const [isAutoScroll, setIsAutoScroll] = useState(true);
   const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -67,32 +81,42 @@ const ProductDetail = () => {
   };
 
 
-  // Helper function to get all image URLs from the product
-  const getAllImageUrls = (product: any): string[] => {
+  // Helper function to get all media items (images and videos) from the product
+  const getAllMediaItems = (product: any): MediaItem[] => {
     if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
-      // Filter out inactive images and ensure image_url exists
-      const activeImages = product.images.filter((img: any) => 
+      // Filter out inactive items and ensure image_url exists
+      const activeMedia = product.images.filter((img: any) =>
         img.is_active !== false && img.image_url && img.image_url.trim() !== ''
       );
-      
-      // Sort images by sort_order, with is_primary first
-      const sortedImages = [...activeImages].sort((a, b) => {
+
+      // Sort media by sort_order, with is_primary first
+      const sortedMedia = [...activeMedia].sort((a, b) => {
         if (a.is_primary && !b.is_primary) return -1;
         if (!a.is_primary && b.is_primary) return 1;
         return (a.sort_order || 0) - (b.sort_order || 0);
       });
-      
-      const imageUrls = sortedImages.map((img: any) => img.image_url);
-      console.log('All images from API:', {
+
+      const mediaItems: MediaItem[] = sortedMedia.map((img: any) => ({
+        url: img.image_url,
+        type: img.image_type === 'video' ? 'video' : 'image',
+        alt_text: img.alt_text,
+        caption: img.caption,
+        is_primary: img.is_primary,
+        sort_order: img.sort_order,
+        mime_type: img.mime_type
+      }));
+
+      console.log('All media from API:', {
         total: product.images.length,
-        active: activeImages.length,
-        rendered: imageUrls.length,
-        urls: imageUrls
+        active: activeMedia.length,
+        images: mediaItems.filter(m => m.type === 'image').length,
+        videos: mediaItems.filter(m => m.type === 'video').length,
+        items: mediaItems
       });
-      
-      return imageUrls;
+
+      return mediaItems;
     }
-    // Fallback to old structure for backward compatibility
+    // Fallback to old structure for backward compatibility (images only)
     const fallbackUrls = [
       product?.image_url,
       product?.image_url_1,
@@ -100,9 +124,14 @@ const ProductDetail = () => {
       product?.image_url_3,
       product?.image_url_4
     ].filter(url => url && url.trim() !== '');
-    
+
     console.log('Using fallback image structure:', fallbackUrls);
-    return fallbackUrls;
+    return fallbackUrls.map(url => ({ url, type: 'image' as const }));
+  };
+
+  // Legacy helper for backward compatibility (returns only URLs)
+  const getAllImageUrls = (product: any): string[] => {
+    return getAllMediaItems(product).map(item => item.url);
   };
 
   // Auto-scroll functionality
@@ -360,138 +389,226 @@ const ProductDetail = () => {
             <div className="space-y-4">
               {/* Main Product Image - Larger size with interactive zoom feature */}
               <div className="relative">
-                <div 
-                  className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square cursor-zoom-in transition-all duration-300 ease-out"
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                  onMouseMove={handleMouseMove}
-                  style={{
-                    boxShadow: isZoomed ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                  }}
-                >
                 {(() => {
-                  // Get all available image URLs
-                  const allImageUrls = getAllImageUrls(product);
-                  
-                  // Ensure we have at least one image
-                  if (allImageUrls.length === 0) {
+                  // Get all available media items (images and videos)
+                  const allMediaItems = getAllMediaItems(product);
+
+                  // Ensure we have at least one media item
+                  if (allMediaItems.length === 0) {
                     return (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <div className="text-center text-gray-500">
-                          <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">📦</span>
+                      <div className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square">
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <div className="text-center text-gray-500">
+                            <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                              <span className="text-2xl">📦</span>
+                            </div>
+                            <p className="text-sm">No media available</p>
                           </div>
-                          <p className="text-sm">No image available</p>
                         </div>
                       </div>
                     );
                   }
-                  
-                  // Get the current image to display
-                  const safeIndex = Math.min(selectedImageIndex, allImageUrls.length - 1);
-                  const currentImage = allImageUrls[safeIndex];
-                  
-                  console.log('Rendering image:', { currentImage, isZoomed, mousePosition, safeIndex });
-                  
+
+                  // Get the current media item to display
+                  const safeIndex = Math.min(selectedImageIndex, allMediaItems.length - 1);
+                  const currentMedia = allMediaItems[safeIndex];
+                  const isVideo = currentMedia.type === 'video';
+
+                  console.log('Rendering media:', { currentMedia, isZoomed, mousePosition, safeIndex, isVideo });
+
+                  // Render video if current media is a video
+                  if (isVideo) {
+                    return (
+                      <div 
+                        className="relative overflow-hidden rounded-xl shadow-xl bg-black aspect-square"
+                        style={{
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <div className="w-full h-full flex items-center justify-center bg-black">
+                          <video
+                            ref={videoRef}
+                            key={`main-video-${safeIndex}`}
+                            src={currentMedia.url}
+                            className="w-full h-full object-contain"
+                            controls
+                            playsInline
+                            preload="metadata"
+                            onPlay={() => {
+                              setIsVideoPlaying(true);
+                              setIsAutoScroll(false);
+                            }}
+                            onPause={() => setIsVideoPlaying(false)}
+                            onEnded={() => {
+                              setIsVideoPlaying(false);
+                              // Resume auto-scroll after video ends
+                              setTimeout(() => setIsAutoScroll(true), 2000);
+                            }}
+                            onError={(e) => {
+                              console.error('Failed to load video:', currentMedia.url);
+                            }}
+                          >
+                            <source src={currentMedia.url} type={currentMedia.mime_type || 'video/mp4'} />
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                        {discount > 0 && (
+                          <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-bold z-10">
+                            {discount}% OFF
+                          </div>
+                        )}
+                        {/* Wishlist Icon */}
+                        <div className="absolute top-3 left-3 z-10">
+                          <button 
+                            onClick={handleWishlistToggle}
+                            disabled={toggleWishlistMutation.isPending || isCheckingWishlist}
+                            className={`p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
+                              isInWishlist ? 'text-red-500' : 'text-gray-600'
+                            }`}
+                            title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                          >
+                            {toggleWishlistMutation.isPending || isCheckingWishlist ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Render image with zoom functionality
                   return (
-                     <img 
-                       key={`main-image-${safeIndex}`}
-                       src={currentImage} 
-                       alt={product.name} 
-                       className="w-full h-full object-contain p-6 transition-all duration-300 ease-out pointer-events-none"
-                       style={{
-                         transformOrigin: `${mousePosition.x}% ${mousePosition.y}%`,
-                         transform: isZoomed ? `scale(2.2) translate(${(50 - mousePosition.x) * 0.3}%, ${(50 - mousePosition.y) * 0.3}%)` : 'scale(1)',
-                         filter: isZoomed ? 'brightness(1.05)' : 'brightness(1)',
-                         willChange: 'transform'
-                       }}
-                       onError={(e) => {
-                         console.error('Failed to load product image:', currentImage);
-                         // Show fallback content instead of hiding
-                         e.currentTarget.style.display = 'none';
-                         const fallbackDiv = document.createElement('div');
-                         fallbackDiv.className = 'w-full h-full flex items-center justify-center bg-gray-100';
-                         fallbackDiv.innerHTML = `
-                           <div class="text-center text-gray-500">
-                             <div class="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
-                               <span class="text-2xl">📦</span>
-                             </div>
-                             <p class="text-sm">Image failed to load</p>
-                           </div>
-                         `;
-                         e.currentTarget.parentNode?.appendChild(fallbackDiv);
-                       }}
-                       onLoad={() => {
-                         console.log('Image loaded successfully:', currentImage);
-                       }}
-                     />
+                    <div 
+                      className="relative overflow-hidden rounded-xl shadow-xl bg-white aspect-square cursor-zoom-in transition-all duration-300 ease-out"
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                      onMouseMove={handleMouseMove}
+                      style={{
+                        boxShadow: isZoomed ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <img
+                        key={`main-image-${safeIndex}`}
+                        src={currentMedia.url}
+                        alt={currentMedia.alt_text || product.name}
+                        className="w-full h-full object-contain p-6 transition-all duration-300 ease-out pointer-events-none"
+                        style={{
+                          transformOrigin: `${mousePosition.x}% ${mousePosition.y}%`,
+                          transform: isZoomed ? `scale(2.2) translate(${(50 - mousePosition.x) * 0.3}%, ${(50 - mousePosition.y) * 0.3}%)` : 'scale(1)',
+                          filter: isZoomed ? 'brightness(1.05)' : 'brightness(1)',
+                          willChange: 'transform'
+                        }}
+                        onError={(e) => {
+                          console.error('Failed to load product image:', currentMedia.url);
+                          // Show fallback content instead of hiding
+                          e.currentTarget.style.display = 'none';
+                          const fallbackDiv = document.createElement('div');
+                          fallbackDiv.className = 'w-full h-full flex items-center justify-center bg-gray-100';
+                          fallbackDiv.innerHTML = `
+                            <div class="text-center text-gray-500">
+                              <div class="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                                <span class="text-2xl">📦</span>
+                              </div>
+                              <p class="text-sm">Image failed to load</p>
+                            </div>
+                          `;
+                          e.currentTarget.parentNode?.appendChild(fallbackDiv);
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', currentMedia.url);
+                        }}
+                      />
+                      {discount > 0 && (
+                        <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-bold z-10">
+                          {discount}% OFF
+                        </div>
+                      )}
+                      {/* Wishlist Icon */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <button 
+                          onClick={handleWishlistToggle}
+                          disabled={toggleWishlistMutation.isPending || isCheckingWishlist}
+                          className={`p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
+                            isInWishlist ? 'text-red-500' : 'text-gray-600'
+                          }`}
+                          title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                        >
+                          {toggleWishlistMutation.isPending || isCheckingWishlist ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                          )}
+                        </button>
+                      </div>
+                      {/* Zoom indicator - only for images */}
+                      <div className={`absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs transition-all duration-300 z-10 ${
+                        isZoomed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                      }`}>
+                        {isZoomed ? 'Move mouse to explore' : 'Hover to zoom'}
+                      </div>
+                    </div>
                   );
                 })()}
-                {discount > 0 && (
-                     <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-bold z-10">
-                    {discount}% OFF
-                  </div>
-                )}
-                   {/* Wishlist Icon */}
-                   <div className="absolute top-3 left-3 z-10">
-                     <button 
-                       onClick={handleWishlistToggle}
-                       disabled={toggleWishlistMutation.isPending || isCheckingWishlist}
-                       className={`p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors disabled:opacity-50 ${
-                         isInWishlist ? 'text-red-500' : 'text-gray-600'
-                       }`}
-                       title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                     >
-                       {toggleWishlistMutation.isPending || isCheckingWishlist ? (
-                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                       ) : (
-                         <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
-                       )}
-                     </button>
-                   </div>
-                   {/* Zoom indicator */}
-                   <div className={`absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs transition-all duration-300 z-10 ${
-                     isZoomed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                   }`}>
-                     {isZoomed ? 'Move mouse to explore' : 'Hover to zoom'}
-                   </div>
-                 </div>
               </div>
 
               {/* Thumbnail Gallery - Below main image */}
               <div className="flex justify-center">
                 <div className="flex gap-3 overflow-x-auto pb-2">
-                   {/* Create array of all available image URLs */}
+                   {/* Create array of all available media items */}
                     {(() => {
-                      const allImageUrls = getAllImageUrls(product);
-                      
-                      // If no images available, don't show thumbnails
-                      if (allImageUrls.length === 0) {
+                      const allMediaItems = getAllMediaItems(product);
+
+                      // If no media available, don't show thumbnails
+                      if (allMediaItems.length === 0) {
                         return null;
                       }
-                      
-                      return allImageUrls.map((imageUrl, index) => (
-                         <div 
+
+                      return allMediaItems.map((media, index) => (
+                         <div
                            key={`thumb-${index}`}
                            onClick={() => handleImageChange(index)}
                            className={`relative overflow-hidden rounded-lg bg-white p-2 shadow-sm hover:border-green-600 transition-all duration-300 cursor-pointer w-16 h-16 lg:w-20 lg:h-20 flex-shrink-0 ${
                              index === selectedImageIndex ? 'border-2 border-green-600 shadow-md scale-105' : 'border border-gray-200 hover:scale-105'
                            }`}
                          >
-                         <img 
-                           src={imageUrl} 
-                           alt={`${product.name} - Image ${index + 1}`} 
-                           className="w-full h-full object-contain" 
-                           onError={(e) => {
-                             console.error('Failed to load thumbnail image:', imageUrl);
-                             // Show a placeholder for failed thumbnails
-                             e.currentTarget.style.display = 'none';
-                             const placeholder = document.createElement('div');
-                             placeholder.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-xs';
-                             placeholder.textContent = '📦';
-                             e.currentTarget.parentNode?.appendChild(placeholder);
-                           }}
-                         />
+                         {media.type === 'video' ? (
+                           // Video thumbnail with play icon overlay
+                           <div className="w-full h-full relative bg-gray-900 rounded flex items-center justify-center">
+                             <video
+                               src={media.url}
+                               className="w-full h-full object-cover rounded opacity-70"
+                               muted
+                               preload="metadata"
+                               onError={(e) => {
+                                 console.error('Failed to load video thumbnail:', media.url);
+                                 e.currentTarget.style.display = 'none';
+                               }}
+                             />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                               <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                 <Play className="w-4 h-4 text-green-600 ml-0.5" fill="currentColor" />
+                               </div>
+                             </div>
+                           </div>
+                         ) : (
+                           // Image thumbnail
+                           <img
+                             src={media.url}
+                             alt={media.alt_text || `${product.name} - Image ${index + 1}`}
+                             className="w-full h-full object-contain"
+                             onError={(e) => {
+                               console.error('Failed to load thumbnail image:', media.url);
+                               // Show a placeholder for failed thumbnails
+                               e.currentTarget.style.display = 'none';
+                               const placeholder = document.createElement('div');
+                               placeholder.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-xs';
+                               placeholder.textContent = '📦';
+                               e.currentTarget.parentNode?.appendChild(placeholder);
+                             }}
+                           />
+                         )}
                          </div>
                        ));
                    })()}

@@ -32,7 +32,6 @@ import Orders from './pages/Orders';
 import OrderSuccess from './pages/OrderSuccess';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
@@ -112,12 +111,11 @@ function AppContent() {
   // Listen for login required events
   useEffect(() => {
     const handleLoginRequired = (event: CustomEvent) => {
-      // Don't show login modal on public routes like home, product/moringa, login/signup
+      // Don't show login modal on public routes like home, product/moringa, login
       const currentPath = window.location.pathname;
       const isPublicRoute = currentPath === '/' ||
                            currentPath === '/home' ||
                            currentPath.includes('/login') || 
-                           currentPath.includes('/signup') || 
                            currentPath.includes('/product/moringa/');
       
       if (isPublicRoute) {
@@ -308,7 +306,7 @@ function AppContent() {
             <Route path="/orders/:orderId" element={<Orders />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/signup" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />

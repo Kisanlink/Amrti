@@ -97,12 +97,11 @@ export const apiRequest = async <T>(
       
       // Handle different HTTP status codes
       if (response.status === 401) {
-        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        // Only show login modal if user is not already on public routes (home, login pages or product/moringa routes)
         const currentPath = window.location.pathname;
         const isPublicRoute = currentPath === '/' ||
                              currentPath === '/home' ||
                              currentPath.includes('/login') || 
-                             currentPath.includes('/signup') || 
                              currentPath.includes('/product/moringa/');
         
         if (!isPublicRoute) {
@@ -120,12 +119,11 @@ export const apiRequest = async <T>(
           }
         }
       } else if (response.status === 403) {
-        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        // Only show login modal if user is not already on public routes (home, login pages or product/moringa routes)
         const currentPath = window.location.pathname;
         const isPublicRoute = currentPath === '/' ||
                              currentPath === '/home' ||
                              currentPath.includes('/login') || 
-                             currentPath.includes('/signup') || 
                              currentPath.includes('/product/moringa/');
         
         if (!isPublicRoute) {
@@ -142,12 +140,11 @@ export const apiRequest = async <T>(
           }
         }
       } else if (response.status === 419) {
-        // Only show login modal if user is not already on public routes (home, login/signup pages or product/moringa routes)
+        // Only show login modal if user is not already on public routes (home, login pages or product/moringa routes)
         const currentPath = window.location.pathname;
         const isPublicRoute = currentPath === '/' ||
                              currentPath === '/home' ||
                              currentPath.includes('/login') || 
-                             currentPath.includes('/signup') || 
                              currentPath.includes('/product/moringa/');
         
         if (!isPublicRoute) {

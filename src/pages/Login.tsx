@@ -80,12 +80,11 @@ const Login = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'email' | 'phone' | 'verify' | 'admin'>('email');
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [step, setStep] = useState<'email' | 'phone' | 'verify'>('phone'); // Default to phone login
   const [sessionInfo, setSessionInfo] = useState<string>('');
   const [lastPhoneNumber, setLastPhoneNumber] = useState<string>('');
   const [isSignup, setIsSignup] = useState(false);
-  const [signupStep, setSignupStep] = useState<'email' | 'phone' | 'verify'>('email');
+  const [signupStep, setSignupStep] = useState<'email' | 'phone' | 'verify'>('phone'); // Default to phone signup
   const [signupSessionInfo, setSignupSessionInfo] = useState<string>('');
   const [formData, setFormData] = useState({
     phoneNumber: '+91',
@@ -101,6 +100,15 @@ const Login = () => {
 
   // Get redirect URL from location state or default to home
   const from = (location.state as any)?.from || '/';
+
+  // Check if user accessed from /signup route and show signup form
+  useEffect(() => {
+    if (location.pathname === '/signup') {
+      setIsSignup(true);
+      setSignupStep('phone');
+      setStep('phone');
+    }
+  }, [location.pathname]);
 
   // Cleanup reCAPTCHA on component unmount (like HTML)
   useEffect(() => {
@@ -710,39 +718,6 @@ const Login = () => {
     }
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Call admin login API
-      const user = await AuthService.adminLogin(formData.email, formData.password);
-      
-      // Check if user is Admin and redirect to admin portal (case-insensitive check)
-      const userRole = (user as any)?.role || localStorage.getItem('userRole') || '';
-      
-      if (userRole && userRole.toLowerCase() === 'admin') {
-        // Redirect to admin portal/dashboard
-        navigate('/admin/portal', { replace: true });
-      } else {
-        // Regular user - navigate to original destination or home
-        const fromPath = from || '/';
-        navigate(fromPath, { replace: true });
-      }
-    } catch (error: any) {
-      console.error('Admin login error:', error);
-      setError(error.message || 'Failed to login. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Email/Password signup handler
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -1071,8 +1046,121 @@ const Login = () => {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      {step === 'email' ? (
+                      {step === 'phone' ? (
+                        <form onSubmit={handlePhoneSubmit} className="space-y-4">
+
+                {/* Phone Number Field */}
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Phone className="h-5 w-5 text-black-400" />
+                    </div>
+                    <input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="tel"
+                      required
+                      value={formData.phoneNumber}
+                      onChange={handleInputChange}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
+                      placeholder="+91 9876543210"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter your phone number with country code
+                  </p>
+                </div>
+
+                          {/* reCAPTCHA Container */}
+                <div id="recaptcha-container" className="flex justify-center my-4"></div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !formData.phoneNumber}
+                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending code...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-5 h-5" />
+                      <span>Send Verification Code</span>
+                    </>
+                  )}
+                </button>
+
+                          {/* Alternative Login Options */}
+                          <div className="space-y-2">
+                            <div className="relative my-4">
+                              <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-300" />
+                              </div>
+                              <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                              </div>
+                            </div>
+
+                            {/* Google Sign In */}
+                            <button
+                              type="button"
+                              onClick={handleGoogleSignIn}
+                              disabled={loading}
+                              className="w-full bg-white hover:bg-gray-50 text-gray-700 font-heading font-semibold py-2 px-6 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                            >
+                              {loading ? (
+                                <>
+                                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                  <span>Signing in...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                  </svg>
+                                  <span>Continue with Google</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Email/Password Login Option */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStep('email');
+                                setError(null);
+                              }}
+                              className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-heading font-semibold py-2 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                            >
+                              <Mail className="w-5 h-5" />
+                              <span>Login with Email & Password</span>
+                            </button>
+                          </div>
+                        </form>
+                      ) : step === 'email' ? (
                         <form onSubmit={handleEmailLogin} className="space-y-4">
+                          {/* Back to Phone Login */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStep('phone');
+                              setError(null);
+                            }}
+                            className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back to Phone Login</span>
+                          </button>
+
                           {/* Email Field */}
                           <div>
                             <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
@@ -1186,148 +1274,7 @@ const Login = () => {
                             </button>
                           </div>
                         </form>
-                      ) : step === 'phone' ? (
-                        <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                          {/* Back to Email Login */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStep('email');
-                              setError(null);
-                            }}
-                            className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Back to Email Login</span>
-                          </button>
-
-                {/* Phone Number Field */}
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone className="h-5 w-5 text-black-400" />
-                    </div>
-                    <input
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      type="tel"
-                      required
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                      placeholder="+91 9876543210"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Enter your phone number with country code
-                  </p>
-                </div>
-
-                          {/* reCAPTCHA Container */}
-                <div id="recaptcha-container" className="flex justify-center my-4"></div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading || !formData.phoneNumber}
-                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Sending code...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Phone className="w-5 h-5" />
-                      <span>Send Verification Code</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : step === 'admin' ? (
-              <form onSubmit={handleAdminLogin} className="space-y-6">
-                {/* Back to Email Login */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAdminLogin(false);
-                    setStep('email');
-                    setError(null);
-                  }}
-                  className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Email Login</span>
-                </button>
-
-                {/* Email Field */}
-                <div>
-                  <label htmlFor="email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-black-400" />
-                    </div>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                      placeholder="admin@example.com"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div>
-                  <label htmlFor="password" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-black-400" />
-                    </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading || !formData.email || !formData.password}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Logging in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-5 h-5" />
-                      <span>Login as Admin</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
+                      ) : (
               <form onSubmit={handleVerifySubmit} className="space-y-6">
                 {/* Verification Code Field */}
                 <div>
@@ -1417,8 +1364,169 @@ const Login = () => {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      {signupStep === 'email' ? (
+                      {signupStep === 'phone' ? (
+                        <form onSubmit={handleSignupPhoneSubmit} className="space-y-4">
+                          {/* Back to Email Signup */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSignupStep('email');
+                              setError(null);
+                            }}
+                            className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back to Email Signup</span>
+                          </button>
+                          <div>
+                            <label htmlFor="signup-name" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                              Full Name *
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User className="h-5 w-5 text-black-400" />
+                              </div>
+                              <input
+                                id="signup-name"
+                                name="name"
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
+                                placeholder="Enter your full name"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label htmlFor="signup-phoneNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
+                              Phone Number *
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Phone className="h-5 w-5 text-black-400" />
+                              </div>
+                              <input
+                                id="signup-phoneNumber"
+                                name="phoneNumber"
+                                type="tel"
+                                required
+                                value={formData.phoneNumber}
+                                onChange={handleInputChange}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
+                                placeholder="+91 9876543210"
+                              />
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Enter your phone number with country code
+                            </p>
+                          </div>
+
+                          <div id="recaptcha-container-signup" className="flex justify-center my-4"></div>
+
+                          <div className="flex items-start">
+                            <input
+                              id="terms"
+                              name="terms"
+                              type="checkbox"
+                              required
+                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
+                            />
+                            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                              I agree to the{' '}
+                              <Link to="/terms" className="text-green-600 hover:text-green-700 font-semibold">
+                                Terms of Service
+                              </Link>{' '}
+                              and{' '}
+                              <Link to="/privacy" className="text-green-600 hover:text-green-700 font-semibold">
+                                Privacy Policy
+                              </Link>
+                            </label>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={loading || !formData.name || !formData.phoneNumber}
+                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            {loading ? (
+                              <>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>Sending code...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Phone className="w-5 h-5" />
+                                <span>Send Verification Code</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Alternative Signup Options */}
+                          <div className="space-y-3">
+                            <div className="relative my-6">
+                              <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-300" />
+                              </div>
+                              <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+                              </div>
+                            </div>
+
+                            {/* Google Sign Up */}
+                            <button
+                              type="button"
+                              onClick={handleGoogleSignUp}
+                              disabled={loading}
+                              className="w-full bg-white hover:bg-gray-50 text-gray-700 font-heading font-semibold py-2 px-6 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                            >
+                              {loading ? (
+                                <>
+                                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                  <span>Creating account...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                  </svg>
+                                  <span>Continue with Google</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Email Signup Option */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignupStep('email');
+                                setError(null);
+                              }}
+                              className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-heading font-semibold py-2 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                            >
+                              <Mail className="w-5 h-5" />
+                              <span>Sign up with Email</span>
+                            </button>
+                          </div>
+                        </form>
+                      ) : signupStep === 'email' ? (
                         <form onSubmit={handleEmailSignup} className="space-y-4">
+                          {/* Back to Phone Signup */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSignupStep('phone');
+                              setError(null);
+                            }}
+                            className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back to Phone Signup</span>
+                          </button>
                           <div>
                             <label htmlFor="signup-name-email" className="block text-sm font-heading font-semibold text-black-900 mb-2">
                               Full Name *
@@ -1560,118 +1668,7 @@ const Login = () => {
                   )}
                 </button>
 
-                            {/* Phone Signup Option */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSignupStep('phone');
-                                setError(null);
-                              }}
-                              className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-heading font-semibold py-2 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
-                            >
-                              <Phone className="w-5 h-5" />
-                              <span>Sign up with Phone Number</span>
-                            </button>
                           </div>
-              </form>
-                      ) : signupStep === 'phone' ? (
-                        <form onSubmit={handleSignupPhoneSubmit} className="space-y-4">
-                          {/* Back to Email Signup */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSignupStep('email');
-                              setError(null);
-                            }}
-                            className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-300 mb-4 flex items-center space-x-1"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Back to Email Signup</span>
-                          </button>
-                          <div>
-                            <label htmlFor="signup-name" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                              Full Name *
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <User className="h-5 w-5 text-black-400" />
-                              </div>
-                              <input
-                                id="signup-name"
-                                name="name"
-                                type="text"
-                                required
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                                placeholder="Enter your full name"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label htmlFor="signup-phoneNumber" className="block text-sm font-heading font-semibold text-black-900 mb-2">
-                              Phone Number *
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Phone className="h-5 w-5 text-black-400" />
-                              </div>
-                              <input
-                                id="signup-phoneNumber"
-                                name="phoneNumber"
-                                type="tel"
-                                required
-                                value={formData.phoneNumber}
-                                onChange={handleInputChange}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm text-black-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-300 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                                placeholder="+91 9876543210"
-                              />
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Enter your phone number with country code
-                            </p>
-                          </div>
-
-                          <div id="recaptcha-container-signup" className="flex justify-center my-4"></div>
-
-                          <div className="flex items-start">
-                            <input
-                              id="terms"
-                              name="terms"
-                              type="checkbox"
-                              required
-                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
-                            />
-                            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                              I agree to the{' '}
-                              <Link to="/terms" className="text-green-600 hover:text-green-700 font-semibold">
-                                Terms of Service
-                              </Link>{' '}
-                              and{' '}
-                              <Link to="/privacy" className="text-green-600 hover:text-green-700 font-semibold">
-                                Privacy Policy
-                              </Link>
-                            </label>
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={loading || !formData.name || !formData.phoneNumber}
-                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-heading font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
-                          >
-                            {loading ? (
-                              <>
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>Sending code...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Phone className="w-5 h-5" />
-                                <span>Send Verification Code</span>
-                              </>
-                            )}
-                          </button>
                         </form>
                       ) : (
                         <form onSubmit={handleSignupVerifySubmit} className="space-y-6">
@@ -1731,43 +1728,6 @@ const Login = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Google Sign In/Up Button - Show only if not on email login step */}
-                {(!isSignup && step !== 'email') && (
-                  <div className="mt-6">
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <button
-                      onClick={isSignup ? handleGoogleSignUp : handleGoogleSignIn}
-            disabled={loading}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-heading font-semibold py-4 px-6 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                          <span>{isSignup ? 'Creating account...' : 'Signing in...'}</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span>Continue with Google</span>
-              </>
-            )}
-          </button>
-                  </div>
-                )}
-
           </div>
         </motion.div>
 
@@ -1796,25 +1756,14 @@ const Login = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="text-center mt-4 space-y-2"
         >
-          {!isSignup && step !== 'admin' && (
-            <button
-              onClick={() => {
-                setShowAdminLogin(true);
-                setStep('admin');
-              }}
-              className="text-sm text-gray-700 hover:text-green-600 transition-colors duration-300 underline"
-            >
-              Login as Admin
-            </button>
-          )}
           <p className="text-gray-700">
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
             <button
               onClick={() => {
                 setIsSignup(!isSignup);
                 setError(null);
-                setStep(isSignup ? 'email' : 'email');
-                setSignupStep('email');
+                setStep(isSignup ? 'phone' : 'phone');
+                setSignupStep('phone');
                 clearRecaptcha();
               }}
               className="font-heading font-semibold text-green-600 hover:text-green-700 transition-colors underline"

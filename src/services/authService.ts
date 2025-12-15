@@ -318,14 +318,10 @@ export class AuthService {
       const provider = new firebase.auth.GoogleAuthProvider();
       const result = await auth.signInWithPopup(provider);
       
-      const authUser = this.firebaseUserToAuthUser(result.user);
-      
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(authUser));
-      
-      // Store auth token
+      // Get Firebase token first
+      let token: string | null = null;
       try {
-        const token = await result.user.getIdToken();
+        token = await result.user.getIdToken();
         if (token) {
           localStorage.setItem('authToken', token);
         }
@@ -333,21 +329,146 @@ export class AuthService {
         console.warn('Failed to store auth token:', error);
       }
       
+      // CRITICAL: Fetch user profile from backend to get the correct user_id
+      // The backend will create/return the user profile with the actual user_id (e.g., USER444866)
+      // instead of using the Firebase UID (e.g., fLzf1JMogdVxQcECpdGJKeBLdgR2)
+      let profileUser: AuthUser | null = null;
+      let actualUserId: string | null = null;
+      try {
+        const { default: ProfileService } = await import('./profileService');
+        const profile = await ProfileService.getProfile();
+        actualUserId = profile.user_id;
+        
+        // Update authUser with correct user_id from profile
+        profileUser = {
+          uid: result.user.uid,
+          phoneNumber: result.user.phoneNumber,
+          displayName: result.user.displayName || profile.first_name || '',
+          isVerified: result.user.emailVerified,
+          photoURL: result.user.photoURL,
+          createdAt: result.user.metadata.creationTime || new Date().toISOString(),
+          lastLoginAt: result.user.metadata.lastSignInTime || new Date().toISOString(),
+          id: profile.user_id, // Use the actual user_id from profile (e.g., USER444866)
+          isActive: profile.is_active,
+          isNewUser: false
+        };
+        
+        console.log('Profile fetched after Google login:', {
+          firebase_uid: result.user.uid,
+          actual_user_id: profile.user_id,
+          profile_id: profile.id
+        });
+      } catch (profileError: any) {
+        console.warn('Failed to fetch profile after Google login, using Firebase UID:', profileError);
+        // Fallback to Firebase UID if profile fetch fails
+        profileUser = this.firebaseUserToAuthUser(result.user);
+        actualUserId = result.user.uid;
+      }
+      
+      // Store user data with correct user_id
+      localStorage.setItem('user', JSON.stringify(profileUser));
+      
+      // CRITICAL: Establish backend user_id mapping by fetching the cart first
+      // This ensures the backend knows the correct user_id (USER444866) before migration
+      if (actualUserId && actualUserId !== result.user.uid) {
+        console.log('Establishing backend user_id mapping by fetching cart...');
+        try {
+          // Fetch the cart first to ensure backend has the correct user_id mapping
+          const { cartApi } = await import('./api');
+          const cartResponse = await cartApi.getCart();
+          const cartData = cartResponse.data.cart;
+          const cartUserId = cartData?.user_id || (cartData as any)?.userId;
+          
+          if (cartUserId === actualUserId) {
+            console.log('Backend user_id mapping established:', {
+              user_id: cartUserId,
+              cart_id: cartData.id
+            });
+          } else {
+            console.warn('Backend cart has different user_id:', {
+              expected: actualUserId,
+              actual: cartUserId
+            });
+          }
+          
+          // Wait a moment for backend to fully process
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cartError) {
+          console.warn('Failed to establish user_id mapping, continuing with migration:', cartError);
+        }
+      }
+      
       // Migrate guest cart to user account BEFORE dispatching login event
       // This ensures the cart is migrated before any components react to the login
+      // The backend should now use the correct user_id (USER444866) instead of Firebase UID
       try {
         const { CartService } = await import('./cartService');
-        const migratedCart = await CartService.migrateGuestCart();
-        console.log('Cart migration completed before login event:', migratedCart);
+        const migratedCart = await CartService.migrateGuestCart(actualUserId || undefined);
+        
+        // Verify the migrated cart has the correct user_id
+        const migratedUserId = migratedCart?.user_id || (migratedCart as any)?.userId;
+        if (migratedUserId && actualUserId && migratedUserId !== actualUserId) {
+          console.error('ERROR: Cart migration used wrong user_id! Attempting to fix...', {
+            expected_user_id: actualUserId,
+            migrated_user_id: migratedUserId,
+            firebase_uid: result.user.uid,
+            migrated_cart_id: migratedCart?.id || (migratedCart as any)?.cart_id
+          });
+          
+          // If migration used wrong user_id, try to manually move items to correct cart
+          try {
+            const { cartApi } = await import('./api');
+            const { CartService: CartServiceImport } = await import('./cartService');
+            
+            // Get the correct cart for the actual user_id
+            const correctCartResponse = await cartApi.getCart();
+            const correctCartData = correctCartResponse.data.cart;
+            const correctUserId = correctCartData?.user_id || (correctCartData as any)?.userId;
+            
+            if (correctUserId === actualUserId) {
+              console.log('Found correct cart, moving items from wrong cart...', {
+                correct_cart_id: correctCartData.id,
+                wrong_cart_id: migratedCart?.id || (migratedCart as any)?.cart_id,
+                items_to_move: migratedCart?.items?.length || 0
+              });
+              
+              // Move items from wrong cart to correct cart
+              const itemsToMove = migratedCart?.items || [];
+              for (const item of itemsToMove) {
+                try {
+                  await CartServiceImport.addItem(item.product_id, item.quantity);
+                  console.log(`Moved item ${item.product_id} (qty: ${item.quantity}) to correct cart`);
+                } catch (addError) {
+                  console.error(`Failed to move item ${item.product_id}:`, addError);
+                }
+              }
+              
+              console.log('Items moved to correct cart successfully');
+            } else {
+              console.error('Correct cart also has wrong user_id:', {
+                expected: actualUserId,
+                actual: correctUserId
+              });
+            }
+          } catch (fixError) {
+            console.error('Failed to fix cart migration:', fixError);
+          }
+        } else {
+          console.log('Cart migration completed with correct user_id:', {
+            user_id: migratedUserId || actualUserId,
+            cart_id: migratedCart?.id || (migratedCart as any)?.cart_id,
+            items_count: migratedCart?.items?.length || 0
+          });
+        }
       } catch (error) {
         console.error('Failed to migrate guest cart:', error);
         // Don't throw error as this shouldn't block the login process
       }
       
       // Dispatch login event AFTER cart migration
-      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: authUser }));
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: profileUser }));
       
-      return authUser;
+      return profileUser;
     } catch (error) {
       console.error('Google sign-in failed:', error);
       throw this.handleFirebaseError(error);
@@ -596,7 +717,6 @@ export class AuthService {
     try {
       // First try to get from Firebase
       if (this.currentUser) {
-        console.log('Getting user from Firebase currentUser:', this.currentUser);
         return this.firebaseUserToAuthUser(this.currentUser);
       }
       
@@ -604,7 +724,6 @@ export class AuthService {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
-        console.log('Getting user from localStorage:', user);
         // If we have a stored user but no Firebase user, 
         // it means the page was refreshed and Firebase needs to re-authenticate
         if (user && user.uid) {
@@ -612,7 +731,6 @@ export class AuthService {
         }
       }
       
-      console.log('No user found');
       return null;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -626,7 +744,6 @@ export class AuthService {
   static isAuthenticated(): boolean {
     // Check Firebase current user first
     if (this.currentUser !== null) {
-      console.log('User authenticated via Firebase currentUser');
       return true;
     }
     
@@ -637,18 +754,13 @@ export class AuthService {
     if (storedUser && storedToken) {
       try {
         const user = JSON.parse(storedUser);
-        const isAuth = !!(user && user.uid && storedToken);
-        console.log('User authentication check via localStorage:', isAuth, 'User:', user, 'Token:', !!storedToken);
-        return isAuth;
+        return !!(user && user.uid && storedToken);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         return false;
       }
     }
     
-    console.log('User not authenticated - missing user data or token');
-    console.log('Stored user:', !!storedUser);
-    console.log('Stored token:', !!storedToken);
     return false;
   }
 
@@ -659,9 +771,7 @@ export class AuthService {
     try {
       // First, try to get the stored token (works for phone auth)
       const storedToken = localStorage.getItem('authToken');
-      console.log('getIdToken called - stored token available:', !!storedToken);
       if (storedToken) {
-        console.log('Using stored auth token for API calls, length:', storedToken.length);
         return storedToken;
       }
       
@@ -675,7 +785,6 @@ export class AuthService {
         return token;
       }
       
-      console.log('No auth token available - checking localStorage keys:', Object.keys(localStorage));
       return null;
     } catch (error) {
       console.error('Error getting ID token:', error);
@@ -700,17 +809,12 @@ export class AuthService {
    * Force refresh authentication state from localStorage
    */
   static refreshAuthState(): void {
-    console.log('=== REFRESHING AUTH STATE ===');
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('authToken');
-    
-    console.log('Stored user exists:', !!storedUser);
-    console.log('Stored token exists:', !!storedToken);
     
     if (storedUser && storedToken) {
       try {
         const user = JSON.parse(storedUser);
-        console.log('Parsed user:', user);
         
         this.currentUser = {
           uid: user.uid,
@@ -724,15 +828,9 @@ export class AuthService {
             lastSignInTime: user.lastLoginAt
           }
         } as any;
-        
-        console.log('Authentication state refreshed from localStorage');
-        console.log('Current user set to:', this.currentUser);
-        this.debugAuthState();
       } catch (error) {
         console.error('Error refreshing auth state:', error);
       }
-    } else {
-      console.log('No stored user or token found, cannot refresh auth state');
     }
   }
 

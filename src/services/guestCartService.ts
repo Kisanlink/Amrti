@@ -434,22 +434,42 @@ export class GuestCartService {
   /**
    * Migrate guest cart to user account
    * Returns the merged cart from the API response
+   * @param authToken - Firebase authentication token
+   * @param userId - Optional database user_id (e.g., USER444866) to ensure correct cart is used
    */
-  static async migrateCart(authToken: string): Promise<any> {
+  static async migrateCart(authToken: string, userId?: string): Promise<any> {
     try {
       const sessionId = this.getSessionId();
       
-      console.log('Migrating guest cart to user account...');
+      console.log('Migrating guest cart to user account...', {
+        hasUserId: !!userId,
+        userId: userId
+      });
       
       // Import API config dynamically to avoid circular dependencies
       const { buildApiUrl } = await import('../config/apiConfig');
+      
+      // Include user_id in request body if provided
+      // This helps backend use correct user_id (USER444866) instead of Firebase UID for Google OAuth
+      // Note: We only send in body to avoid CORS issues with custom headers
+      const requestBody: any = {};
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${authToken}`,
+        'X-Session-ID': sessionId,
+        'Content-Type': 'application/json',
+      };
+      
+      if (userId) {
+        requestBody.user_id = userId;
+        console.log('Including user_id in migration request body:', {
+          user_id: userId
+        });
+      }
+      
       const response = await fetch(buildApiUrl('/cart/migrate'), {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'X-Session-ID': sessionId,
-          'Content-Type': 'application/json',
-        },
+        headers,
+        body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : undefined,
       });
 
       if (!response.ok) {

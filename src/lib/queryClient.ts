@@ -115,7 +115,6 @@ export const handleQueryError = (error: any) => {
     // Unauthorized - redirect to login (but not on public routes like product/moringa)
     const currentPath = window.location.pathname;
     const isPublicRoute = currentPath.includes('/login') || 
-                         currentPath.includes('/signup') || 
                          currentPath.includes('/product/moringa/');
     
     if (!isPublicRoute) {

@@ -16,14 +16,55 @@ export const updateCartQueries = (queryClient: any, data: Cart | GuestCart, disp
     ? data.discounted_total 
     : ((data as any).final_price || data.total_price || 0);
   
+  // Preserve product data from previous cart to prevent image loss
+  const previousCart = queryClient.getQueryData<Cart | GuestCart>(queryKeys.cart.all);
+  let enrichedData = data;
+  
+  if (previousCart?.items && data?.items) {
+    // Create a map of product data from previous cart
+    const productDataMap = new Map();
+    previousCart.items.forEach((item: any) => {
+      if (item.product && item.product_id) {
+        productDataMap.set(item.product_id, item.product);
+      }
+    });
+    
+    // Merge product data into new cart items
+    const enrichedItems = data.items.map((item: any) => {
+      const preservedProduct = productDataMap.get(item.product_id);
+      
+      // If new item doesn't have product data, use preserved data
+      if (preservedProduct && !item.product) {
+        return { ...item, product: preservedProduct };
+      }
+      
+      // If both have product data, merge them (preserved data takes precedence for images)
+      if (preservedProduct && item.product) {
+        // Merge but prioritize preserved product data for images
+        const mergedProduct = {
+          ...item.product,
+          ...preservedProduct,
+          // Ensure images are preserved
+          images: preservedProduct.images || item.product.images,
+          image_url: preservedProduct.image_url || item.product.image_url
+        };
+        return { ...item, product: mergedProduct };
+      }
+      
+      return item;
+    });
+    
+    enrichedData = { ...data, items: enrichedItems };
+  }
+  
   // Update Redux count IMMEDIATELY if dispatch is provided
   if (dispatch) {
     dispatch(setCartCount(totalItems)); // INSTANT Redux update
   }
 
-  // Update all cart-related queries with new data
-  queryClient.setQueryData(queryKeys.cart.all, data);
-  queryClient.setQueryData(queryKeys.cart.items, data.items || []);
+  // Update all cart-related queries with enriched data
+  queryClient.setQueryData(queryKeys.cart.all, enrichedData);
+  queryClient.setQueryData(queryKeys.cart.items, enrichedData.items || []);
   queryClient.setQueryData(queryKeys.cart.summary, {
     total_items: totalItems,
     total_price: totalPrice,
@@ -259,7 +300,36 @@ export const useIncrementCartItem = () => {
   
   return useMutation({
     mutationFn: async (productId: string) => {
+      // Get current cart to preserve product data
+      const currentCart = queryClient.getQueryData<Cart | GuestCart>(queryKeys.cart.all);
+      
       const cart = await CartService.incrementItem(productId);
+      
+      // Preserve product data from previous cart items
+      if (currentCart?.items && cart?.items) {
+        const productDataMap = new Map();
+        currentCart.items.forEach((item: any) => {
+          if (item.product && item.product_id) {
+            productDataMap.set(item.product_id, item.product);
+          }
+        });
+        
+        // Merge product data into new cart items
+        const enrichedItems = cart.items.map((item: any) => {
+          const preservedProduct = productDataMap.get(item.product_id);
+          if (preservedProduct && !item.product) {
+            return { ...item, product: preservedProduct };
+          }
+          // If item already has product but it's incomplete, merge with preserved data
+          if (preservedProduct && item.product) {
+            return { ...item, product: { ...preservedProduct, ...item.product } };
+          }
+          return item;
+        });
+        
+        return { ...cart, items: enrichedItems };
+      }
+      
       return cart;
     },
     onSuccess: (data) => {
@@ -279,7 +349,36 @@ export const useDecrementCartItem = () => {
   
   return useMutation({
     mutationFn: async (productId: string) => {
+      // Get current cart to preserve product data
+      const currentCart = queryClient.getQueryData<Cart | GuestCart>(queryKeys.cart.all);
+      
       const cart = await CartService.decrementItem(productId);
+      
+      // Preserve product data from previous cart items
+      if (currentCart?.items && cart?.items) {
+        const productDataMap = new Map();
+        currentCart.items.forEach((item: any) => {
+          if (item.product && item.product_id) {
+            productDataMap.set(item.product_id, item.product);
+          }
+        });
+        
+        // Merge product data into new cart items
+        const enrichedItems = cart.items.map((item: any) => {
+          const preservedProduct = productDataMap.get(item.product_id);
+          if (preservedProduct && !item.product) {
+            return { ...item, product: preservedProduct };
+          }
+          // If item already has product but it's incomplete, merge with preserved data
+          if (preservedProduct && item.product) {
+            return { ...item, product: { ...preservedProduct, ...item.product } };
+          }
+          return item;
+        });
+        
+        return { ...cart, items: enrichedItems };
+      }
+      
       return cart;
     },
     onSuccess: (data) => {
