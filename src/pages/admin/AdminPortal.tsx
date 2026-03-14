@@ -43,6 +43,7 @@ import {
   setSelectedReviewId as setSelectedReviewIdAction,
 } from '../../store/slices/adminRecipesSlice';
 import type { RecipeReview } from '../../services/adminRecipeService';
+import AdminProducts from './AdminProducts';
 
 const AdminPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ const AdminPortal: React.FC = () => {
   const { showNotification } = useNotification();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'reviews' | 'orders' | 'users' | 'analytics' | 'settings'>('reviews');
+  const [activeView, setActiveView] = useState<'dashboard' | 'reviews' | 'products' | 'orders' | 'users' | 'analytics' | 'settings'>('reviews');
   const [showReviewDetailModal, setShowReviewDetailModal] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -257,6 +258,7 @@ const AdminPortal: React.FC = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, active: activeView === 'dashboard', comingSoon: true },
     { id: 'reviews', label: 'Recipe Reviews', icon: FileText, active: activeView === 'reviews', comingSoon: false },
+    { id: 'products', label: 'Products', icon: Package, active: activeView === 'products', comingSoon: false },
     { id: 'orders', label: 'Orders', icon: ShoppingCart, active: activeView === 'orders', comingSoon: true },
     { id: 'users', label: 'Users', icon: Users, active: activeView === 'users', comingSoon: true },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, active: activeView === 'analytics', comingSoon: true },
@@ -380,6 +382,8 @@ const AdminPortal: React.FC = () => {
               </div>
             </div>
           )}
+
+          {activeView === 'products' && <AdminProducts />}
 
           {activeView === 'reviews' && (
             <div className="max-w-7xl mx-auto space-y-6">

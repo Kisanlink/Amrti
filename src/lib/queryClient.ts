@@ -78,9 +78,16 @@ export const queryKeys = {
   // Admin recipe reviews queries
   adminRecipes: {
     all: ['adminRecipes'] as const,
-    pending: (page: number, pageSize: number, status?: string) => 
+    pending: (page: number, pageSize: number, status?: string) =>
       ['adminRecipes', 'pending', { page, pageSize, status }] as const,
     detail: (reviewId: string) => ['adminRecipes', 'detail', reviewId] as const,
+  },
+
+  // Admin product queries
+  adminProducts: {
+    all: ['adminProducts'] as const,
+    list: (page: number, perPage: number) => ['adminProducts', 'list', { page, perPage }] as const,
+    images: (productId: string) => ['adminProducts', 'images', productId] as const,
   },
   
   // Wishlist queries

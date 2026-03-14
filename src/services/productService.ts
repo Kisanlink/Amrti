@@ -1,5 +1,30 @@
-import { productsApi, type ProductsResponse, type ProductsApiResponse, type ProductDetailResponse } from './api';
+import { productsApi, apiRequest, type ProductsResponse, type ProductsApiResponse, type ProductDetailResponse } from './api';
 import type { Product } from '../context/AppContext';
+
+// Admin product types
+export interface CreateProductRequest {
+  name: string;
+  description: string;
+  category: string;
+  price: number;
+  actual_price: number;
+  discount_percent?: number;
+  stock?: number;
+  min_stock_level?: number;
+  max_stock_level?: number;
+  reorder_point?: number;
+}
+
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {}
+
+export interface ProductImage {
+  id: string;
+  product_id: string;
+  image_url: string;
+  alt_text?: string;
+  is_primary: boolean;
+  created_at: string;
+}
 
 export class ProductService {
   /**
@@ -471,7 +496,7 @@ export class ProductService {
    * @returns Filtered products array
    */
   static filterProducts(
-    products: Product[], 
+    products: Product[],
     filters: {
       category?: string;
       minPrice?: number;
@@ -485,7 +510,7 @@ export class ProductService {
       if (filters.category && product.category !== filters.category) {
         return false;
       }
-      
+
       // Price range filter
       if (filters.minPrice && product.price < filters.minPrice) {
         return false;
@@ -493,20 +518,70 @@ export class ProductService {
       if (filters.maxPrice && product.price > filters.maxPrice) {
         return false;
       }
-      
+
       // Stock filter
       if (filters.inStock !== undefined && this.isInStock(product.stock, product.stock_status) !== filters.inStock) {
         return false;
       }
-      
+
       // Rating filter
       if (filters.minRating && product.rating < filters.minRating) {
         return false;
       }
-      
+
       return true;
+    });
+  }
+
+  // ==================== ADMIN METHODS ====================
+
+  static async createProduct(data: CreateProductRequest): Promise<any> {
+    return apiRequest('/admin/products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async updateProduct(id: string, data: UpdateProductRequest): Promise<any> {
+    return apiRequest(`/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async deleteProduct(id: string): Promise<any> {
+    return apiRequest(`/admin/products/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  static async uploadProductImage(productId: string, file: File, altText?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (altText) formData.append('alt_text', altText);
+    return apiRequest(`/admin/products/${productId}/images`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  static async getProductImages(productId: string): Promise<any> {
+    return apiRequest(`/admin/products/${productId}/images`, {
+      method: 'GET',
+    });
+  }
+
+  static async deleteProductImage(productId: string, imageId: string): Promise<any> {
+    return apiRequest(`/admin/products/${productId}/images/${imageId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  static async setImageAsPrimary(productId: string, imageId: string): Promise<any> {
+    return apiRequest(`/admin/products/${productId}/images/${imageId}/primary`, {
+      method: 'PUT',
     });
   }
 }
 
-export default ProductService; 
+export default ProductService;
