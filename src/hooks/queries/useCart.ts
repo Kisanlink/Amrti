@@ -148,15 +148,16 @@ export const useAddToCart = () => {
   
   return useMutation({
     mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
-      // STEP 1: Get current cart
+      // STEP 1: Get current cart — save BEFORE optimistic update for rollback
       const currentCart = queryClient.getQueryData<Cart | GuestCart>(queryKeys.cart.all);
-      
+      const originalCart = currentCart; // snapshot for rollback
+
       if (currentCart) {
         const currentItems = currentCart.items || [];
         const existingItemIndex = currentItems.findIndex((item: any) => item.product_id === productId);
-        
+
         let optimisticCart: Cart | GuestCart;
-        
+
         if (existingItemIndex >= 0) {
           // Item exists - update quantity optimistically
           const updatedItems = [...currentItems];
@@ -166,7 +167,7 @@ export const useAddToCart = () => {
             quantity: (existingItem.quantity || 1) + quantity,
             total_price: ((existingItem.quantity || 1) + quantity) * (existingItem.unit_price || 0),
           };
-          
+
           optimisticCart = {
             ...currentCart,
             items: updatedItems,
@@ -182,27 +183,26 @@ export const useAddToCart = () => {
             unit_price: 0,
             total_price: 0,
           } as any;
-          
+
           optimisticCart = {
             ...currentCart,
             items: [...currentItems, newItem],
             total_items: ((currentCart.total_items || (currentCart as any)?.items_count || 0) + quantity),
           } as Cart | GuestCart;
         }
-        
+
         // STEP 2: Update Redux and cache IMMEDIATELY (SYNCHRONOUS - instant UI update)
         updateCartQueries(queryClient, optimisticCart, dispatch);
       }
-      
+
       // STEP 3: Make API call (ASYNC - doesn't block UI)
       try {
         const cart = await CartService.addItem(productId, quantity);
         return cart;
       } catch (error) {
-        // Rollback on error
-        const currentCartBackup = queryClient.getQueryData<Cart | GuestCart>(queryKeys.cart.all);
-        if (currentCartBackup) {
-          updateCartQueries(queryClient, currentCartBackup, dispatch);
+        // Rollback to original cart (before optimistic update), not the optimistic state
+        if (originalCart) {
+          updateCartQueries(queryClient, originalCart, dispatch);
         }
         throw handleQueryError(error);
       }
@@ -210,8 +210,8 @@ export const useAddToCart = () => {
     onSuccess: (data) => {
       // Update with actual API response
       updateCartQueries(queryClient, data, dispatch);
-      // Refetch to get enriched product details (background)
-      queryClient.refetchQueries({ queryKey: queryKeys.cart.all }).catch(() => {});
+      // Mark stale so next observer refetch gets fresh data — avoids immediate overwrite
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
       handleQuerySuccess(data, 'Item added to cart successfully');
     },
     onError: (error) => {
@@ -263,8 +263,8 @@ export const useRemoveFromCart = () => {
     onSuccess: (data) => {
       // Update with actual API response
       updateCartQueries(queryClient, data, dispatch);
-      // Refetch to get enriched product details (background)
-      queryClient.refetchQueries({ queryKey: queryKeys.cart.all }).catch(() => {});
+      // Mark stale so next observer refetch gets fresh data — avoids immediate overwrite
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
       handleQuerySuccess(data, 'Item removed from cart');
     },
     onError: (error) => {

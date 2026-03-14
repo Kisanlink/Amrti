@@ -60,10 +60,19 @@ export class GuestCartService {
    * Get or create session ID for guest cart
    */
   private static getSessionId(): string {
-    let sessionId = localStorage.getItem(this.SESSION_KEY);
+    let sessionId: string | null = null;
+    try {
+      sessionId = localStorage.getItem(this.SESSION_KEY);
+    } catch {
+      try { sessionId = sessionStorage.getItem(this.SESSION_KEY); } catch { /* ignore */ }
+    }
     if (!sessionId) {
       sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem(this.SESSION_KEY, sessionId);
+      try {
+        localStorage.setItem(this.SESSION_KEY, sessionId);
+      } catch {
+        try { sessionStorage.setItem(this.SESSION_KEY, sessionId); } catch { /* ignore */ }
+      }
     }
     return sessionId;
   }
@@ -155,7 +164,11 @@ export class GuestCartService {
       cart,
       timestamp: Date.now(),
     };
-    localStorage.setItem(this.CART_CACHE_KEY, JSON.stringify(cacheData));
+    try {
+      localStorage.setItem(this.CART_CACHE_KEY, JSON.stringify(cacheData));
+    } catch {
+      try { sessionStorage.setItem(this.CART_CACHE_KEY, JSON.stringify(cacheData)); } catch { /* ignore */ }
+    }
   }
 
   /**
@@ -163,14 +176,21 @@ export class GuestCartService {
    */
   private static getCachedCart(): GuestCart | null {
     try {
-      const cached = localStorage.getItem(this.CART_CACHE_KEY);
+      let cached: string | null = null;
+      try {
+        cached = localStorage.getItem(this.CART_CACHE_KEY);
+      } catch {
+        try { cached = sessionStorage.getItem(this.CART_CACHE_KEY); } catch { /* ignore */ }
+      }
       if (!cached) return null;
 
       const { cart, timestamp } = JSON.parse(cached);
       const isExpired = Date.now() - timestamp > this.CACHE_EXPIRY;
-      
+
       if (isExpired) {
-        localStorage.removeItem(this.CART_CACHE_KEY);
+        try { localStorage.removeItem(this.CART_CACHE_KEY); } catch {
+          try { sessionStorage.removeItem(this.CART_CACHE_KEY); } catch { /* ignore */ }
+        }
         return null;
       }
 
@@ -527,7 +547,11 @@ export class GuestCartService {
    * Get current session ID
    */
   static getCurrentSessionId(): string | null {
-    return localStorage.getItem(this.SESSION_KEY);
+    try {
+      return localStorage.getItem(this.SESSION_KEY);
+    } catch {
+      try { return sessionStorage.getItem(this.SESSION_KEY); } catch { return null; }
+    }
   }
 
   // Utility methods
