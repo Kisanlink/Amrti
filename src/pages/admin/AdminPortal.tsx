@@ -23,6 +23,7 @@ import {
   BarChart3,
   ShoppingCart,
   Receipt,
+  Layers,
 } from 'lucide-react';
 import AuthService from '../../services/authService';
 import { useNotification } from '../../context/NotificationContext';
@@ -44,6 +45,9 @@ import {
 } from '../../store/slices/adminRecipesSlice';
 import type { RecipeReview } from '../../services/adminRecipeService';
 import AdminProducts from './AdminProducts';
+import AdminInventory from './AdminInventory';
+import AdminOrders from './AdminOrders';
+import AdminUsers from './AdminUsers';
 
 const AdminPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -51,7 +55,7 @@ const AdminPortal: React.FC = () => {
   const { showNotification } = useNotification();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'reviews' | 'products' | 'orders' | 'users' | 'analytics' | 'settings'>('reviews');
+  const [activeView, setActiveView] = useState<'dashboard' | 'reviews' | 'products' | 'inventory' | 'orders' | 'users' | 'analytics' | 'settings'>('reviews');
   const [showReviewDetailModal, setShowReviewDetailModal] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -259,8 +263,9 @@ const AdminPortal: React.FC = () => {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, active: activeView === 'dashboard', comingSoon: true },
     { id: 'reviews', label: 'Recipe Reviews', icon: FileText, active: activeView === 'reviews', comingSoon: false },
     { id: 'products', label: 'Products', icon: Package, active: activeView === 'products', comingSoon: false },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart, active: activeView === 'orders', comingSoon: true },
-    { id: 'users', label: 'Users', icon: Users, active: activeView === 'users', comingSoon: true },
+    { id: 'inventory', label: 'Inventory', icon: Layers, active: activeView === 'inventory', comingSoon: false },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart, active: activeView === 'orders', comingSoon: false },
+    { id: 'users', label: 'Users', icon: Users, active: activeView === 'users', comingSoon: false },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, active: activeView === 'analytics', comingSoon: true },
     { id: 'settings', label: 'Settings', icon: Settings, active: activeView === 'settings', comingSoon: true },
   ];
@@ -384,6 +389,12 @@ const AdminPortal: React.FC = () => {
           )}
 
           {activeView === 'products' && <AdminProducts />}
+
+          {activeView === 'inventory' && <AdminInventory />}
+
+          {activeView === 'orders' && <AdminOrders />}
+
+          {activeView === 'users' && <AdminUsers />}
 
           {activeView === 'reviews' && (
             <div className="max-w-7xl mx-auto space-y-6">
@@ -611,7 +622,7 @@ const AdminPortal: React.FC = () => {
           )}
 
           {/* Coming Soon Views */}
-          {['orders', 'users', 'analytics', 'settings'].includes(activeView) && (
+          {['analytics', 'settings'].includes(activeView) && (
             <div className="max-w-7xl mx-auto">
               <div className="bg-gradient-to-r from-slate-700 to-slate-900 rounded-xl p-8 text-white shadow-lg mb-6">
                 <h2 className="text-3xl font-bold mb-2">{menuItems.find(m => m.id === activeView)?.label}</h2>
@@ -619,8 +630,6 @@ const AdminPortal: React.FC = () => {
               </div>
               <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm">
                 <div className="text-center py-12">
-                  {activeView === 'orders' && <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />}
-                  {activeView === 'users' && <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />}
                   {activeView === 'analytics' && <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />}
                   {activeView === 'settings' && <Settings className="w-16 h-16 text-slate-300 mx-auto mb-4" />}
                   <h3 className="text-xl font-semibold text-slate-900 mb-2">Coming Soon</h3>

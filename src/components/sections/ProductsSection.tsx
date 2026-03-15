@@ -182,7 +182,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </button>
             
             {/* Add to Cart Button */}
-            {product.stock === 0 || product.stock_status === "coming Soon" ? (
+            {product.stock === 0 || product.stock_status === "Coming Soon" ? (
               <button
                 onClick={handleButtonClick}
                 disabled

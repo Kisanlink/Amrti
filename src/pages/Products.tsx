@@ -529,7 +529,7 @@ const Products = () => {
                         </Link>
                         
                         {/* Add to Cart Button */}
-                        {product.stock === 0 || product.stock_status === "Comming Soon" ? (
+                        {product.stock === 0 || product.stock_status === "Coming Soon" ? (
                           <button
                             disabled
                             className="p-2 border border-gray-400 text-gray-400 rounded-lg cursor-not-allowed"
