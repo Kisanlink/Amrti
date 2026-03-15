@@ -89,6 +89,29 @@ export const queryKeys = {
     list: (page: number, perPage: number) => ['adminProducts', 'list', { page, perPage }] as const,
     images: (productId: string) => ['adminProducts', 'images', productId] as const,
   },
+
+  // Admin inventory queries
+  adminInventory: {
+    all: ['adminInventory'] as const,
+    list: (page: number, perPage: number) => ['adminInventory', 'list', { page, perPage }] as const,
+    byProduct: (productId: string) => ['adminInventory', 'product', productId] as const,
+    lowStock: ['adminInventory', 'lowStock'] as const,
+    outOfStock: ['adminInventory', 'outOfStock'] as const,
+  },
+
+  // Admin order queries
+  adminOrders: {
+    all: ['adminOrders'] as const,
+    list: (page: number, status?: string) => ['adminOrders', 'list', { page, status }] as const,
+    detail: (id: string) => ['adminOrders', 'detail', id] as const,
+    stats: ['adminOrders', 'stats'] as const,
+  },
+
+  // Admin user queries
+  adminUsers: {
+    all: ['adminUsers'] as const,
+    list: (page: number) => ['adminUsers', 'list', page] as const,
+  },
   
   // Wishlist queries
   wishlist: {
