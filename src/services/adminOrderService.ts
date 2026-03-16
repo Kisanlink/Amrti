@@ -6,9 +6,9 @@ export interface AdminOrder {
   status: string;
   payment_status: string;
   payment_method: string;
-  total_amount: number;
-  shipping_charges: number;
-  discount_amount: number;
+  total_amount: number | undefined;
+  shipping_charges: number | undefined;
+  discount_amount: number | undefined;
   created_at: string;
   updated_at: string;
   customer?: {
@@ -60,7 +60,8 @@ class AdminOrderService {
   }
 
   async getOrderDetail(id: string): Promise<AdminOrder> {
-    return apiRequest<AdminOrder>(`/admin/orders/${id}`);
+    const res = await apiRequest<{ order: AdminOrder }>(`/admin/orders/${id}`);
+    return res.order;
   }
 
   async updateOrderStatus(id: string, status: string): Promise<{ message: string }> {

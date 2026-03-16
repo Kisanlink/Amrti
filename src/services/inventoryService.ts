@@ -22,13 +22,18 @@ export interface InventoryItem {
 }
 
 export interface InventoryListResponse {
-  items: InventoryItem[];
+  inventory: InventoryItem[];
   pagination: {
     page: number;
     per_page: number;
     total: number;
     has_more: boolean;
   };
+}
+
+interface LowStockResponse {
+  items: InventoryItem[];
+  count: number;
 }
 
 class InventoryService {
@@ -57,11 +62,13 @@ class InventoryService {
   }
 
   async getLowStock(): Promise<InventoryItem[]> {
-    return apiRequest<InventoryItem[]>('/admin/inventory/low-stock');
+    const res = await apiRequest<LowStockResponse>('/admin/inventory/low-stock');
+    return res.items;
   }
 
   async getOutOfStock(): Promise<InventoryItem[]> {
-    return apiRequest<InventoryItem[]>('/admin/inventory/out-of-stock');
+    const res = await apiRequest<LowStockResponse>('/admin/inventory/out-of-stock');
+    return res.items;
   }
 }
 

@@ -182,7 +182,7 @@ const AdminInventory: React.FC = () => {
 
   const currentItems: InventoryItem[] =
     activeTab === 'all'
-      ? allData?.items ?? []
+      ? allData?.inventory ?? []
       : activeTab === 'low'
       ? lowData ?? []
       : outData ?? [];

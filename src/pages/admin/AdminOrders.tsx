@@ -134,10 +134,10 @@ const OrderDetailModal: React.FC<{ orderId: string; onClose: () => void }> = ({
                           </td>
                           <td className="px-3 py-2 text-right text-slate-600">{item.quantity}</td>
                           <td className="px-3 py-2 text-right text-slate-600">
-                            ₹{item.unit_price.toFixed(2)}
+                            ₹{(item.unit_price ?? 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-2 text-right font-medium text-slate-800">
-                            ₹{item.total_price.toFixed(2)}
+                            ₹{(item.total_price ?? 0).toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -150,21 +150,21 @@ const OrderDetailModal: React.FC<{ orderId: string; onClose: () => void }> = ({
             <div className="border-t border-slate-200 pt-4 text-sm space-y-1">
               <div className="flex justify-between text-slate-600">
                 <span>Subtotal</span>
-                <span>₹{(order.total_amount - order.shipping_charges).toFixed(2)}</span>
+                <span>₹{((order.total_amount ?? 0) - (order.shipping_charges ?? 0)).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Shipping</span>
-                <span>₹{order.shipping_charges.toFixed(2)}</span>
+                <span>₹{(order.shipping_charges ?? 0).toFixed(2)}</span>
               </div>
-              {order.discount_amount > 0 && (
+              {(order.discount_amount ?? 0) > 0 && (
                 <div className="flex justify-between text-green-700">
                   <span>Discount</span>
-                  <span>-₹{order.discount_amount.toFixed(2)}</span>
+                  <span>-₹{(order.discount_amount ?? 0).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-slate-900 text-base border-t border-slate-200 pt-2 mt-2">
                 <span>Total</span>
-                <span>₹{order.total_amount.toFixed(2)}</span>
+                <span>₹{(order.total_amount ?? 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -258,7 +258,7 @@ const AdminOrders: React.FC = () => {
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-slate-800">
-                        ₹{order.total_amount.toFixed(2)}
+                        ₹{(order.total_amount ?? 0).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <PaymentBadge status={order.payment_status} />

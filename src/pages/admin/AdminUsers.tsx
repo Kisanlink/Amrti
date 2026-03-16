@@ -34,7 +34,7 @@ const AdminUsers: React.FC = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAdminUserList(page);
 
-  const users = data?.users ?? [];
+  const users = data?.data ?? [];
   const pagination = data?.pagination;
 
   return (
