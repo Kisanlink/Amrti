@@ -184,6 +184,7 @@ const AdminOrders: React.FC = () => {
   const statusFilter = activeTab === 'all' ? undefined : activeTab;
   const { data, isLoading } = useAdminOrderList(page, statusFilter);
   const confirmMutation = useConfirmOrder();
+  const updateStatusMutation = useUpdateOrderStatus();
 
   const orders = data?.orders ?? [];
   const pagination = data?.pagination;
@@ -244,8 +245,10 @@ const AdminOrders: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {orders.map((order: AdminOrder) => {
-                  const isPending =
-                    !order.status || order.status.toLowerCase() === 'pending';
+                  const status = order.status?.toLowerCase();
+                  const isPending = !status || status === 'pending';
+                  const isConfirmed = status === 'confirmed';
+                  const isShipped = status === 'shipped';
                   return (
                     <tr key={order.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-mono text-xs text-slate-600 max-w-[120px] truncate">
@@ -283,6 +286,26 @@ const AdminOrders: React.FC = () => {
                             >
                               <CheckCircle className="w-3 h-3" />
                               Confirm
+                            </button>
+                          )}
+                          {isConfirmed && (
+                            <button
+                              onClick={() => updateStatusMutation.mutate({ id: order.id, status: 'shipped' })}
+                              disabled={updateStatusMutation.isPending}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                            >
+                              <Truck className="w-3 h-3" />
+                              Ship
+                            </button>
+                          )}
+                          {isShipped && (
+                            <button
+                              onClick={() => updateStatusMutation.mutate({ id: order.id, status: 'delivered' })}
+                              disabled={updateStatusMutation.isPending}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 transition-colors"
+                            >
+                              <Package className="w-3 h-3" />
+                              Deliver
                             </button>
                           )}
                         </div>
