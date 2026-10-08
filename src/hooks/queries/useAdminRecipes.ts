@@ -24,13 +24,6 @@ export const usePendingReviews = (
     staleTime: 1 * 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
     retry: false,
-    onError: (error) => {
-      console.error('Failed to fetch pending reviews:', error);
-      showNotification({
-        type: 'error',
-        message: 'Failed to load pending recipe reviews. Please try again.'
-      });
-    },
   });
 };
 
@@ -45,13 +38,6 @@ export const useReviewById = (reviewId: string) => {
     staleTime: 1 * 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
     retry: false,
-    onError: (error) => {
-      console.error('Failed to fetch review:', error);
-      showNotification({
-        type: 'error',
-        message: 'Failed to load recipe review. Please try again.'
-      });
-    },
   });
 };
 

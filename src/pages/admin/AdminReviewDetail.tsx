@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useReviewById, useApproveRecipe, useRejectRecipe, useDeleteReview } from '../../hooks/queries/useAdminRecipes';
 import AuthService from '../../services/authService';
+import RecipeService from '../../services/recipeService';
 import LoginRequiredModal from '../../components/ui/LoginRequiredModal';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -207,7 +208,7 @@ const AdminReviewDetail: React.FC = () => {
           <div className="mb-6">
             {review.image ? (
               <img
-                src={review.image}
+                src={RecipeService.getRecipeImage(review.image)}
                 alt={review.name}
                 className="w-full h-64 sm:h-96 object-cover rounded-lg"
               />

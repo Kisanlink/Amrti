@@ -3,6 +3,7 @@ import { ArrowLeft, Star, Clock, Users, TrendingUp, Heart, Leaf, Award, CheckCir
 import { Link, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api';
+import RecipeService from '../services/recipeService';
 
 const RecipeDetail = () => {
   const { id } = useParams();
@@ -84,7 +85,7 @@ const RecipeDetail = () => {
             <div className="space-y-3 sm:space-y-4">
               <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-white p-3 sm:p-4">
                 <img 
-                  src={recipe.image} 
+                  src={RecipeService.getRecipeImage(recipe.image)} 
                   alt={recipe.title || recipe.name} 
                   className="w-full h-auto object-contain" 
                   style={{ maxHeight: '400px' }}
@@ -217,7 +218,7 @@ const RecipeDetail = () => {
                     {Object.entries(recipe.nutrition || recipe.nutrition_facts || {}).map(([key, value]) => (
                       <div key={key} className="flex justify-between items-center">
                         <span className="text-black-700 text-sm sm:text-base">{key}</span>
-                        <span className="font-semibold text-black-900 text-sm sm:text-base">{value}</span>
+                        <span className="font-semibold text-black-900 text-sm sm:text-base">{String(value)}</span>
                       </div>
                     ))}
                   </div>

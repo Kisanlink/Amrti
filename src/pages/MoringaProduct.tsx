@@ -798,13 +798,14 @@ const QualityContent = () => {
           Quality Test Report
         </h3>
 
-        {/* Report Image Display */}
+        {/* Embedded PDF Viewer */}
         <div className="mb-6 border border-gray-300 rounded-lg overflow-hidden">
-          <img
-            src="/lab_report.png"
-            alt="Moringa Powder Quality Test Report"
-            className="w-full h-auto"
-            style={{ minHeight: '500px', objectFit: 'contain' }}
+          <embed 
+            src="/Test_report.pdf#toolbar=1&navpanes=1&scrollbar=1" 
+            type="application/pdf" 
+            width="100%" 
+            height="600px"
+            title="Test Report PDF"
           />
         </div>
 

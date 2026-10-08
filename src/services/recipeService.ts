@@ -11,7 +11,7 @@ export class RecipeService {
   static async getAllRecipes(page = 1, pageSize = 10): Promise<RecipesResponse> {
     try {
       const response = await recipesApi.getRecipes(page, pageSize);
-      
+
       // Transform the API response to match the Recipe interface
       const transformedRecipes = response.recipes.map((apiRecipe: any) => ({
         id: apiRecipe.id || `recipe_${Math.random().toString(36).substr(2, 9)}`,
@@ -35,7 +35,7 @@ export class RecipeService {
         nutrition_facts: apiRecipe.nutrition_facts || {},
         pro_tips: apiRecipe.pro_tips || []
       }));
-      
+
       return {
         ...response,
         recipes: transformedRecipes
@@ -54,8 +54,8 @@ export class RecipeService {
    * @returns Promise with recipes and pagination info
    */
   static async getRecipesByCategory(
-    category: string, 
-    page = 1, 
+    category: string,
+    page = 1,
     pageSize = 10
   ): Promise<RecipesResponse> {
     try {
@@ -64,9 +64,9 @@ export class RecipeService {
       if (!validCategories.includes(category)) {
         throw new Error(`Invalid category. Must be one of: ${validCategories.join(', ')}`);
       }
-      
+
       const response = await recipesApi.getRecipesByCategory(category, page, pageSize);
-      
+
       // Transform the API response to match the Recipe interface
       const transformedRecipes = response.recipes.map((apiRecipe: any) => ({
         id: apiRecipe.id || `recipe_${Math.random().toString(36).substr(2, 9)}`,
@@ -90,7 +90,7 @@ export class RecipeService {
         nutrition_facts: apiRecipe.nutrition_facts || {},
         pro_tips: apiRecipe.pro_tips || []
       }));
-      
+
       return {
         ...response,
         recipes: transformedRecipes
@@ -150,8 +150,8 @@ export class RecipeService {
       // Get all recipes and filter locally since search endpoint is not provided
       const response = await recipesApi.getRecipes(page, pageSize);
       const searchTerm = query.toLowerCase();
-      
-      return response.recipes.filter(recipe => 
+
+      return response.recipes.filter(recipe =>
         recipe.name.toLowerCase().includes(searchTerm) ||
         recipe.demo_description.toLowerCase().includes(searchTerm) ||
         recipe.description.toLowerCase().includes(searchTerm)

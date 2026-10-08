@@ -363,7 +363,7 @@ const Recipes = () => {
                 <div className="relative overflow-hidden rounded-2xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
                   <div className="relative overflow-hidden flex-shrink-0">
                     <img
-                      src={recipe.image}
+                      src={RecipeService.getRecipeImage(recipe.image)}
                         alt={recipe.name}
                       className="w-full h-auto object-contain group-hover:scale-110 transition-transform duration-500"
                       style={{ maxHeight: '250px' }}
@@ -458,7 +458,7 @@ const Recipes = () => {
                   <div className="overflow-hidden rounded-xl bg-white backdrop-blur-sm border border-beige-400/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden flex-shrink-0">
                       <img
-                        src={recipe.image}
+                        src={RecipeService.getRecipeImage(recipe.image)}
                         alt={recipe.name}
                         className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ maxHeight: '180px' }}

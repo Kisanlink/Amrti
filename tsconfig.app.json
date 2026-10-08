@@ -2,10 +2,16 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
-
+    "types": [
+      "vite/client"
+    ],
     /* Bundler mode */
     "moduleResolution": "node",
     "moduleDetection": "force",
@@ -15,7 +21,6 @@
     "esModuleInterop": true,
     "allowJs": true,
     "resolveJsonModule": true,
-
     /* Linting */
     "strict": false,
     "noUnusedLocals": false,
@@ -23,6 +28,15 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.js",
+    "src/**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
