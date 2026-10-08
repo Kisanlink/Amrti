@@ -92,20 +92,20 @@ const MoringaProduct = () => {
         {/* Tab Navigation */}
         <section className="py-4 bg-beige-400">
           <div className="container-custom">
-            <div className="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-4">
+            <div className="grid grid-cols-4 gap-1 sm:gap-2 md:gap-4 max-w-4xl mx-auto w-full">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-1 sm:space-x-2 px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-heading font-semibold transition-all duration-300 text-xs sm:text-sm md:text-base ${activeTab === tab.id
+                    className={`flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-1 md:space-x-2 p-1.5 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-xl sm:rounded-full font-heading font-semibold transition-all duration-300 text-[10px] sm:text-sm md:text-base w-full ${activeTab === tab.id
                         ? 'bg-green-600 text-white-50 shadow-lg'
                         : 'bg-beige-300/80 text-black-700 hover:bg-green-600 hover:text-white-50'
                       }`}
                   >
-                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                    <span>{tab.label}</span>
+                    <Icon className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
+                    <span className="text-center sm:text-left leading-tight">{tab.label}</span>
                   </button>
                 );
               })}
@@ -422,7 +422,7 @@ const RecipesContent = () => {
     {
       category: 'Easy to use',
       title: 'Moringa Lemon Water',
-      image: '/Recipes/tea moringa.jpg',
+      image: '/Recipes/858e8280-fe49-4fa4-a7d1-bdd824d32234-2026-10-07.png',
       ingredients: [
         '1 glass of hot water',
         'juice of half a lemon',
@@ -437,7 +437,7 @@ const RecipesContent = () => {
     {
       category: 'Beverages',
       title: 'Moringa Iced Tea',
-      image: '/Recipes/tea moringa.jpg',
+      image: '/Recipes/60021a9f-5b3d-45ce-9890-6aa7eb30c1e0-2026-10-07.png',
       ingredients: [
         'Amrit\'s Moringa powder',
         'Warm water',
@@ -471,7 +471,7 @@ const RecipesContent = () => {
     {
       category: 'Blends and smoothies',
       title: 'Moringa leaf Almond Smoothie',
-      image: '/Recipes/moringa smoothie.jpg',
+      image: '/Recipes/b95a154d-2f86-4725-a74f-286849553611-2026-10-07.png',
       ingredients: [
         '50 grams dry moringa leaves or Amrti\'s moringa powder',
         '250 ml soya milk',
@@ -502,7 +502,7 @@ const RecipesContent = () => {
     {
       category: 'Food recipes',
       title: 'Moringa Avocado Toast',
-      image: '/Recipes/dosa moringa.jpg',
+      image: '/Recipes/10ed7bd5-9911-4ec5-a897-30dfd2675ced-2026-10-07.png',
       ingredients: [
         '2 slices of bread (your choice), toasted',
         '1/2 avocado',
@@ -538,7 +538,7 @@ const RecipesContent = () => {
     {
       category: 'Food recipes',
       title: 'Moringa Leaf Chutney Rice',
-      image: '/Recipes/moringa dessert.jpg',
+      image: '/Recipes/d9e6a3c5-927a-4667-9325-5e11aa1ceda4-2026-10-07.png',
       ingredients: [
         '100g Amrti\'s moringa powder',
         '50ml coconut oil',
