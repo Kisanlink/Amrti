@@ -198,7 +198,7 @@ export class RecipeService {
     if (imageUrl && imageUrl.trim() !== '') {
       return imageUrl;
     }
-    return fallbackUrl || '/public/Recipes/moringa smoothie.jpg';
+    return fallbackUrl || '/Recipes/moringa smoothie.jpg';
   }
 }
 

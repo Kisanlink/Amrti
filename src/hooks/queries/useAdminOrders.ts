@@ -67,3 +67,20 @@ export const useUpdateOrderStatus = () => {
     },
   });
 };
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotification();
+
+  return useMutation({
+    mutationFn: (id: string) => AdminOrderService.cancelOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminOrders.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminInventory.all });
+      showNotification({ type: 'success', message: 'Order cancelled and inventory restored!' });
+    },
+    onError: (error: any) => {
+      showNotification({ type: 'error', message: error.message || 'Failed to cancel order' });
+    },
+  });
+};

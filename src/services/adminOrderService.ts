@@ -77,6 +77,12 @@ class AdminOrderService {
     });
   }
 
+  async cancelOrder(id: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>(`/admin/orders/${id}/cancel`, {
+      method: 'POST',
+    });
+  }
+
   async getStats(): Promise<AdminOrderStats> {
     return apiRequest<AdminOrderStats>('/admin/orders/stats');
   }

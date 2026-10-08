@@ -89,156 +89,155 @@ const MoringaProduct = () => {
     <>
       <ScrollToTop />
       <div className="pt-16 sm:pt-20 bg-beige-300 min-h-screen">
-      {/* Tab Navigation */}
-      <section className="py-4 bg-beige-400">
-        <div className="container-custom">
-          <div className="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-4">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-1 sm:space-x-2 px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-heading font-semibold transition-all duration-300 text-xs sm:text-sm md:text-base ${
-                    activeTab === tab.id
-                      ? 'bg-green-600 text-white-50 shadow-lg'
-                      : 'bg-beige-300/80 text-black-700 hover:bg-green-600 hover:text-white-50'
-                  }`}
-                >
-                  <Icon className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+        {/* Tab Navigation */}
+        <section className="py-4 bg-beige-400">
+          <div className="container-custom">
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-4">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-1 sm:space-x-2 px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-heading font-semibold transition-all duration-300 text-xs sm:text-sm md:text-base ${activeTab === tab.id
+                        ? 'bg-green-600 text-white-50 shadow-lg'
+                        : 'bg-beige-300/80 text-black-700 hover:bg-green-600 hover:text-white-50'
+                      }`}
+                  >
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
 
-      {/* Tab Content */}
-      <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
-        <div className="container-custom">
-          {activeTab === 'benefits' && <BenefitsContent isVideoLoaded={isVideoLoaded} setIsVideoLoaded={setIsVideoLoaded} />}
-          {activeTab === 'recipes' && <RecipesContent />}
-          {activeTab === 'traceability' && <TraceabilityContent />}
-          {activeTab === 'quality' && <QualityContent />}
-        </div>
-      </section>
+        {/* Tab Content */}
+        <section className="py-12 sm:py-16 bg-gradient-to-br from-beige-400 to-beige-500">
+          <div className="container-custom">
+            {activeTab === 'benefits' && <BenefitsContent isVideoLoaded={isVideoLoaded} setIsVideoLoaded={setIsVideoLoaded} />}
+            {activeTab === 'recipes' && <RecipesContent />}
+            {activeTab === 'traceability' && <TraceabilityContent />}
+            {activeTab === 'quality' && <QualityContent />}
+          </div>
+        </section>
 
-      {/* Our Products Section */}
-      <section className="py-12 sm:py-16 bg-beige-200">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8 sm:mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-black-900 mb-4">
-              Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Products</span>
-            </h2>
-            <p className="text-lg text-black-700 max-w-2xl mx-auto">
-              Discover our complete range of premium natural products
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {/* Moringa Powder */}
+        {/* Our Products Section */}
+        <section className="py-12 sm:py-16 bg-beige-200">
+          <div className="container-custom">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              transition={{ duration: 0.6 }}
+              className="text-center mb-8 sm:mb-12"
             >
-              <div className="p-6">
-  
-                <img 
-                  src="/products/pouch front mockup.jpg" 
-                  alt="Moringa Powder" 
-                  className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]" 
-                />
-                <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Moringa Powder</h3>
-                <p className="text-black-700 mb-4">Nutrient-rich powder packed with vitamins and antioxidants</p>
-                <Link 
-                  to="/product/moringa/101"
-                  className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
-                >
-                  <span>View Details</span>
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </Link>
-              </div>
+              <h2 className="text-3xl sm:text-4xl font-heading font-bold text-black-900 mb-4">
+                Our <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">Products</span>
+              </h2>
+              <p className="text-lg text-black-700 max-w-2xl mx-auto">
+                Discover our complete range of premium natural products
+              </p>
             </motion.div>
 
-            {/* Amla Powder */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {/* Moringa Powder */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="p-6">
+
+                  <img
+                    src="/products/pouch front mockup.jpg"
+                    alt="Moringa Powder"
+                    className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]"
+                  />
+                  <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Moringa Powder</h3>
+                  <p className="text-black-700 mb-4">Nutrient-rich powder packed with vitamins and antioxidants</p>
+                  <Link
+                    to="/product/moringa/101"
+                    className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
+                  >
+                    <span>View Details</span>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </Link>
+                </div>
+              </motion.div>
+
+              {/* Amla Powder */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="p-6">
+
+                  <img
+                    src="/products/amla bg.png"
+                    alt="Amla Powder"
+                    className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]"
+                  />
+                  <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Amla Powder</h3>
+                  <p className="text-black-700 mb-4">Rich in Vitamin C and natural antioxidants</p>
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
+                  >
+                    <span>View Details</span>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </Link>
+                </div>
+              </motion.div>
+
+              {/* Kombucha */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="p-6">
+
+                  <img
+                    src="/products/aswagandha bg.png"
+                    alt="Kombucha"
+                    className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]"
+                  />
+                  <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Ashwagandha Powder</h3>
+                  <p className="text-black-700 mb-4">Rich in antioxidants and natural compounds</p>
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
+                  >
+                    <span>View Details</span>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-center mt-8 sm:mt-12"
             >
-              <div className="p-6">
-
-                <img 
-                  src="/products/amla bg.png" 
-                  alt="Amla Powder" 
-                  className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]" 
-                />
-                <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Amla Powder</h3>
-                <p className="text-black-700 mb-4">Rich in Vitamin C and natural antioxidants</p>
-                <Link 
-                  to="/products"
-                  className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
-                >
-                  <span>View Details</span>
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Kombucha */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="p-6">
-       
-                <img 
-                  src="/products/aswagandha bg.png" 
-                  alt="Kombucha" 
-                  className="w-full h-auto object-contain max-h-[200px] sm:max-h-[250px] md:max-h-[300px] min-h-[150px] sm:min-h-[180px] md:min-h-[200px]" 
-                />
-                <h3 className="text-xl font-heading font-bold text-black-900 mb-2">Ashwagandha Powder</h3>
-                <p className="text-black-700 mb-4">Rich in antioxidants and natural compounds</p>
-                <Link 
-                  to="/products"
-                  className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
-                >
-                  <span>View Details</span>
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </Link>
-              </div>
+              <Link
+                to="/products"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <span>View All Products</span>
+                <ArrowLeft className="w-4 h-4 rotate-180" />
+              </Link>
             </motion.div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center mt-8 sm:mt-12"
-          >
-            <Link 
-              to="/products"
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white-50 font-heading font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <span>View All Products</span>
-              <ArrowLeft className="w-4 h-4 rotate-180" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
     </>
   );
 };
@@ -267,17 +266,17 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
           Learn More About Moringa Benefits
         </h3>
         <div className="max-w-sm mx-auto">
-        <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-6 shadow-xl">
+          <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-6 shadow-xl">
             <div className="aspect-[9/16] bg-black rounded-lg overflow-hidden relative">
               {!isVideoLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
                     <p className="text-white text-sm">Loading video...</p>
-            </div>
-          </div>
+                  </div>
+                </div>
               )}
-              <video 
+              <video
                 className={`w-full h-full object-cover transition-opacity duration-300 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
                 controls
                 preload="metadata"
@@ -293,8 +292,8 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
         </div>
         <p className="text-black-700 mt-4 text-sm">
           Watch this informative video to learn more about the incredible benefits of Moringa powder
-          </p>
-        </div>
+        </p>
+      </div>
 
       {/* Nutritional Comparison */}
       <div className="bg-beige-300/80 backdrop-blur-sm border border-beige-400/50 rounded-2xl p-8 shadow-xl">
@@ -305,63 +304,63 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
           <p className="text-lg text-black-700">
             See how Moringa powder compares to other superfoods
           </p>
-            </div>
-        
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                   <span className="text-orange-600 font-bold text-sm">A</span>
-          </div>
+                </div>
                 <span className="font-semibold text-black-900">Vitamin A</span>
               </div>
               <div className="text-right">
                 <span className="text-green-600 font-bold text-lg">2x more</span>
                 <p className="text-xs text-gray-600">than Carrots</p>
               </div>
-        </div>
+            </div>
 
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                   <span className="text-orange-600 font-bold text-sm">C</span>
-            </div>
+                </div>
                 <span className="font-semibold text-black-900">Vitamin C</span>
-          </div>
+              </div>
               <div className="text-right">
                 <span className="text-green-600 font-bold text-lg">4x more</span>
                 <p className="text-xs text-gray-600">than Oranges</p>
               </div>
-        </div>
+            </div>
 
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                   <span className="text-blue-600 font-bold text-sm">Ca</span>
-            </div>
+                </div>
                 <span className="font-semibold text-black-900">Calcium</span>
-          </div>
+              </div>
               <div className="text-right">
                 <span className="text-green-600 font-bold text-lg">17x more</span>
                 <p className="text-xs text-gray-600">than Milk</p>
-        </div>
-      </div>
+              </div>
+            </div>
 
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                   <span className="text-red-600 font-bold text-sm">Fe</span>
-            </div>
+                </div>
                 <span className="font-semibold text-black-900">Iron</span>
-          </div>
+              </div>
               <div className="text-right">
                 <span className="text-green-600 font-bold text-lg">10x more</span>
                 <p className="text-xs text-gray-600">than Spinach</p>
-        </div>
-      </div>
+              </div>
+            </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
@@ -375,7 +374,7 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
                 <p className="text-xs text-gray-600">than Banana</p>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -388,7 +387,7 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
                 <p className="text-xs text-gray-600">than Yogurt</p>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -403,10 +402,10 @@ const BenefitsContent = ({ isVideoLoaded, setIsVideoLoaded }: { isVideoLoaded: b
             </div>
           </div>
         </div>
-        
+
         <div className="mt-8 text-center">
           <p className="text-black-700 text-sm">
-            <span className="font-semibold">Moringa powder</span> contains significantly higher amounts of essential nutrients 
+            <span className="font-semibold">Moringa powder</span> contains significantly higher amounts of essential nutrients
             compared to commonly known superfoods, making it one of the most nutrient-dense foods on the planet.
           </p>
         </div>
@@ -599,17 +598,17 @@ const RecipesContent = () => {
                 >
                   {/* Recipe Image */}
                   <div className="mb-4">
-                    <img 
-                      src={recipe.image} 
+                    <img
+                      src={recipe.image}
                       alt={recipe.title}
                       className="w-full h-48 object-cover rounded-lg shadow-md"
                     />
                   </div>
-                  
+
                   <h4 className="text-lg font-heading font-bold text-black-900 mb-4">
                     {recipe.title}
                   </h4>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <h5 className="font-semibold text-black-900 mb-2">Ingredients:</h5>
@@ -622,7 +621,7 @@ const RecipesContent = () => {
                         ))}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h5 className="font-semibold text-black-900 mb-2">Instructions:</h5>
                       <ol className="space-y-1">
@@ -670,16 +669,16 @@ const TraceabilityContent = () => {
             <h3 className="text-2xl font-heading font-bold text-black-900 mb-6">
               Farmer Details
             </h3>
-            
+
             {/* Farmer Image */}
             <div className="mb-6">
-              <img 
-                src="/farmer.jpg" 
-                alt="Farmer Ramana Rao Verdeneni" 
+              <img
+                src="/farmer.jpg"
+                alt="Farmer Ramana Rao Verdeneni"
                 className="w-full h-auto max-h-80 object-contain rounded-lg shadow-lg"
               />
             </div>
-            
+
             <div className="space-y-3 sm:space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 sm:py-3 border-b border-beige-400">
                 <span className="font-semibold text-black-900 text-sm sm:text-base">Farmer Name:</span>
@@ -707,7 +706,7 @@ const TraceabilityContent = () => {
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 sm:py-3 border-b border-beige-400">
                 <span className="font-semibold text-black-900 text-sm sm:text-base">Processing Date:</span>
-                <span className="text-black-700 text-sm sm:text-base">21st June 2025</span>
+                <span className="text-black-700 text-sm sm:text-base">25th October 2026</span>
               </div>
             </div>
           </div>
@@ -732,24 +731,24 @@ const TraceabilityContent = () => {
 const QualityContent = () => {
   // Latest test report data (most recent batch)
   const latestReport = {
-      id: 'batch-103',
-      batchNumber: '103',
-      reportNumber: '001:NL:24:08:03873 R',
-      issueDate: '28-Aug-2024',
-      reference: 'EQNX:001:NL:24:08:03873/A R',
-      sample: 'Moringa Powder',
-      manufacturingDate: '01-Aug-2024',
-      lab: 'EQUINOX LABS',
-      status: 'Passed',
-      parameters: [
-        { name: 'Energy', value: '375.20', unit: 'Kcal/100g', method: 'SOP-CHM-29-00' },
-        { name: 'Carbohydrate', value: '49.80', unit: 'g/100g', method: 'SOP-CHM-28-00' },
-        { name: 'Protein', value: '23.85', unit: 'g/100g', method: 'SOP-CHM-90-01' },
-        { name: 'Added Sugar', value: '<1.0', unit: 'g/100g', method: 'SOP-CHM-139-00' },
-        { name: 'Total Sugar', value: '<2.0', unit: 'g/100g', method: 'SOP-CHM-123-00' },
-        { name: 'Total Fat', value: '9.12', unit: 'g/100g', method: 'SOP-CHM-100-01' },
-        { name: 'Sodium', value: '172.45', unit: 'mg/100g', method: 'SOP-CHM-27-01 (Part A)' }
-      ]
+    id: 'batch-103',
+    batchNumber: '103',
+    reportNumber: '001:NL:24:08:03873 R',
+    issueDate: '28-Aug-2024',
+    reference: 'EQNX:001:NL:24:08:03873/A R',
+    sample: 'Moringa Powder',
+    manufacturingDate: '01-Aug-2024',
+    lab: 'EQUINOX LABS',
+    status: 'Passed',
+    parameters: [
+      { name: 'Energy', value: '375.20', unit: 'Kcal/100g', method: 'SOP-CHM-29-00' },
+      { name: 'Carbohydrate', value: '49.80', unit: 'g/100g', method: 'SOP-CHM-28-00' },
+      { name: 'Protein', value: '23.85', unit: 'g/100g', method: 'SOP-CHM-90-01' },
+      { name: 'Added Sugar', value: '<1.0', unit: 'g/100g', method: 'SOP-CHM-139-00' },
+      { name: 'Total Sugar', value: '<2.0', unit: 'g/100g', method: 'SOP-CHM-123-00' },
+      { name: 'Total Fat', value: '9.12', unit: 'g/100g', method: 'SOP-CHM-100-01' },
+      { name: 'Sodium', value: '172.45', unit: 'mg/100g', method: 'SOP-CHM-27-01 (Part A)' }
+    ]
   };
 
   return (
@@ -787,70 +786,70 @@ const QualityContent = () => {
             <FileText className="w-6 h-6 text-green-600" />
             <h3 className="text-2xl font-heading font-bold text-black-900">
               Complete Quality Test Report
-          </h3>
+            </h3>
           </div>
           <p className="text-black-700">
             Full laboratory test report from {latestReport.lab} with official stamp and certification
           </p>
         </div>
 
-               {/* Report Display */}
-               <h3 className="text-2xl font-heading font-bold text-black-900 mb-6 text-center">
-                 Quality Test Report
-                </h3>
-               
-               {/* Report Image Display */}
-               <div className="mb-6 border border-gray-300 rounded-lg overflow-hidden">
-                 <img
-                   src="/lab_report.png"
-                   alt="Moringa Powder Quality Test Report"
-                   className="w-full h-auto"
-                   style={{ minHeight: '500px', objectFit: 'contain' }}
-                 />
-              </div>
+        {/* Report Display */}
+        <h3 className="text-2xl font-heading font-bold text-black-900 mb-6 text-center">
+          Quality Test Report
+        </h3>
 
-               {/* Action Buttons */}
-               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                 <a
-                   href="/Test_report.pdf"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-300"
-                 >
-                   <FileText className="w-5 h-5" />
-                   <span>View Full Report</span>
-                 </a>
-                 
-              <a
-                href="/Test_report.pdf"
-                   download="Amrti_Quality_Test_Report.pdf"
-                   className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-300"
-              >
-                   <FileText className="w-5 h-5" />
-                   <span>Download Report</span>
-              </a>
-      </div>
+        {/* Report Image Display */}
+        <div className="mb-6 border border-gray-300 rounded-lg overflow-hidden">
+          <img
+            src="/lab_report.png"
+            alt="Moringa Powder Quality Test Report"
+            className="w-full h-auto"
+            style={{ minHeight: '500px', objectFit: 'contain' }}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a
+            href="/Test_report.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-300"
+          >
+            <FileText className="w-5 h-5" />
+            <span>View Full Report</span>
+          </a>
+
+          <a
+            href="/Test_report.pdf"
+            download="Amrti_Quality_Test_Report.pdf"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-300"
+          >
+            <FileText className="w-5 h-5" />
+            <span>Download Report</span>
+          </a>
+        </div>
 
         {/* Report Summary */}
         <div className="bg-green-50 border border-green-200 rounded-xl p-6">
           <h4 className="text-xl font-heading font-bold text-green-800 mb-4 text-center">Report Summary</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
-          <div>
-            <p className="text-2xl font-bold text-green-600">100%</p>
-            <p className="text-sm text-green-700">Pass Rate</p>
-          </div>
-          <div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">100%</p>
+              <p className="text-sm text-green-700">Pass Rate</p>
+            </div>
+            <div>
               <p className="text-2xl font-bold text-green-600">ISO Certified</p>
               <p className="text-sm text-green-700">Laboratory</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-green-600">Premium</p>
-            <p className="text-sm text-green-700">Quality Standards</p>
+              <p className="text-sm text-green-700">Quality Standards</p>
+            </div>
           </div>
-        </div>
           <p className="text-center text-green-700 text-sm">
-            This complete test report from Equinox Labs includes all nutritional analysis, safety tests, and quality certifications. 
-            Our moringa powder consistently meets the highest quality standards with comprehensive testing for nutritional content, 
+            This complete test report from Equinox Labs includes all nutritional analysis, safety tests, and quality certifications.
+            Our moringa powder consistently meets the highest quality standards with comprehensive testing for nutritional content,
             purity, and safety.
           </p>
         </div>

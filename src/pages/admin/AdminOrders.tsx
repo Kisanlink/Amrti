@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { ShoppingCart, CheckCircle, Truck, Package, Clock, X, Eye } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Truck, Package, Clock, X, Eye, XCircle } from 'lucide-react';
 import {
   useAdminOrderList,
   useAdminOrderDetail,
   useConfirmOrder,
   useUpdateOrderStatus,
+  useCancelOrder,
 } from '../../hooks/queries/useAdminOrders';
 import type { AdminOrder } from '../../services/adminOrderService';
 
-type StatusTab = 'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered';
+type StatusTab = 'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 
 const STATUS_TABS: { id: StatusTab; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -16,6 +17,7 @@ const STATUS_TABS: { id: StatusTab; label: string }[] = [
   { id: 'confirmed', label: 'Confirmed' },
   { id: 'shipped', label: 'Shipped' },
   { id: 'delivered', label: 'Delivered' },
+  { id: 'cancelled', label: 'Cancelled' },
 ];
 
 const OrderStatusBadge: React.FC<{ status: string }> = ({ status }) => {
@@ -36,6 +38,12 @@ const OrderStatusBadge: React.FC<{ status: string }> = ({ status }) => {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
         <Package className="w-3 h-3" /> Confirmed
+      </span>
+    );
+  if (s === 'cancelled')
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+        <XCircle className="w-3 h-3" /> Cancelled
       </span>
     );
   return (
@@ -185,6 +193,7 @@ const AdminOrders: React.FC = () => {
   const { data, isLoading } = useAdminOrderList(page, statusFilter);
   const confirmMutation = useConfirmOrder();
   const updateStatusMutation = useUpdateOrderStatus();
+  const cancelMutation = useCancelOrder();
 
   const orders = data?.orders ?? [];
   const pagination = data?.pagination;
@@ -249,6 +258,7 @@ const AdminOrders: React.FC = () => {
                   const isPending = !status || status === 'pending';
                   const isConfirmed = status === 'confirmed';
                   const isShipped = status === 'shipped';
+                  const isCancellable = isPending || isConfirmed;
                   return (
                     <tr key={order.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-mono text-xs text-slate-600 max-w-[120px] truncate">
@@ -306,6 +316,20 @@ const AdminOrders: React.FC = () => {
                             >
                               <Package className="w-3 h-3" />
                               Deliver
+                            </button>
+                          )}
+                          {isCancellable && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Cancel this order? This cannot be undone.')) {
+                                  cancelMutation.mutate(order.id);
+                                }
+                              }}
+                              disabled={cancelMutation.isPending}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 transition-colors"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Cancel
                             </button>
                           )}
                         </div>
