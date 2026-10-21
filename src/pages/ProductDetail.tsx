@@ -44,7 +44,7 @@ const ProductDetail = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const [isAutoScroll, setIsAutoScroll] = useState(true);
-  const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [autoScrollInterval, setAutoScrollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
