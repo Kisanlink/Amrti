@@ -3,7 +3,6 @@ import { useState, useEffect, memo, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Phone, Lock, ArrowLeft, Shield, Truck, RotateCcw, Award, CheckCircle, Mail, User, UserPlus } from 'lucide-react';
 import AuthService from '../services/authService';
-import { initializeRecaptcha, getRecaptchaToken, clearRecaptcha } from '../config/firebase';
 import { buildApiUrl } from '../config/apiConfig';
 
 // Logo and Description Component - Defined outside to prevent re-creation on every render
@@ -95,8 +94,8 @@ const Login = () => {
   });
 
   // Session timeout warning and management (exact same as HTML)
-  const [sessionTimeoutWarning, setSessionTimeoutWarning] = useState<NodeJS.Timeout | null>(null);
-  const [sessionTimeoutTimer, setSessionTimeoutTimer] = useState<NodeJS.Timeout | null>(null);
+  const [sessionTimeoutWarning, setSessionTimeoutWarning] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [sessionTimeoutTimer, setSessionTimeoutTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Get redirect URL from location state or default to home
   const from = (location.state as any)?.from || '/';
@@ -109,27 +108,6 @@ const Login = () => {
       setStep('phone');
     }
   }, [location.pathname]);
-
-  // Cleanup reCAPTCHA on component unmount (like HTML)
-  useEffect(() => {
-    return () => {
-      clearRecaptcha();
-    };
-  }, []);
-
-  // Ensure reCAPTCHA container is ready when signup form is visible
-  useEffect(() => {
-    if (isSignup && signupStep === 'phone') {
-      // Small delay to ensure DOM is updated after animation
-      const timer = setTimeout(() => {
-        const container = document.getElementById('recaptcha-container-signup');
-        if (!container) {
-          console.warn('reCAPTCHA container for signup not found yet');
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isSignup, signupStep]);
 
   // Session timeout warning and management (exact same as HTML)
   const startSessionTimeoutWarning = () => {
@@ -264,80 +242,28 @@ const Login = () => {
     setError(null);
 
     try {
-      console.log('Initializing reCAPTCHA...');
+      console.log('Sending verification code via WhatsApp...');
       
-      // Ensure the recaptcha container exists
-      const recaptchaContainer = document.getElementById('recaptcha-container');
-      if (!recaptchaContainer) {
-        setError('reCAPTCHA container not found. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      // Initialize reCAPTCHA first (exact same as HTML)
-      try {
-        await initializeRecaptcha();
-        console.log('reCAPTCHA initialized successfully');
-      } catch (initError: any) {
-        console.error('reCAPTCHA initialization error:', initError);
-        setError(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      // Wait a moment for reCAPTCHA to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Getting reCAPTCHA token...');
-      
-      // Get reCAPTCHA token
-      let recaptchaToken: string;
-      try {
-        recaptchaToken = await getRecaptchaToken();
-        console.log('reCAPTCHA token obtained successfully');
-      } catch (tokenError: any) {
-        console.error('reCAPTCHA token error:', tokenError);
-        setError(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
-        clearRecaptcha(); // Reset verifier
-        setLoading(false);
-        return;
-      }
-      
-      console.log('Sending verification code...');
-      
-      // Call backend API instead of AuthService (exact same as HTML)
       const phoneSendCodeUrl = buildApiUrl('/auth/phone/send-code');
-      console.log('Sending request to:', phoneSendCodeUrl);
-      console.log('Request payload:', {
-        phone_number: formData.phoneNumber,
-        recaptcha_token: recaptchaToken
-      });
-      
       const response = await fetch(phoneSendCodeUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone_number: formData.phoneNumber,
-          recaptcha_token: recaptchaToken
+          phone_number: formData.phoneNumber
         })
       });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       // Check if response is ok and has content
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Error response text:', errorText);
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.message || errorJson.error || errorMessage;
         } catch (e) {
-          // If not JSON, use the text as is
           errorMessage = errorText || errorMessage;
         }
         
@@ -349,43 +275,31 @@ const Login = () => {
       let result;
       try {
         const responseText = await response.text();
-        console.log('Response text:', responseText);
-        
         if (!responseText) {
           setError('Empty response from server');
           return;
         }
         result = JSON.parse(responseText);
-        console.log('Parsed result:', result);
       } catch (e) {
         setError('Invalid response format from server');
-        console.error('JSON parse error:', e);
         return;
       }
       
-      // Handle the response based on the backend's API format
       if (result.success && result.data) {
         setError(null);
         setSessionInfo(result.data.session_info);
         setLastPhoneNumber(formData.phoneNumber);
-      setStep('verify');
-        console.log('Verification code sent! Check your phone for SMS.');
+        setStep('verify');
         
-        // Store session info and phone number for verification with timestamp (exact same as HTML)
         const sessionData = {
           session_info: result.data.session_info,
           phone_number: formData.phoneNumber,
           timestamp: Date.now(),
-          expires_at: Date.now() + (4 * 60 * 1000) // 4 minutes (Firebase expires at 5 minutes)
+          expires_at: Date.now() + (5 * 60 * 1000)
         };
         
-        // Persist session data to localStorage
         localStorage.setItem('phone_auth_session', JSON.stringify(sessionData));
-        
-        // Start session timeout warning
         startSessionTimeoutWarning();
-        
-        // Clear the phone number input for security
         setFormData(prev => ({ ...prev, phoneNumber: '' }));
       } else {
         setError(`Failed to send verification code: ${result.message || 'Unknown error'}`);
@@ -393,14 +307,7 @@ const Login = () => {
       
     } catch (error: any) {
       console.error('Phone auth error:', error);
-      
-      // Handle specific error cases
-      if (error.message && error.message.includes('reCAPTCHA')) {
-        setError('reCAPTCHA verification failed. Please try again.');
-        clearRecaptcha(); // Reset verifier
-      } else {
-        setError(`Failed to send verification code: ${error.message}`);
-      }
+      setError(`Failed to send verification code: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -504,17 +411,29 @@ const Login = () => {
           localStorage.setItem('firebase_refresh_token', result.data.refresh_token);
         }
         
-        // Create a mock user object for display (exact same as HTML)
-        const mockUser = {
-          uid: result.data.local_id || 'phone_user',
-          phoneNumber: result.data.phone_number || formData.phoneNumber,
-          email: null,
-          displayName: null,
-          emailVerified: false
+        // Extract real user details returned by the backend
+        const userObj = result.data.user || {};
+        const uid = userObj.uid || userObj.id || result.data.local_id || 'phone_user';
+        const phoneNumber = userObj.phone_number || lastPhoneNumber || formData.phoneNumber;
+        const displayName = userObj.name || 'User';
+
+        const authUser = {
+          uid: uid,
+          id: userObj.id || uid,
+          phoneNumber: phoneNumber,
+          email: userObj.email || null,
+          displayName: displayName,
+          emailVerified: userObj.is_verified ?? true,
+          isVerified: userObj.is_verified ?? true,
+          photoURL: null,
+          createdAt: userObj.created_at || new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          isActive: userObj.is_active ?? true,
+          isNewUser: userObj.is_new_user ?? false
         };
         
         // Store user data
-        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('user', JSON.stringify(authUser));
         localStorage.setItem('authToken', result.data.id_token);
         
         // Clear the verification code input
@@ -566,46 +485,8 @@ const Login = () => {
     clearSessionData();
 
     try {
-      setError('Resending verification code...');
+      setError('Resending verification code via WhatsApp...');
       setLoading(true);
-      
-      // Ensure the recaptcha container exists
-      const recaptchaContainer = document.getElementById('recaptcha-container');
-      if (!recaptchaContainer) {
-        setError('reCAPTCHA container not found. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      // Reset reCAPTCHA verifier
-      clearRecaptcha();
-      
-      // Initialize new reCAPTCHA
-      try {
-        await initializeRecaptcha();
-        console.log('reCAPTCHA re-initialized successfully');
-      } catch (initError: any) {
-        console.error('reCAPTCHA re-initialization error:', initError);
-        setError(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      // Wait for reCAPTCHA to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get new reCAPTCHA token
-      let recaptchaToken: string;
-      try {
-        recaptchaToken = await getRecaptchaToken();
-        console.log('reCAPTCHA token obtained successfully for resend');
-      } catch (tokenError: any) {
-        console.error('reCAPTCHA token error on resend:', tokenError);
-        setError(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
-        clearRecaptcha(); // Reset verifier
-        setLoading(false);
-        return;
-      }
       
       // Call backend API to resend verification code
       const response = await fetch(buildApiUrl('/auth/phone/send-code'), {
@@ -614,8 +495,7 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone_number: phoneNumber,
-          recaptcha_token: recaptchaToken
+          phone_number: phoneNumber
         })
       });
       
@@ -823,35 +703,13 @@ const Login = () => {
     setError(null);
 
     try {
-      // Wait for container to be available (in case of animation delay)
-      let recaptchaContainer = document.getElementById('recaptcha-container-signup');
-      let attempts = 0;
-      while (!recaptchaContainer && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        recaptchaContainer = document.getElementById('recaptcha-container-signup');
-        attempts++;
-      }
-      
-      if (!recaptchaContainer) {
-        setError('reCAPTCHA container not found. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      // Initialize reCAPTCHA with the signup container ID
-      await initializeRecaptcha('recaptcha-container-signup');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const recaptchaToken = await getRecaptchaToken();
-      
       const response = await fetch(buildApiUrl('/auth/phone/send-code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone_number: formData.phoneNumber,
-          recaptcha_token: recaptchaToken
+          phone_number: formData.phoneNumber
         })
       });
       
@@ -864,6 +722,11 @@ const Login = () => {
         } catch (e) {
           errorMessage = errorText || errorMessage;
         }
+
+        if (errorMessage.includes('BILLING_NOT_ENABLED')) {
+          errorMessage = 'SMS verification service is temporarily unavailable. Please try again later or contact support.';
+        }
+
         setError(`Failed to send verification code: ${errorMessage}`);
         return;
       }
@@ -950,15 +813,28 @@ const Login = () => {
           localStorage.setItem('firebase_refresh_token', result.data.refresh_token);
         }
         
-        const mockUser = {
-          uid: result.data.local_id || 'phone_user',
-          phoneNumber: result.data.phone_number || formData.phoneNumber,
-          email: null,
-          displayName: formData.name,
-          emailVerified: false
+        // Extract real user details returned by the backend
+        const userObj = result.data.user || {};
+        const uid = userObj.uid || userObj.id || result.data.local_id || 'phone_user';
+        const phoneNumber = userObj.phone_number || formData.phoneNumber;
+        const displayName = userObj.name || formData.name || 'User';
+
+        const authUser = {
+          uid: uid,
+          id: userObj.id || uid,
+          phoneNumber: phoneNumber,
+          email: userObj.email || null,
+          displayName: displayName,
+          emailVerified: userObj.is_verified ?? true,
+          isVerified: userObj.is_verified ?? true,
+          photoURL: null,
+          createdAt: userObj.created_at || new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          isActive: userObj.is_active ?? true,
+          isNewUser: userObj.is_new_user ?? true
         };
         
-        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('user', JSON.stringify(authUser));
         localStorage.setItem('authToken', result.data.id_token);
         
         navigate(from);
@@ -1070,12 +946,9 @@ const Login = () => {
                     />
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Enter your phone number with country code
+                    We will send a verification code to your WhatsApp
                   </p>
                 </div>
-
-                          {/* reCAPTCHA Container */}
-                <div id="recaptcha-container" className="flex justify-center my-4"></div>
 
                 {/* Submit Button */}
                 <button
@@ -1325,7 +1198,6 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    clearRecaptcha();
                     setStep('phone');
                   }}
                   className="w-full text-green-600 hover:text-green-700 font-heading font-semibold py-2 px-4 transition-colors"
@@ -1419,11 +1291,9 @@ const Login = () => {
                               />
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
-                              Enter your phone number with country code
+                              We will send a verification code to your WhatsApp
                             </p>
                           </div>
-
-                          <div id="recaptcha-container-signup" className="flex justify-center my-4"></div>
 
                           <div className="flex items-start">
                             <input
@@ -1764,7 +1634,6 @@ const Login = () => {
                 setError(null);
                 setStep(isSignup ? 'phone' : 'phone');
                 setSignupStep('phone');
-                clearRecaptcha();
               }}
               className="font-heading font-semibold text-green-600 hover:text-green-700 transition-colors underline"
             >
