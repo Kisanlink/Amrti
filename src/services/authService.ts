@@ -3,7 +3,7 @@ import {
   User as FirebaseUser,
   UserCredential
 } from 'firebase/auth';
-import { getAuth, getFirebase, getRecaptchaToken, initializeRecaptcha, clearRecaptcha, initializeFirebase } from '../config/firebase';
+import { getAuth, getFirebase, initializeFirebase } from '../config/firebase';
 
 export interface AuthUser {
   uid: string;
@@ -102,46 +102,13 @@ export class AuthService {
         throw new Error('Please enter a valid phone number');
       }
 
-      // Initialize reCAPTCHA first
-      console.log('Initializing reCAPTCHA...');
-      
-      // Check if the recaptcha container exists
-      const recaptchaContainer = document.getElementById('recaptcha-container');
-      if (!recaptchaContainer) {
-        throw new Error('reCAPTCHA container not found. Please ensure the form is properly rendered.');
-      }
-      
-      try {
-        await initializeRecaptcha();
-        console.log('reCAPTCHA initialized successfully');
-      } catch (initError: any) {
-        console.error('reCAPTCHA initialization error:', initError);
-        throw new Error(initError.message || 'Failed to initialize reCAPTCHA. Please refresh the page.');
-      }
-      
-      // Wait a moment for reCAPTCHA to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get reCAPTCHA token
-      console.log('Getting reCAPTCHA token...');
-      let recaptchaToken: string;
-      try {
-        recaptchaToken = await getRecaptchaToken();
-        console.log('reCAPTCHA token obtained successfully');
-      } catch (tokenError: any) {
-        console.error('reCAPTCHA token error:', tokenError);
-        clearRecaptcha(); // Reset verifier
-        throw new Error(tokenError.message || 'Failed to get reCAPTCHA token. Please try again.');
-      }
-
       // Import API config dynamically to avoid circular dependencies
       const { buildApiUrl } = await import('../config/apiConfig');
       const requestBody = {
-        phone_number: phoneNumber,
-        recaptcha_token: recaptchaToken
+        phone_number: phoneNumber
       };
       
-      console.log('Sending phone code request:', requestBody);
+      console.log('Sending phone code request via WhatsApp:', requestBody);
       
       const response = await fetch(buildApiUrl('/auth/phone/send-code'), {
         method: 'POST',
@@ -161,6 +128,9 @@ export class AuthService {
           const responseText = await response.text();
           console.error('Raw error response:', responseText);
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        if (errorMessage.includes('BILLING_NOT_ENABLED')) {
+          errorMessage = 'SMS verification service is temporarily unavailable. Please try again later or contact support.';
         }
         throw new Error(errorMessage);
       }
