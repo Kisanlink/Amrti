@@ -298,13 +298,17 @@ const Checkout: React.FC = () => {
           
           // Clear cart
           await CartService.clearCart();
-          
-          // Show success message
+
+          // Show success message. If the shipment/tracking is not ready yet, reassure the
+          // customer that the order is confirmed and delivery is being arranged — the payment
+          // succeeded regardless, so we never imply failure here.
           showNotification({
             type: 'success',
-            message: 'Order placed successfully! Redirecting to order details...'
+            message: verification.shipment_pending
+              ? 'Payment received and order confirmed! We’re arranging delivery — tracking will appear shortly.'
+              : 'Order placed successfully! Redirecting to order details...'
           });
-          
+
           return; // Stop execution here
         } else {
           throw new Error('Payment verification failed');

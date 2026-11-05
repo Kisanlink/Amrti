@@ -122,6 +122,13 @@ export interface PaymentVerificationResponse {
   message: string;
   payment_id: string;
   order_id: string;
+  awb_number?: string;
+  tracking_url?: string;
+  invoice_url?: string;
+  // Post-payment fulfillment state. shipment_pending is true when tracking is not yet
+  // available, so we reassure the customer ("arranging delivery") rather than implying failure.
+  fulfillment_status?: string;
+  shipment_pending?: boolean;
 }
 
 // ==================== CHECKOUT API ====================
