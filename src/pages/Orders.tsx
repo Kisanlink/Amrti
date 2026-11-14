@@ -6,6 +6,7 @@ import { OrderService, type Order, type OrderItem } from '../services/orderServi
 import { useNotification } from '../context/NotificationContext';
 import ScrollToTop from '../components/ui/ScrollToTop';
 import InvoiceViewer from '../components/ui/InvoiceViewer';
+import ShippingAddressPrompt from '../components/orders/ShippingAddressPrompt';
 import AuthService from '../services/authService';
 import ProductService from '../services/productService';
 
@@ -414,6 +415,15 @@ const Orders: React.FC = () => {
                             Track Package
                           </a>
                         )}
+                        {OrderService.needsShippingAddress(orderItem) && (
+                          <Link
+                            to={`/orders/${orderItem.order_id || orderItem.id}`}
+                            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-100 text-amber-800 border border-amber-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-amber-200 transition-all duration-300"
+                          >
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                            Add delivery address
+                          </Link>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <Link
@@ -547,6 +557,12 @@ const Orders: React.FC = () => {
                   <p className="text-gray-700 text-sm sm:text-base">{order.shipping_address || 'Address not provided'}</p>
                 )}
               </motion.div>
+
+              {/* Customer self-entry of a missing delivery address (paid order stuck
+                  in needs_manual_fulfillment). Refreshes the order on success. */}
+              {OrderService.needsShippingAddress(order) && (
+                <ShippingAddressPrompt order={order} onUpdated={fetchOrderDetails} />
+              )}
 
               {/* Order Tracking Information */}
               <motion.div

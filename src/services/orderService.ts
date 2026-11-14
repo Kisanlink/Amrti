@@ -1,4 +1,5 @@
-import { apiRequest } from './api';
+import { apiRequest, getHeaders } from './api';
+import { API_BASE_PATH } from '../config/apiConfig';
 
 export interface OrderItem {
   id?: string;
@@ -37,7 +38,11 @@ export interface Order {
     country: string;
   };
   payment_method: string;
-  payment_status: 'pending' | 'completed' | 'failed' | 'successful';
+  payment_status: 'pending' | 'completed' | 'failed' | 'successful' | 'paid';
+  // Fulfillment pipeline state. "needs_manual_fulfillment" = paid but no deliverable
+  // address was available, so the customer may supply one (PAY-06 self-entry).
+  fulfillment_status?: '' | 'pending_shipment' | 'shipment_failed' | 'needs_manual_fulfillment' | 'fulfilled' | string;
+  shipment_error?: string;
   notes: string;
   razorpay_order_id: string;
   razorpay_receipt: string;
@@ -83,6 +88,33 @@ export interface OrdersResponse {
   };
   message?: string;
   success?: boolean;
+}
+
+// Body for POST /orders/:id/shipping-address (customer self-entry of a missing
+// delivery address). address_line_1, city, state and postal_code are required.
+export interface ShippingAddressPayload {
+  name?: string;
+  phone?: string;
+  address_line_1: string;
+  address_line_2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country?: string;
+}
+
+// Typed result of submitShippingAddress so callers can branch on the HTTP status
+// (200 saved / shipment created, 409 no longer eligible, 400 validation) and show
+// the backend's own message rather than a generic error.
+export interface SubmitShippingAddressResult {
+  status: number;
+  success: boolean;
+  message: string;
+  error?: string;
+  order_id?: string;
+  fulfillment_status?: string;
+  waybill?: string;
+  tracking_url?: string;
 }
 
 export const orderApi = {
@@ -148,6 +180,61 @@ export class OrderService {
       console.error('Failed to cancel order:', error);
       throw new Error('Failed to cancel order. Please try again later.');
     }
+  }
+
+  /**
+   * Submit (or correct) the shipping address for a paid order that is stuck
+   * awaiting a deliverable destination (needs_manual_fulfillment). Posts to the
+   * authenticated owner-only endpoint and returns a typed result so callers can
+   * branch on 200 / 409 / 400 instead of the generic apiRequest error path, which
+   * discards the status code and the backend's `error` text.
+   * @param orderId - ID of the order whose address is being supplied
+   * @param payload - The shipping address fields
+   * @returns Promise with the typed submission result
+   */
+  static async submitShippingAddress(
+    orderId: string,
+    payload: ShippingAddressPayload
+  ): Promise<SubmitShippingAddressResult> {
+    const url = `${API_BASE_PATH}/orders/${encodeURIComponent(orderId)}/shipping-address`;
+    const headers = await getHeaders();
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const body: any = await response.json().catch(() => ({}));
+    return {
+      status: response.status,
+      success: response.ok && body?.success !== false,
+      message:
+        body?.message ||
+        body?.error ||
+        (response.ok ? 'Shipping address saved' : `Request failed (status ${response.status})`),
+      error: response.ok ? undefined : body?.error || body?.message,
+      order_id: body?.order_id,
+      fulfillment_status: body?.fulfillment_status,
+      waybill: body?.waybill,
+      tracking_url: body?.tracking_url,
+    };
+  }
+
+  /**
+   * True when an order is paid but could not be shipped because no deliverable
+   * address was available, so it can accept a customer-entered shipping address.
+   * Mirrors the backend eligibility guard: paid, not yet shipped (no waybill), no
+   * courier shipment already created, and fulfillment_status === needs_manual_fulfillment.
+   * @param order - The order to check
+   * @returns true if the self-entry address form should be shown
+   */
+  static needsShippingAddress(order?: Order | null): boolean {
+    if (!order) return false;
+    const paid = order.payment_status === 'paid' || order.payment_status === 'successful';
+    const noWaybill = !order.delhivery_waybill || order.delhivery_waybill.trim() === '';
+    const atCourier = (order.shipment_error || '')
+      .toLowerCase()
+      .includes('shipment created at courier');
+    return paid && noWaybill && !atCourier && order.fulfillment_status === 'needs_manual_fulfillment';
   }
 
   /**

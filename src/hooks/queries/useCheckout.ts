@@ -192,6 +192,17 @@ const openMagicCheckoutModal = async (
             // Don't block navigation if cart clearing fails
           }
           
+          // If the shipment/tracking is not ready yet, reassure the customer — payment
+          // succeeded and the order is confirmed; delivery is being arranged.
+          if (verifyResult.shipment_pending) {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+              detail: {
+                type: 'success',
+                message: 'Payment received and order confirmed! We’re arranging delivery — tracking will appear shortly.',
+              },
+            }));
+          }
+
           // Redirect to success page
           navigate(`/order-success?order_id=${verifyResult.order_id}`);
         } else {
