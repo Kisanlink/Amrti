@@ -40,6 +40,11 @@ const ShippingAddressPrompt: React.FC<ShippingAddressPromptProps> = ({ order, on
   const [form, setForm] = useState<FormState>({ ...emptyForm });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  // Server-side submission error (an HTTP 400 field correction, or a request/transport failure).
+  // Kept separate from the per-field `errors` (client-side validation) and rendered beside the form
+  // so the server's correction detail stays visible after the transient notification closes. Cleared
+  // when the customer edits a field or retries.
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleChange =
     (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +56,8 @@ const ShippingAddressPrompt: React.FC<ShippingAddressPromptProps> = ({ order, on
         delete next[field];
         return next;
       });
+      // Editing any field invalidates a prior server rejection; clear it so stale detail isn't shown.
+      setSubmitError((prev) => (prev ? null : prev));
     };
 
   const validate = (): boolean => {
@@ -88,6 +95,7 @@ const ShippingAddressPrompt: React.FC<ShippingAddressPromptProps> = ({ order, on
 
     try {
       setSubmitting(true);
+      setSubmitError(null); // retrying clears any prior server rejection
       const result = await OrderService.submitShippingAddress(orderId, payload);
 
       if (result.status === 200 && result.success) {
@@ -106,21 +114,19 @@ const ShippingAddressPrompt: React.FC<ShippingAddressPromptProps> = ({ order, on
         });
         onUpdated();
       } else if (result.status === 400) {
-        showNotification({
-          type: 'error',
-          message: result.error || 'Please check the address details and try again.',
-        });
+        const message = result.error || 'Please check the address details and try again.';
+        setSubmitError(message);
+        showNotification({ type: 'error', message });
       } else {
-        showNotification({
-          type: 'error',
-          message: result.error || result.message || 'Could not save the address. Please try again.',
-        });
+        const message =
+          result.error || result.message || 'Could not save the address. Please try again.';
+        setSubmitError(message);
+        showNotification({ type: 'error', message });
       }
     } catch (err: any) {
-      showNotification({
-        type: 'error',
-        message: err?.message || 'Could not save the address. Please try again.',
-      });
+      const message = err?.message || 'Could not save the address. Please try again.';
+      setSubmitError(message);
+      showNotification({ type: 'error', message });
     } finally {
       setSubmitting(false);
     }
@@ -250,6 +256,16 @@ const ShippingAddressPrompt: React.FC<ShippingAddressPromptProps> = ({ order, on
             )}
           </div>
         </div>
+
+        {submitError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         <div className="flex justify-end">
           <button
